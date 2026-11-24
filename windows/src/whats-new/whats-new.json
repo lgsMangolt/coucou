@@ -2,6 +2,81 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.7.1",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Quick access",
+            "zh-Hans": "快速访问",
+            "hi": "त्वरित पहुँच",
+            "es": "Acceso rápido",
+            "ar": "وصول سريع",
+            "fr": "Accès rapide",
+            "bn": "দ্রুত অ্যাক্সেস",
+            "pt-BR": "Acesso rápido",
+            "ru": "Быстрый доступ",
+            "id": "Akses cepat",
+            "de": "Schnellzugriff",
+            "tr": "Hızlı erişim",
+            "ko": "빠른 접근",
+            "ja": "クイックアクセス"
+          },
+          "detail": {
+            "en": "Change mode in the header and turn on any option from the row under the pills.",
+            "zh-Hans": "在顶部切换模式，并从胶囊下方的一行里开启任何选项。",
+            "hi": "हेडर में मोड बदलें और पिल्स के नीचे की पंक्ति से कोई भी विकल्प चालू करें।",
+            "es": "Cambia de modo en la cabecera y activa cualquier opción desde la fila bajo las píldoras.",
+            "ar": "غيّر الوضع من الشريط العلوي وشغّل أي خيار من الصف أسفل الكبسولات.",
+            "fr": "Change de mode dans l'en-tête et active n'importe quelle option depuis la ligne sous les pilules.",
+            "bn": "হেডারে মোড বদলান আর পিলের নিচের সারি থেকে যেকোনো বিকল্প চালু করুন।",
+            "pt-BR": "Troque de modo no cabeçalho e ligue qualquer opção pela linha sob as pílulas.",
+            "ru": "Меняйте режим в шапке и включайте любую опцию в строке под пилюлями.",
+            "id": "Ganti mode di header dan nyalakan opsi apa pun dari baris di bawah pil.",
+            "de": "Wechsle den Modus in der Kopfzeile und schalte jede Option in der Zeile unter den Kapseln ein.",
+            "tr": "Modu üst çubuktan değiştirin ve araçların altındaki satırdan istediğiniz seçeneği açın.",
+            "ko": "머리글에서 모드를 바꾸고, 모찌 아래 줄에서 원하는 옵션을 켜세요.",
+            "ja": "ヘッダーでモードを切り替え、ピルの下の行から好きなオプションをオンにできます。"
+          }
+        },
+        {
+          "icon": "clock",
+          "title": {
+            "en": "It adapts to you",
+            "zh-Hans": "它会适应你",
+            "hi": "यह आपके हिसाब से ढलता है",
+            "es": "Se adapta a ti",
+            "ar": "يتكيّف معك",
+            "fr": "Il s'adapte à toi",
+            "bn": "এটি আপনার সঙ্গে মানিয়ে নেয়",
+            "pt-BR": "Ele se adapta a você",
+            "ru": "Подстраивается под вас",
+            "id": "Menyesuaikan dengan Anda",
+            "de": "Passt sich dir an",
+            "tr": "Size uyum sağlar",
+            "ko": "나에게 맞춰져요",
+            "ja": "あなたに合わせて変わります"
+          },
+          "detail": {
+            "en": "A tool you don't open for two weeks leaves the mode, and the options you use most come first.",
+            "zh-Hans": "两周没打开的工具会退出模式，最常用的选项排在最前面。",
+            "hi": "दो हफ़्ते तक न खोला गया टूल मोड से हट जाता है, और सबसे ज़्यादा इस्तेमाल होने वाले विकल्प सबसे आगे आते हैं।",
+            "es": "Una herramienta que no abres en dos semanas sale del modo, y las opciones que más usas van primero.",
+            "ar": "الأداة التي لا تفتحها لأسبوعين تخرج من الوضع، والخيارات الأكثر استخدامًا تأتي أولًا.",
+            "fr": "Un outil que tu n'ouvres pas pendant deux semaines quitte le mode, et les options les plus utilisées passent en premier.",
+            "bn": "দুই সপ্তাহ না খুললে একটি টুল মোড থেকে সরে যায়, আর সবচেয়ে বেশি ব্যবহার হওয়া বিকল্প আগে আসে।",
+            "pt-BR": "Uma ferramenta que você não abre por duas semanas sai do modo, e as opções que você mais usa vêm primeiro.",
+            "ru": "Инструмент, который вы не открываете две недели, уходит из режима, а самые частые опции идут первыми.",
+            "id": "Alat yang tidak Anda buka selama dua minggu keluar dari mode, dan opsi yang paling sering dipakai tampil lebih dulu.",
+            "de": "Ein Werkzeug, das du zwei Wochen nicht öffnest, verlässt den Modus, und die meistgenutzten Optionen stehen vorn.",
+            "tr": "İki hafta açmadığınız bir araç moddan çıkar, en çok kullandığınız seçenekler öne geçer.",
+            "ko": "2주 동안 열지 않은 도구는 모드에서 빠지고, 가장 많이 쓰는 옵션이 앞에 와요.",
+            "ja": "2週間開かなかったツールはモードから外れ、よく使うオプションが先頭に並びます。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.7.0",
       "items": [
         {

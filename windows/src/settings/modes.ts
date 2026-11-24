@@ -8,6 +8,7 @@ import { h } from "../views/dom";
 import { t } from "../i18n/i18n";
 import { MAX_DECLARED, availablePills, sanitizeDeclared } from "../core/pills";
 import type { Mode, Settings } from "../core/state";
+import { seedModes } from "../core/modes";
 
 export interface ModesHost {
   settings(): Settings;
@@ -15,16 +16,6 @@ export interface ModesHost {
   apply(pills: string[], modeId: string): void;
   save(): void;
   toggle(on: boolean, onChange: (v: boolean) => void): HTMLElement;
-}
-
-/** What a first visit starts with: the pills each mode is about, where this build has them. */
-export function seedModes(offered: ReadonlySet<string>): Mode[] {
-  const only = (ids: string[]) => ids.filter((id) => offered.has(id));
-  return [
-    { id: "work", name: t("Work"), pills: only(["integration_whatsapp", "integration_mail", "integration_printers"]) },
-    { id: "rest", name: t("Rest"), pills: [] },
-    { id: "music", name: t("Music"), pills: only(["integration_ytmusic"]).length ? only(["integration_ytmusic"]) : only(["integration_spotify"]) },
-  ];
 }
 
 export function modesSection(host: ModesHost): HTMLElement {

@@ -11,6 +11,7 @@ import type { SpotifyState } from "./spotify";
 import type { YtAction, YtMusicState } from "./ytmusic";
 import type { PersonalData } from "./personal";
 import type { PrintersReport } from "./printers";
+import type { UsageData } from "./adapt";
 import type { UpdateStatus } from "./update";
 import type { WaIslandView, WaSettingsView, WaTestResult } from "./whatsapp";
 
@@ -549,6 +550,13 @@ export const Bridge = {
   printersRefresh: () => call<PrintersReport>("printers_refresh"),
   printersIgnore: (name: string) => call<PrintersReport>("printers_ignore", { name }),
   printersUnignore: (name: string) => call<PrintersReport>("printers_unignore", { name }),
+
+  // ── What is used (src-tauri/src/usage.rs): the island adapts to it ──
+  usageGet: () => call<UsageData>("usage_get"),
+  usageTouch: (id: string) => call<UsageData>("usage_touch", { id }),
+  usageSeen: (ids: string[]) => call<UsageData>("usage_seen", { ids }),
+  usageNotice: (pill: string, mode: string) => call<UsageData>("usage_notice", { pill, mode }),
+  usageDismiss: (pill: string, mode: string) => call<UsageData>("usage_dismiss", { pill, mode }),
 
   // ── New versions (src-tauri/src/update.rs) ────────────────────────────────
   updateStatus: () => call<UpdateStatus>("update_status"),

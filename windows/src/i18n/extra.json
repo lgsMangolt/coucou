@@ -8313,6 +8313,51 @@
       "tr": "Notlarınızı buraya yazın…",
       "ko": "여기에 메모를 적으세요…",
       "ja": "ここにメモを書いてください…"
+    },
+    "{name} left {mode}: unused for {days} days": {
+      "zh-Hans": "{name} 已移出 {mode}：{days} 天未使用",
+      "hi": "{name} को {mode} से हटाया गया: {days} दिन से इस्तेमाल नहीं हुआ",
+      "es": "{name} salió de {mode}: sin usar hace {days} días",
+      "ar": "أُخرج {name} من {mode}: لم يُستخدم منذ {days} يومًا",
+      "fr": "{name} a quitté {mode} : inutilisé depuis {days} jours",
+      "bn": "{name} {mode} থেকে সরানো হয়েছে: {days} দিন ব্যবহার হয়নি",
+      "pt-BR": "{name} saiu de {mode}: sem uso há {days} dias",
+      "ru": "{name} убран из «{mode}»: не использовался {days} дн.",
+      "id": "{name} keluar dari {mode}: tidak dipakai selama {days} hari",
+      "de": "{name} wurde aus {mode} entfernt: {days} Tage ungenutzt",
+      "tr": "{name}, {mode} modundan çıkarıldı: {days} gündür kullanılmadı",
+      "ko": "{name}을(를) {mode}에서 뺐어요: {days}일 동안 쓰지 않았어요",
+      "ja": "{name} を {mode} から外しました：{days} 日間使われていません"
+    },
+    "{name} took the place of {other}": {
+      "zh-Hans": "{name} 取代了 {other}",
+      "hi": "{name} ने {other} की जगह ली",
+      "es": "{name} ocupó el lugar de {other}",
+      "ar": "حلّ {name} محل {other}",
+      "fr": "{name} a pris la place de {other}",
+      "bn": "{name} {other}-এর জায়গা নিল",
+      "pt-BR": "{name} entrou no lugar de {other}",
+      "ru": "{name} занял место {other}",
+      "id": "{name} menggantikan {other}",
+      "de": "{name} hat den Platz von {other} übernommen",
+      "tr": "{name}, {other} yerine geçti",
+      "ko": "{name}이(가) {other} 자리를 대신했어요",
+      "ja": "{name} が {other} の代わりになりました"
+    },
+    "Turn on {name}": {
+      "zh-Hans": "开启 {name}",
+      "hi": "{name} चालू करें",
+      "es": "Activar {name}",
+      "ar": "تشغيل {name}",
+      "fr": "Activer {name}",
+      "bn": "{name} চালু করুন",
+      "pt-BR": "Ligar {name}",
+      "ru": "Включить {name}",
+      "id": "Nyalakan {name}",
+      "de": "{name} einschalten",
+      "tr": "{name} aç",
+      "ko": "{name} 켜기",
+      "ja": "{name} をオンにする"
     }
   }
 }

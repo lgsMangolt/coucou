@@ -49,6 +49,7 @@ mod webview_drop;
 mod webview_memory;
 mod personal;
 mod printers;
+mod usage;
 mod whatsapp;
 mod ytmusic;
 
@@ -1067,6 +1068,11 @@ pub fn run() {
             printers::printers_refresh,
             printers::printers_ignore,
             printers::printers_unignore,
+            usage::usage_get,
+            usage::usage_touch,
+            usage::usage_seen,
+            usage::usage_notice,
+            usage::usage_dismiss,
             whatsapp::whatsapp_ignore,
             whatsapp::whatsapp_unignore,
             whatsapp::whatsapp_settings,

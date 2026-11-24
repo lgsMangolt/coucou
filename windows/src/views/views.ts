@@ -31,6 +31,7 @@ import { buildYtMusicCard } from "./ytmusic";
 import { buildTodoCard } from "./todo";
 import { buildPadCard } from "./pad";
 import { buildPrintersCard } from "./printers";
+import { buildFeatureChips, buildModeSwitch } from "./modes-strip";
 import { PAD_ID, TASKS_ID } from "../core/personal";
 import { PRINTERS_ID } from "../core/printers";
 import { YTMUSIC_ID } from "../core/ytmusic";
@@ -153,10 +154,14 @@ export function buildHeader(actions: ViewActions): ViewHost {
     actions.setView(v);
   }
 
+  // The modes (Work, Rest, Music) in the free middle of the header (views/modes-strip.ts).
+  const modeSwitch = buildModeSwitch(() => actions.blip());
+
   const el = h(
     "div",
     { id: "header" },
     h("div", { class: "tabs" }, tabHome, tabChat, tabDrop, tabLaunch),
+    modeSwitch.el,
     h("div", { class: "header-actions" }, planPills, gearBtn, soundBtn, closeBtn),
   );
   const headerActions = el.lastElementChild as HTMLElement;
@@ -176,6 +181,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
       soundBtn.append(svg(State.settings.soundEnabled ? ICONS.speakerLine : ICONS.speakerSlashLine, 18, { stroke: 1.6 }));
       closeBtn.style.display = State.pendingApproval ? "none" : "";
       syncPlanPills();
+      modeSwitch.sync();
       el.style.opacity = v === "confused" ? "0" : "1";
     },
   };
@@ -222,7 +228,9 @@ function buildOverview(actions: ViewActions): ViewHost {
   );
   const left = card(null, leftBody, jump);
   const pills = h("div", { class: "pills" });
-  const right = card(null, pills);
+  // What else can be turned on, under the pills (views/modes-strip.ts).
+  const chips = buildFeatureChips({ setFocus: (id) => actions.setFocus(id), blip: () => actions.blip() });
+  const right = card(null, h("div", { class: "pills-wrap" }, pills, chips.el));
   // Opened from a plan pill in the header: stands in for the left card.
   const plan = new PlanCard();
   let planTimer: number | null = null;
@@ -499,6 +507,7 @@ function buildOverview(actions: ViewActions): ViewHost {
         pruneMiniBots();
       }
       spotifyPill?.sync();
+      chips.sync();
     },
   };
 }
