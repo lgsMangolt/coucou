@@ -246,7 +246,7 @@ pub fn append(path: &Path, entry: &Entry) -> Result<(), String> {
 // account). Coucou only knows its address and a code the script checks. It goes there after the
 // click on Save and nowhere else; the CSV stays on this computer as a local copy.
 
-pub const SHEET_KEY: &str = "whatsapp-ledger-sheet-code";
+pub const SHEET_KEY: &str = if super::SECOND { "whatsapp-2-ledger-sheet-code" } else { "whatsapp-ledger-sheet-code" };
 const SHEET_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The address Google gives a deployed web app: https://script.google.com/macros/s/<id>/exec

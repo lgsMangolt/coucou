@@ -35,7 +35,7 @@ import { buildFeatureChips, buildModeSwitch } from "./modes-strip";
 import { PAD_ID, TASKS_ID } from "../core/personal";
 import { PRINTERS_ID } from "../core/printers";
 import { YTMUSIC_ID } from "../core/ytmusic";
-import { WHATSAPP_ID } from "../core/whatsapp";
+import { WHATSAPP_ID, WHATSAPP2_ID } from "../core/whatsapp";
 import { MAIL_ID } from "../core/mail";
 import { buildMailCard } from "./mail";
 import type { Outfit, OutfitSelection } from "../mochi/wardrobe";
@@ -245,11 +245,14 @@ function buildOverview(actions: ViewActions): ViewHost {
   const padCard = buildPadCard({ keyboard: (on) => actions.keyboard(on), holdOpen: (on) => actions.holdOpen(on) });
   const printersCard = buildPrintersCard();
   const ytCard = buildYtMusicCard({ keyboard: (on) => actions.keyboard(on), holdOpen: (on) => actions.holdOpen(on) });
-  const whatsappCard = buildWhatsAppCard({
+  const waHost = {
     openSettings: () => actions.openSettingsWindow(),
-    keyboard: (on) => actions.keyboard(on),
-    holdOpen: (on) => actions.holdOpen(on),
-  });
+    keyboard: (on: boolean) => actions.keyboard(on),
+    holdOpen: (on: boolean) => actions.holdOpen(on),
+  };
+  const whatsappCard = buildWhatsAppCard(waHost);
+  // The second WhatsApp account: its own card, its own conversations.
+  const whatsapp2Card = buildWhatsAppCard(waHost, 1);
 
   const el = h("div", { class: "view overview" },
     h("div", { class: "left" }, left),
@@ -259,7 +262,7 @@ function buildOverview(actions: ViewActions): ViewHost {
   let pillIds = "";
   let detailOpen = false;
   let lastFocus: string | null = null;
-  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | "ytmusic" | "todo" | "pad" | "printers" | null = null;
+  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | "ytmusic" | "todo" | "pad" | "printers" | "whatsapp2" | null = null;
   let cardKey = "";
   /** The list row highlighted at the last sync, to scroll only when it moves. */
   let shownSelection: number | null = null;
@@ -433,6 +436,14 @@ function buildOverview(actions: ViewActions): ViewHost {
           cardKey = "";
         }
         whatsappCard.sync();
+      } else if (task && task.id === WHATSAPP2_ID) {
+        if (mode !== "whatsapp2") {
+          clear(leftBody);
+          leftBody.append(whatsapp2Card.el);
+          mode = "whatsapp2";
+          cardKey = "";
+        }
+        whatsapp2Card.sync();
       } else if (task && task.id === YTMUSIC_ID) {
         // Its own card in every state: starting, waiting for the sign-in, the player.
         if (mode !== "ytmusic") {

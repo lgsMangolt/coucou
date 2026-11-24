@@ -38,16 +38,40 @@ use prefs::Prefs;
 use provider::{Provider, WaError};
 use webhook::Listener;
 
-pub const PILL_ID: &str = "integration_whatsapp";
+/// This module is compiled twice (lib.rs): as `whatsapp`, the first account, and, from this same
+/// file, as `whatsapp2`, the second one. The copy knows which it is from its own path, and
+/// everything that must not be shared (the pill, the keystore entries, the events, the files, the
+/// ports, the gateway's folder) is told apart by it. The state is separate because the statics are.
+const fn is_second_account() -> bool {
+    let path = module_path!().as_bytes();
+    let needle = b"whatsapp2";
+    let mut i = 0;
+    while i + needle.len() <= path.len() {
+        let mut j = 0;
+        while j < needle.len() && path[i + j] == needle[j] {
+            j += 1;
+        }
+        if j == needle.len() {
+            return true;
+        }
+        i += 1;
+    }
+    false
+}
+
+/// True in the second account's copy.
+pub const SECOND: bool = is_second_account();
+
+pub const PILL_ID: &str = if SECOND { "integration_whatsapp2" } else { "integration_whatsapp" };
 const WEBHOOK_PATH: &str = "/whatsapp";
 /// Credential store entries, Rust-only (secrets.rs INTERNAL_KEYS): the webview never reads them.
-pub const URL_KEY: &str = "whatsapp-url";
-pub const CREDENTIAL_KEY: &str = "whatsapp-api-key";
-pub const SECRET_KEY: &str = "whatsapp-webhook-secret";
+pub const URL_KEY: &str = if SECOND { "whatsapp-2-url" } else { "whatsapp-url" };
+pub const CREDENTIAL_KEY: &str = if SECOND { "whatsapp-2-api-key" } else { "whatsapp-api-key" };
+pub const SECRET_KEY: &str = if SECOND { "whatsapp-2-webhook-secret" } else { "whatsapp-webhook-secret" };
 
-const ISLAND_EVENT: &str = "whatsapp";
-const PILL_EVENT: &str = "whatsapp-pill";
-const SETTINGS_EVENT: &str = "whatsapp-settings";
+const ISLAND_EVENT: &str = if SECOND { "whatsapp2" } else { "whatsapp" };
+const PILL_EVENT: &str = if SECOND { "whatsapp2-pill" } else { "whatsapp-pill" };
+const SETTINGS_EVENT: &str = if SECOND { "whatsapp2-settings" } else { "whatsapp-settings" };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "state", rename_all = "camelCase")]
@@ -1200,20 +1224,17 @@ fn only(window: &WebviewWindow, label: &str) -> Result<(), String> {
     if window.label() == label { Ok(()) } else { Err("not from this window".into()) }
 }
 
-#[tauri::command]
 pub fn whatsapp_island(window: WebviewWindow) -> Result<IslandView, String> {
     only(&window, crate::island::WINDOW_LABEL)?;
     Ok(ctl().island_view())
 }
 
-#[tauri::command]
 pub fn whatsapp_open(window: WebviewWindow, chat: String) -> Result<(), String> {
     only(&window, crate::island::WINDOW_LABEL)?;
     open(&chat);
     Ok(())
 }
 
-#[tauri::command]
 pub fn whatsapp_close(window: WebviewWindow, chat: String) -> Result<(), String> {
     only(&window, crate::island::WINDOW_LABEL)?;
     close(&chat);
@@ -1222,7 +1243,6 @@ pub fn whatsapp_close(window: WebviewWindow, chat: String) -> Result<(), String>
 
 /// The card's ↗: WhatsApp at the conversation open in the card (`open_in_whatsapp`). True when it
 /// went to WhatsApp Desktop rather than WhatsApp Web.
-#[tauri::command]
 pub fn whatsapp_open_app(window: WebviewWindow) -> Result<bool, String> {
     only(&window, crate::island::WINDOW_LABEL)?;
     let chat = ctl().open_chat.clone();
@@ -1230,7 +1250,6 @@ pub fn whatsapp_open_app(window: WebviewWindow) -> Result<bool, String> {
 }
 
 /// Enter or the send button in the island's card: the only way a message leaves Coucou.
-#[tauri::command]
 pub async fn whatsapp_send(window: WebviewWindow, chat: String, text: String) -> Result<bool, String> {
     only(&window, crate::island::WINDOW_LABEL)?;
     Ok(send(&chat, &text).await)
@@ -1238,7 +1257,6 @@ pub async fn whatsapp_send(window: WebviewWindow, chat: String, text: String) ->
 
 /// Save on a card of the island: the entry goes to the Google Sheet (when one is set up) and to the
 /// CSV on this computer, and only then.
-#[tauri::command]
 pub async fn whatsapp_ledger_save(window: WebviewWindow, id: u64) -> Result<String, String> {
     only(&window, crate::island::WINDOW_LABEL)?;
     // Taken out first: a double click cannot write it twice.
@@ -1280,7 +1298,6 @@ pub async fn whatsapp_ledger_save(window: WebviewWindow, id: u64) -> Result<Stri
     Ok(path.to_string_lossy().into_owned())
 }
 
-#[tauri::command]
 pub fn whatsapp_ledger_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
     only(&window, crate::island::WINDOW_LABEL)?;
     ctl().ledger_pending.retain(|(n, _)| *n != id);
@@ -1289,7 +1306,6 @@ pub fn whatsapp_ledger_discard(window: WebviewWindow, id: u64) -> Result<(), Str
 }
 
 /// Settings → WhatsApp → money notes: on or off, and the folder of the spreadsheet.
-#[tauri::command]
 pub fn whatsapp_set_ledger(window: WebviewWindow, enabled: bool, dir: String, chat: String) -> Result<(), String> {
     only(&window, crate::HUB_LABEL)?;
     let dir = dir.trim().to_string();
@@ -1314,7 +1330,6 @@ pub fn whatsapp_set_ledger(window: WebviewWindow, enabled: bool, dir: String, ch
 
 /// Settings → WhatsApp → money notes → Google Sheet: the script's address and, when given, its code
 /// (None keeps the stored one, "" removes it). The code is read by Rust only.
-#[tauri::command]
 pub fn whatsapp_set_ledger_sheet(window: WebviewWindow, url: String, code: Option<String>) -> Result<(), String> {
     only(&window, crate::HUB_LABEL)?;
     let url = url.trim().to_string();
@@ -1342,7 +1357,6 @@ pub fn whatsapp_set_ledger_sheet(window: WebviewWindow, url: String, code: Optio
 }
 
 /// "Test the sheet": one call to the script that adds nothing; it only has to answer yes.
-#[tauri::command]
 pub async fn whatsapp_ledger_sheet_test(window: WebviewWindow) -> Result<(), String> {
     only(&window, crate::HUB_LABEL)?;
     let url = ctl().prefs.ledger_sheet_url.clone();
@@ -1357,7 +1371,6 @@ pub async fn whatsapp_ledger_sheet_test(window: WebviewWindow) -> Result<(), Str
 
 /// A reply the user may send, written from the conversation's last messages (suggest.rs). ""
 /// when there is nothing to answer. Shown in the card only: sending stays `whatsapp_send`.
-#[tauri::command]
 pub async fn whatsapp_suggest(window: WebviewWindow, chat: String) -> Result<String, String> {
     only(&window, crate::island::WINDOW_LABEL)?;
     let prompt = ctl().inbox.conversations.get(&chat).and_then(suggest::prompt);
@@ -1367,7 +1380,6 @@ pub async fn whatsapp_suggest(window: WebviewWindow, chat: String) -> Result<Str
     }
 }
 
-#[tauri::command]
 pub fn whatsapp_ignore(window: WebviewWindow, chat: String) -> Result<(), String> {
     if window.label() != crate::island::WINDOW_LABEL {
         only(&window, crate::HUB_LABEL)?;
@@ -1377,7 +1389,6 @@ pub fn whatsapp_ignore(window: WebviewWindow, chat: String) -> Result<(), String
     Ok(())
 }
 
-#[tauri::command]
 pub fn whatsapp_unignore(window: WebviewWindow, chat: String) -> Result<(), String> {
     only(&window, crate::HUB_LABEL)?;
     {
@@ -1389,14 +1400,12 @@ pub fn whatsapp_unignore(window: WebviewWindow, chat: String) -> Result<(), Stri
     Ok(())
 }
 
-#[tauri::command]
 pub fn whatsapp_settings(window: WebviewWindow) -> Result<SettingsView, String> {
     only(&window, crate::HUB_LABEL)?;
     Ok(ctl().settings_view())
 }
 
 /// The switches: on/off, mute groups, read receipts on opening.
-#[tauri::command]
 pub fn whatsapp_set_options(window: WebviewWindow, enabled: bool, mute_groups: bool, mark_read_on_open: bool) -> Result<(), String> {
     only(&window, crate::HUB_LABEL)?;
     let restart = {
@@ -1414,7 +1423,6 @@ pub fn whatsapp_set_options(window: WebviewWindow, enabled: bool, mute_groups: b
 
 /// Advanced → Save: the gateway, its address and credential (None keeps the stored one, "" removes
 /// it), the webhook's port, and GOWA started by Coucou.
-#[tauri::command]
 pub fn whatsapp_save_gateway(
     window: WebviewWindow,
     gateway: String,
@@ -1453,14 +1461,12 @@ pub fn whatsapp_save_gateway(
     Ok(())
 }
 
-#[tauri::command]
 pub async fn whatsapp_test(window: WebviewWindow) -> Result<TestResult, String> {
     only(&window, crate::HUB_LABEL)?;
     Ok(test_connection().await)
 }
 
 /// "Install WhatsApp" / "Update": the one network call to GitHub, on this click only.
-#[tauri::command]
 pub fn whatsapp_install(window: WebviewWindow) -> Result<(), String> {
     only(&window, crate::HUB_LABEL)?;
     install();
@@ -1576,7 +1582,8 @@ mod tests {
             assert!(crate::secrets::set(key, "x").is_err(), "{key}: secret_set must refuse it");
             assert!(!crate::secrets::present(key), "{key}");
         }
-        assert_eq!(crate::secrets::INTERNAL_KEYS.iter().filter(|k| k.starts_with("whatsapp-")).count(), 4);
+        // Four for each of the two accounts.
+        assert_eq!(crate::secrets::INTERNAL_KEYS.iter().filter(|k| k.starts_with("whatsapp-")).count(), 8);
     }
 
     #[test]
@@ -1611,7 +1618,8 @@ mod tests {
         let json = serde_json::to_value(c.settings_view()).unwrap();
         assert_eq!(json["webhook"]["state"], "off");
         assert_eq!(json["install"]["step"], "idle");
-        assert_eq!(json["defaultUrl"], "http://127.0.0.1:3000");
+        // Each account has its own default address: the second one's gateway sits next to the first one's.
+        assert_eq!(json["defaultUrl"], if SECOND { "http://127.0.0.1:3011" } else { "http://127.0.0.1:3000" });
         assert_eq!(serde_json::to_value(SendError::Refused { detail: "x".into() }).unwrap()["code"], "refused");
         assert_eq!(serde_json::to_value(WebhookState::PortBusy { port: 1 }).unwrap()["state"], "portBusy");
         assert_eq!(serde_json::to_value(LinkState::NeedsQr).unwrap()["state"], "needsQr");

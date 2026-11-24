@@ -125,6 +125,11 @@ pub const INTERNAL_KEYS: &[&str] = &[
     "whatsapp-webhook-secret",
     // The code that lets Coucou add rows to the user's Google Sheet (whatsapp/ledger.rs).
     "whatsapp-ledger-sheet-code",
+    // The second WhatsApp account (src/whatsapp compiled again as whatsapp2): the same four, under its own names.
+    "whatsapp-2-url",
+    "whatsapp-2-api-key",
+    "whatsapp-2-webhook-secret",
+    "whatsapp-2-ledger-sheet-code",
 ];
 
 /// Whether the keystore would accept this key through `get_internal` / `set_internal`.

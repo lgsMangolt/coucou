@@ -120,8 +120,27 @@ fn put_in_place(binary: &[u8]) -> Result<(), String> {
     Ok(())
 }
 
+/// The second account's "install": the program the first account already verified and installed,
+/// copied into its own folder. No network, nothing downloaded twice.
+async fn copy_from_first(progress: impl Fn(Step)) -> Result<String, String> {
+    progress(Step::Installing);
+    let source = crate::whatsapp::process::installed_binary();
+    if !process::is_runnable(&source) {
+        return Err(fail("needsFirst"));
+    }
+    let binary = tauri::async_runtime::spawn_blocking(move || std::fs::read(&source))
+        .await
+        .map_err(|_| fail("unzipFailed"))?
+        .map_err(|_| fail("needsFirst"))?;
+    tauri::async_runtime::spawn_blocking(move || put_in_place(&binary)).await.map_err(|_| fail("unzipFailed"))??;
+    Ok(crate::whatsapp::prefs::load().gowa_version.unwrap_or_default())
+}
+
 /// The whole install; `progress` hears each step. Returns GOWA's version.
 pub async fn run(progress: impl Fn(Step)) -> Result<String, String> {
+    if super::SECOND {
+        return copy_from_first(progress).await;
+    }
     let (os, arch) = (release::this_os(), release::this_arch());
     let client = github_client(Duration::from_secs(600))?;
 

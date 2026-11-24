@@ -14,7 +14,7 @@ import { ICONS } from "./icons";
 import { Bridge } from "../core/bridge";
 import { State } from "../core/state";
 import {
-  WHATSAPP_GREEN, WHATSAPP_ID, WhatsApp, canSend, initials, keyAction, lastMessages, linkColor, linkLabel,
+  WHATSAPP_GREEN, waPillId, waStore, canSend, initials, keyAction, lastMessages, linkColor, linkLabel,
   preview, previewParts, sendErrorLabel, timeAgo, type WaConversation, type WaEntry, type WaMessage,
 } from "../core/whatsapp";
 import { language, t, tl } from "../i18n/i18n";
@@ -50,10 +50,13 @@ function bubble(m: WaMessage, isGroup: boolean): HTMLElement {
   return h("div", { class: m.fromMe ? "wa-line mine" : "wa-line" }, box);
 }
 
-export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
+/** `account`: 0 is the first WhatsApp, 1 the second: its own conversations, its own commands. */
+export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsAppCard {
+  const store = waStore(account);
+  const pillId = waPillId(account);
   // ── The list ──
   const unreadTag = h("span", { class: "wa-unread" });
-  const head = h("div", { class: "int-head" }, dot(WHATSAPP_GREEN, 7), h("b", { text: "WhatsApp" }), unreadTag);
+  const head = h("div", { class: "int-head" }, dot(WHATSAPP_GREEN, 7), h("b", { text: account ? "WhatsApp 2" : "WhatsApp" }), unreadTag);
   const listBody = h("div", {});
   // Notes on money read from your own chat, each waiting for your click (ledger.rs).
   const pendingBox = h("div", { class: "wa-pending" });
@@ -96,7 +99,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
   /** Asked once per received message, and only for the conversation that is open. */
   function syncSuggestion(c: WaConversation) {
     const last = c.messages[c.messages.length - 1];
-    const key = last && !last.fromMe && WhatsApp.view.link.state === "connected" ? `${c.id}~${last.id}` : "";
+    const key = last && !last.fromMe && store.view.link.state === "connected" ? `${c.id}~${last.id}` : "";
     if (key === suggestKey) return;
     suggestKey = key;
     suggested = "";
@@ -105,7 +108,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
       return;
     }
     showSuggestion("writing");
-    void Bridge.whatsappSuggest(c.id).then((text) => {
+    void Bridge.whatsappSuggest(c.id, account).then((text) => {
       if (suggestKey !== key) return;
       suggested = (text ?? "").trim();
       showSuggestion(suggested ? "ready" : "none");
@@ -121,7 +124,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
   });
 
   const current = (): WaConversation | undefined =>
-    openChat ? WhatsApp.view.conversations.find((c) => c.id === openChat) : undefined;
+    openChat ? store.view.conversations.find((c) => c.id === openChat) : undefined;
 
   function open(id: string) {
     openChat = id;
@@ -130,7 +133,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
     convoKey = "";
     suggestKey = "";
     showSuggestion("none");
-    void Bridge.whatsappOpen(id);
+    void Bridge.whatsappOpen(id, account);
     host.keyboard(true);
     window.setTimeout(() => field.focus(), 120);
     sync();
@@ -138,7 +141,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
 
   function close() {
     if (openChat == null) return;
-    void Bridge.whatsappClose(openChat);
+    void Bridge.whatsappClose(openChat, account);
     openChat = null;
     field.value = "";
     suggestKey = "";
@@ -152,8 +155,8 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
   async function send() {
     const chat = openChat;
     const text = field.value;
-    if (!chat || !canSend(text, WhatsApp.view.sending)) return;
-    const sent = await Bridge.whatsappSend(chat, text);
+    if (!chat || !canSend(text, store.view.sending)) return;
+    const sent = await Bridge.whatsappSend(chat, text, account);
     if (sent && openChat === chat && field.value === text) {
       field.value = "";
       host.holdOpen(false);
@@ -184,16 +187,16 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
   // Leaving the card (another pill, another view, the island folded) closes the conversation.
   State.subscribe(() => {
     if (openChat == null) return;
-    if (State.mode !== "expanded" || State.view !== "overview" || State.focusTask?.id !== WHATSAPP_ID || !WhatsApp.view.on) {
+    if (State.mode !== "expanded" || State.view !== "overview" || State.focusTask?.id !== pillId || !store.view.on) {
       close();
     }
   });
 
   function syncSendButton() {
-    const ok = canSend(field.value, WhatsApp.view.sending);
+    const ok = canSend(field.value, store.view.sending);
     sendBtn.classList.toggle("ready", ok);
     sendBtn.disabled = !ok;
-    field.disabled = WhatsApp.view.sending;
+    field.disabled = store.view.sending;
   }
 
   function row(c: WaConversation): HTMLElement {
@@ -211,7 +214,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
         onclick: (e: Event) => {
           e.stopPropagation();
           ignoring = null;
-          void Bridge.whatsappIgnore(c.id);
+          void Bridge.whatsappIgnore(c.id, account);
         },
       }));
     } else {
@@ -260,7 +263,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
   }
 
   function syncList() {
-    const v = WhatsApp.view;
+    const v = store.view;
     const key = [
       language(), v.link.state, "detail" in v.link ? v.link.detail : "", v.unread, ignoring,
       ...v.pending.map((e) => `${e.id}|${e.amount}|${e.kind}|${e.category}|${e.person}|${e.note}`),
@@ -290,7 +293,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
   }
 
   function syncConversation(c: WaConversation) {
-    const v = WhatsApp.view;
+    const v = store.view;
     const shown = lastMessages(c);
     const key = [language(), c.id, c.name, ...shown.map((m) => m.id)].join("~");
     if (key !== convoKey) {
@@ -327,7 +330,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
     const c = current();
     // Kept open through a missed check (the draft too): only gone when WhatsApp is off or the
     // conversation left the list (ignored).
-    if (openChat != null && (!c || !WhatsApp.view.on)) {
+    if (openChat != null && (!c || !store.view.on)) {
       close();
       return;
     }

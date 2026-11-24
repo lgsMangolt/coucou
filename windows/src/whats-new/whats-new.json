@@ -2,6 +2,81 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.8.0",
+      "items": [
+        {
+          "icon": "chat",
+          "title": {
+            "en": "Two WhatsApps",
+            "zh-Hans": "两个 WhatsApp",
+            "hi": "दो WhatsApp",
+            "es": "Dos WhatsApp",
+            "ar": "حسابان في واتساب",
+            "fr": "Deux WhatsApp",
+            "bn": "দুটি WhatsApp",
+            "pt-BR": "Dois WhatsApps",
+            "ru": "Два WhatsApp",
+            "id": "Dua WhatsApp",
+            "de": "Zwei WhatsApp",
+            "tr": "İki WhatsApp",
+            "ko": "WhatsApp 두 개",
+            "ja": "2つの WhatsApp"
+          },
+          "detail": {
+            "en": "Link a second number by its own QR: its own pill, conversations and replies, apart from the first.",
+            "zh-Hans": "用单独的二维码关联第二个号码：有自己的胶囊、对话和回复，与第一个互不干扰。",
+            "hi": "अपने QR से दूसरा नंबर जोड़ें: अपनी पिल, बातचीत और जवाब, पहले से बिल्कुल अलग।",
+            "es": "Vincula un segundo número con su propio QR: su propia píldora, conversaciones y respuestas, aparte de la primera.",
+            "ar": "اربط رقمًا ثانيًا برمز QR خاص: كبسولته ومحادثاته وردوده منفصلة عن الأول.",
+            "fr": "Associe un deuxième numéro avec son propre QR : sa propre pilule, ses conversations et ses réponses, à part du premier.",
+            "bn": "নিজস্ব QR দিয়ে দ্বিতীয় নম্বর যুক্ত করুন: নিজস্ব পিল, কথোপকথন ও উত্তর, প্রথমটি থেকে আলাদা।",
+            "pt-BR": "Conecte um segundo número com o próprio QR: pílula, conversas e respostas próprias, separadas da primeira.",
+            "ru": "Привяжите второй номер по его QR: своя пилюля, свои чаты и ответы, отдельно от первого.",
+            "id": "Hubungkan nomor kedua dengan QR-nya sendiri: pil, percakapan, dan balasan sendiri, terpisah dari yang pertama.",
+            "de": "Verknüpfe eine zweite Nummer mit eigenem QR: eigene Kapsel, eigene Chats und Antworten, getrennt vom ersten.",
+            "tr": "İkinci numarayı kendi QR'ıyla bağlayın: kendi aracı, sohbetleri ve yanıtlarıyla, birinciden ayrı.",
+            "ko": "두 번째 번호를 자체 QR로 연결하세요. 모찌, 대화, 답장이 첫 번째와 따로 움직여요.",
+            "ja": "2つ目の番号を専用の QR でリンクします。ピル・会話・返信は1つ目とは別です。"
+          }
+        },
+        {
+          "icon": "clock",
+          "title": {
+            "en": "Rest with WhatsApp 2",
+            "zh-Hans": "休息模式带 WhatsApp 2",
+            "hi": "आराम मोड में WhatsApp 2",
+            "es": "Descanso con WhatsApp 2",
+            "ar": "الاستراحة مع واتساب 2",
+            "fr": "Repos avec WhatsApp 2",
+            "bn": "বিশ্রামে WhatsApp 2",
+            "pt-BR": "Descanso com o WhatsApp 2",
+            "ru": "Отдых с WhatsApp 2",
+            "id": "Istirahat dengan WhatsApp 2",
+            "de": "Ruhe mit WhatsApp 2",
+            "tr": "WhatsApp 2 ile Dinlenme",
+            "ko": "WhatsApp 2와 휴식",
+            "ja": "WhatsApp 2 と休憩"
+          },
+          "detail": {
+            "en": "In Rest mode only the second WhatsApp stays: you are notified and can answer with a click.",
+            "zh-Hans": "休息模式下只保留第二个 WhatsApp：有消息会提醒，点一下就能回复。",
+            "hi": "आराम मोड में सिर्फ़ दूसरा WhatsApp रहता है: सूचना मिलती है और एक क्लिक से जवाब दे सकते हैं।",
+            "es": "En el modo Descanso solo queda el segundo WhatsApp: te avisa y respondes con un clic.",
+            "ar": "في وضع الاستراحة يبقى واتساب الثاني فقط: يُنبّهك ويمكنك الرد بنقرة.",
+            "fr": "En mode Repos, seul le deuxième WhatsApp reste : tu es prévenu et tu réponds d'un clic.",
+            "bn": "বিশ্রাম মোডে শুধু দ্বিতীয় WhatsApp থাকে: আপনি জানতে পারেন এবং এক ক্লিকে উত্তর দিতে পারেন।",
+            "pt-BR": "No modo Descanso fica só o segundo WhatsApp: ele avisa e você responde com um clique.",
+            "ru": "В режиме отдыха остаётся только второй WhatsApp: он уведомляет, а отвечать можно одним кликом.",
+            "id": "Di mode Istirahat hanya WhatsApp kedua yang tersisa: Anda diberi tahu dan bisa membalas dengan satu klik.",
+            "de": "Im Ruhemodus bleibt nur das zweite WhatsApp: Du wirst benachrichtigt und antwortest mit einem Klick.",
+            "tr": "Dinlenme modunda yalnızca ikinci WhatsApp kalır: bildirim alırsınız ve tek tıkla yanıtlarsınız.",
+            "ko": "휴식 모드에는 두 번째 WhatsApp만 남아요. 알림을 받고 클릭 한 번으로 답장할 수 있어요.",
+            "ja": "休憩モードでは2つ目の WhatsApp だけが残ります。通知が届き、クリックで返信できます。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.7.2",
       "items": [
         {

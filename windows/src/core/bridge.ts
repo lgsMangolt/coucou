@@ -28,6 +28,9 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T |
   }
 }
 
+/** The command of the first WhatsApp account (whatsapp_x) or of the second (whatsapp2_x). */
+const wa = (account: number, name: string) => `${account ? "whatsapp2" : "whatsapp"}_${name}`;
+
 export interface BootInfo {
   settings: Settings;
   /** Logical screen rect of the monitor the island lives on. */
@@ -496,14 +499,14 @@ export const Bridge = {
 
   // ── WhatsApp (src-tauri/src/whatsapp) ─────────────────────────────────────
   /** The island's copy, asked once at start (then the "whatsapp" event). Island only. */
-  whatsappIsland: () => call<WaIslandView>("whatsapp_island"),
+  whatsappIsland: (account = 0) => call<WaIslandView>(wa(account, "island")),
   /** A conversation opened in the card: its latest messages, the receipt if Settings says so. */
-  whatsappOpen: (chat: string) => call<void>("whatsapp_open", { chat }),
-  whatsappClose: (chat: string) => call<void>("whatsapp_close", { chat }),
+  whatsappOpen: (chat: string, account = 0) => call<void>(wa(account, "open"), { chat }),
+  whatsappClose: (chat: string, account = 0) => call<void>(wa(account, "close"), { chat }),
   /** The card's ↗: WhatsApp Desktop at the open conversation, or WhatsApp Web without it. */
-  whatsappOpenApp: () => call<boolean>("whatsapp_open_app"),
+  whatsappOpenApp: (account = 0) => call<boolean>(wa(account, "open_app")),
   /** Enter or the send button only. True once the gateway took it. */
-  whatsappSend: (chat: string, text: string) => call<boolean>("whatsapp_send", { chat, text }),
+  whatsappSend: (chat: string, text: string, account = 0) => call<boolean>(wa(account, "send"), { chat, text }),
   /** Saves a note on money to the spreadsheet; resolves with the file's path. Island only. */
   whatsappLedgerSave: (id: number) => callOrThrow<string>("whatsapp_ledger_save", { id }),
   whatsappLedgerDiscard: (id: number) => call<void>("whatsapp_ledger_discard", { id }),
@@ -514,21 +517,21 @@ export const Bridge = {
   whatsappSetLedgerSheet: (url: string, code: string | null) => callOrThrow<void>("whatsapp_set_ledger_sheet", { url, code }),
   whatsappLedgerSheetTest: () => callOrThrow<void>("whatsapp_ledger_sheet_test"),
   /** A reply the user may send, for the open conversation; "" when there is nothing to answer. */
-  whatsappSuggest: (chat: string) => call<string>("whatsapp_suggest", { chat }),
+  whatsappSuggest: (chat: string, account = 0) => call<string>(wa(account, "suggest"), { chat }),
   /** A chat id, or (Settings) a phone number. */
-  whatsappIgnore: (chat: string) => call<void>("whatsapp_ignore", { chat }),
-  whatsappUnignore: (chat: string) => call<void>("whatsapp_unignore", { chat }),
+  whatsappIgnore: (chat: string, account = 0) => call<void>(wa(account, "ignore"), { chat }),
+  whatsappUnignore: (chat: string, account = 0) => call<void>(wa(account, "unignore"), { chat }),
   /** Settings only, from here down. */
-  whatsappSettings: () => call<WaSettingsView>("whatsapp_settings"),
-  whatsappSetOptions: (enabled: boolean, muteGroups: boolean, markReadOnOpen: boolean) =>
-    callOrThrow<void>("whatsapp_set_options", { enabled, muteGroups, markReadOnOpen }),
+  whatsappSettings: (account = 0) => call<WaSettingsView>(wa(account, "settings")),
+  whatsappSetOptions: (enabled: boolean, muteGroups: boolean, markReadOnOpen: boolean, account = 0) =>
+    callOrThrow<void>(wa(account, "set_options"), { enabled, muteGroups, markReadOnOpen }),
   /** `credential`: null keeps the stored one, "" removes it. */
   whatsappSaveGateway: (g: {
     gateway: "gowa" | "openwa"; url: string; credential: string | null; port: number; autoStart: boolean; gowaPath: string;
-  }) => callOrThrow<void>("whatsapp_save_gateway", g),
-  whatsappTest: () => call<WaTestResult>("whatsapp_test"),
+  }, account = 0) => callOrThrow<void>(wa(account, "save_gateway"), g),
+  whatsappTest: (account = 0) => call<WaTestResult>(wa(account, "test")),
   /** "Install WhatsApp" / "Update": GOWA from its GitHub releases, on this click only. */
-  whatsappInstall: () => call<void>("whatsapp_install"),
+  whatsappInstall: (account = 0) => call<void>(wa(account, "install")),
 
   // ── YouTube Music (src-tauri/src/ytmusic.rs) ──────────────────────────────
   ytmusicState: () => call<YtMusicState>("ytmusic_state"),

@@ -25,7 +25,7 @@ import { claudeModelControl } from "./claude-models";
 import { agentsSection } from "./agents";
 import { phoneSection } from "./phone";
 import { whatsappSection } from "./whatsapp";
-import { WHATSAPP_ID } from "../core/whatsapp";
+import { WHATSAPP_ID, WHATSAPP2_ID } from "../core/whatsapp";
 import { modesSection } from "./modes";
 import { updateRows, updatesListener } from "./updates";
 import { colorDot } from "./colors";
@@ -1001,23 +1001,28 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
 
 /** WhatsApp (experimental), under the other integrations: its pill is turned on from its own switch. */
 function whatsappSections(): HTMLElement[] {
-  if (!availablePills().some((p) => p.id === WHATSAPP_ID)) return [];
-  return [whatsappSection({
-    toggle,
-    maxPills: MAX_ACTIVE,
-    pillActive: () => settings.activeIntegrations.includes(WHATSAPP_ID),
-    setPill: (on) => {
-      const has = settings.activeIntegrations.includes(WHATSAPP_ID);
-      if (on && !has && settings.activeIntegrations.length < MAX_ACTIVE) {
-        settings.activeIntegrations = [...settings.activeIntegrations, WHATSAPP_ID];
-      } else if (!on && has) {
-        settings.activeIntegrations = settings.activeIntegrations.filter((x) => x !== WHATSAPP_ID);
-      } else {
-        return;
-      }
-      declaredChanged();
-    },
-  })];
+  const sections: HTMLElement[] = [];
+  // The first WhatsApp, and the second one (its own number, its own gateway).
+  for (const [account, id] of [[0, WHATSAPP_ID], [1, WHATSAPP2_ID]] as const) {
+    if (!availablePills().some((p) => p.id === id)) continue;
+    sections.push(whatsappSection({
+      toggle,
+      maxPills: MAX_ACTIVE,
+      pillActive: () => settings.activeIntegrations.includes(id),
+      setPill: (on) => {
+        const has = settings.activeIntegrations.includes(id);
+        if (on && !has && settings.activeIntegrations.length < MAX_ACTIVE) {
+          settings.activeIntegrations = [...settings.activeIntegrations, id];
+        } else if (!on && has) {
+          settings.activeIntegrations = settings.activeIntegrations.filter((x) => x !== id);
+        } else {
+          return;
+        }
+        declaredChanged();
+      },
+    }, account));
+  }
+  return sections;
 }
 
 // ── General section ───────────────────────────────────────────────────────────

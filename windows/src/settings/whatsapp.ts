@@ -25,7 +25,8 @@ export interface WhatsAppSettingsHost {
 
 const hintStyle = (color: string) => `color:${color}`;
 
-export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
+/** `account`: 0 is the first WhatsApp, 1 the second (its own number, gateway and session). */
+export function whatsappSection(host: WhatsAppSettingsHost, account = 0): HTMLElement {
   let view: WaSettingsView | null = null;
   let showAdvanced = false;
   /** The advanced fields are filled from Rust once, then left to the user while they type. */
@@ -108,7 +109,7 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     if (!p) return;
     const next = { enabled: p.enabled, muteGroups: p.muteGroups, markReadOnOpen: p.markReadOnOpen, ...change };
     try {
-      await Bridge.whatsappSetOptions(next.enabled, next.muteGroups, next.markReadOnOpen);
+      await Bridge.whatsappSetOptions(next.enabled, next.muteGroups, next.markReadOnOpen, account);
     } catch {
       // The next report puts the switches back as they are.
     }
@@ -166,7 +167,7 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     const raw = ignoreInput.value.trim();
     if (!raw) return;
     ignoreInput.value = "";
-    void Bridge.whatsappIgnore(raw);
+    void Bridge.whatsappIgnore(raw, account);
   }
   addBtn.addEventListener("click", addIgnored);
   ignoreInput.addEventListener("keydown", (e) => {
@@ -197,7 +198,7 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
         port: Number.isInteger(port) && port >= 1024 && port <= 65535 ? port : (view?.prefs.port ?? DEFAULT_PORT),
         autoStart,
         gowaPath: pathInput.value.trim(),
-      });
+      }, account);
       credentialInput.value = "";
       return true;
     } catch (err) {
@@ -217,7 +218,7 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     testing = true;
     testResult = "";
     drawAdvanced();
-    const result = await Bridge.whatsappTest();
+    const result = await Bridge.whatsappTest(account);
     testing = false;
     testResult = result ? testResultLabel(result) : "";
     drawAdvanced();
@@ -264,7 +265,7 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
       return out;
     }
     if (v.installed) {
-      const update = h("button", { text: t("Update"), onclick: () => void Bridge.whatsappInstall() });
+      const update = h("button", { text: t("Update"), onclick: () => void Bridge.whatsappInstall(account) });
       const text = v.prefs.gowaVersion
         ? t("Gateway GOWA {version} installed, started by Coucou", { version: v.prefs.gowaVersion })
         : t("Your GOWA gateway is set up");
@@ -277,9 +278,9 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     } else {
       out.push(
         h("div", { class: "row" }, h("button", {
-          class: "primary", text: t("Install WhatsApp"), onclick: () => void Bridge.whatsappInstall(),
+          class: "primary", text: t("Install WhatsApp"), onclick: () => void Bridge.whatsappInstall(account),
         })),
-        h("div", { class: "hint", text: t("Coucou downloads GOWA, the open-source gateway, from its GitHub page (about 15 MB, once), checks it and starts it. Then scan the QR code with your phone. No command line needed.") }),
+        h("div", { class: "hint", text: account ? t("This account reuses the program of the first one: install and link the first WhatsApp before.") : t("Coucou downloads GOWA, the open-source gateway, from its GitHub page (about 15 MB, once), checks it and starts it. Then scan the QR code with your phone. No command line needed.") }),
       );
     }
     const failed = installError(v.install);
@@ -347,7 +348,7 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     ignoredList.replaceChildren(...v.ignored.map((chat) => h("div", { class: "row", style: "gap:8px" },
       h("span", { style: "font-size:12.5px", text: chat.name }),
       h("span", { class: "spacer" }),
-      h("button", { text: t("Remove"), onclick: () => void Bridge.whatsappUnignore(chat.id) }),
+      h("button", { text: t("Remove"), onclick: () => void Bridge.whatsappUnignore(chat.id, account) }),
     )));
     drawAdvanced();
   }
@@ -368,16 +369,19 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     h("div", { class: "row" }, h("label", { text: t("Mute groups (unless I’m mentioned)") }), muteSwitch),
     h("div", { class: "row" }, h("label", { text: t("Mark as read when I open a conversation") }), readSwitch),
     h("div", { class: "hint", text: t("Off: marked read only when you reply. Never when a message just arrives.") }),
-    h("div", { class: "subhead", text: t("Money notes") }),
-    h("div", { class: "row" }, h("label", { text: t("Note spending and income from my own chat") }), ledgerSwitch),
-    h("div", { class: "hint", text: t("Message yourself on WhatsApp, like “spent 35 groceries” or “received 800 from Rafael”. Coucou reads only that chat and writes to the spreadsheet only after you tap Save.") }),
-    h("div", { class: "row" }, h("label", { text: t("Chat for the notes") }), ledgerChatSelect),
-    h("div", { class: "row" }, ledgerDirInput, ledgerSaveBtn),
-    ledgerFileHint,
-    ledgerNote,
-    h("div", { class: "row" }, sheetUrlInput),
-    h("div", { class: "row" }, sheetCodeInput, sheetSaveBtn, sheetTestBtn),
-    sheetNote,
+    // Money notes are read from the first account only.
+    ...(account ? [] : [
+      h("div", { class: "subhead", text: t("Money notes") }),
+      h("div", { class: "row" }, h("label", { text: t("Note spending and income from my own chat") }), ledgerSwitch),
+      h("div", { class: "hint", text: t("Message yourself on WhatsApp, like “spent 35 groceries” or “received 800 from Rafael”. Coucou reads only that chat and writes to the spreadsheet only after you tap Save.") }),
+      h("div", { class: "row" }, h("label", { text: t("Chat for the notes") }), ledgerChatSelect),
+      h("div", { class: "row" }, ledgerDirInput, ledgerSaveBtn),
+      ledgerFileHint,
+      ledgerNote,
+      h("div", { class: "row" }, sheetUrlInput),
+      h("div", { class: "row" }, sheetCodeInput, sheetSaveBtn, sheetTestBtn),
+      sheetNote,
+    ]),
     h("div", { class: "subhead", text: t("Ignored chats") }),
     ignoredList,
     h("div", { class: "row" }, ignoreInput, addBtn),
@@ -389,9 +393,10 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
   const section = h(
     "section",
     {},
-    h("h2", {}, h("i", { class: "dot", style: `background:${WHATSAPP_GREEN}` }), h("span", { text: t("WhatsApp (experimental)") })),
+    h("h2", {}, h("i", { class: "dot", style: `background:${WHATSAPP_GREEN}` }), h("span", { text: account ? t("WhatsApp 2 (second account)") : t("WhatsApp (experimental)") })),
     h("div", { class: "hint", style: hintStyle("#F5B83D"), text: t("Unofficial integration: it goes through a gateway you run on this computer. Use it on your own account only. WhatsApp may restrict accounts that abuse it.") }),
-    h("div", { class: "row" }, h("label", { text: t("Show my WhatsApp messages") }), enableSwitch),
+    ...(account ? [h("div", { class: "hint", text: t("Link another WhatsApp number: scan its QR with that phone. It has its own gateway and its own session, so nothing mixes with the first account.") })] : []),
+    h("div", { class: "row" }, h("label", { text: account ? t("Show messages from the second WhatsApp") : t("Show my WhatsApp messages") }), enableSwitch),
     body,
   );
   body.style.display = "none";
@@ -402,9 +407,9 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     view = v;
     draw();
   };
-  void Bridge.whatsappSettings().then(apply);
+  void Bridge.whatsappSettings(account).then(apply);
   let off: (() => void) | null = null;
-  void onEvent<WaSettingsView>("whatsapp-settings", (v) => {
+  void onEvent<WaSettingsView>(account ? "whatsapp2-settings" : "whatsapp-settings", (v) => {
     // A section drawn again (another page, a language change) leaves this one behind.
     if (!section.isConnected && view) {
       off?.();

@@ -22,7 +22,8 @@ static STATE: Mutex<Running> = Mutex::new(Running { child: None, last_start: Non
 /// Where GOWA keeps its own WhatsApp session (its database, not Coucou's), and where Coucou
 /// puts the binary it installs: the link survives restarts.
 pub fn working_dir() -> PathBuf {
-    crate::platform::local_dir().join("GOWA")
+    // Each account keeps its own WhatsApp session, so the two never share a link.
+    crate::platform::local_dir().join(if super::SECOND { "GOWA2" } else { "GOWA" })
 }
 
 pub fn installed_binary() -> PathBuf {

@@ -8,6 +8,8 @@ import { N_, t } from "../i18n/i18n";
 export const WHATSAPP_ID = "integration_whatsapp";
 /** WhatsApp's own green: the pill keeps it whatever, like the brand. */
 export const WHATSAPP_GREEN = "#25D366";
+/** The second WhatsApp account's pill (a second number, linked with its own gateway). */
+export const WHATSAPP2_ID = "integration_whatsapp2";
 
 export type WaMedia =
   | { kind: "none" | "image" | "video" | "sticker" | "location" | "contact" | "other" }
@@ -80,6 +82,20 @@ export const IDLE_WHATSAPP: WaIslandView = {
 export const WhatsApp = {
   view: { ...IDLE_WHATSAPP } as WaIslandView,
 };
+
+/** The page's copy of the second account. */
+export const WhatsApp2 = {
+  view: { ...IDLE_WHATSAPP } as WaIslandView,
+};
+
+/** The copy of an account: 0 is the first WhatsApp, 1 the second. */
+export function waStore(account: number): { view: WaIslandView } {
+  return account ? WhatsApp2 : WhatsApp;
+}
+
+export function waPillId(account: number): string {
+  return account ? WHATSAPP2_ID : WHATSAPP_ID;
+}
 
 export type WaWebhook =
   | { state: "off" | "listening" | "registered" }
@@ -276,6 +292,7 @@ export function installFailure(reason: string): string {
     case "noChecksum": return t("GOWA's release has no checksum to check the download against: nothing was installed.");
     case "badChecksum": return t("The download doesn't match the file GOWA published: it was deleted, nothing was installed.");
     case "unzipFailed": return t("The download couldn't be unzipped. Try again.");
+    case "needsFirst": return t("Install and link the first WhatsApp first: this one reuses its program.");
     default: return t("The download didn't go through. Check your connection and try again.");
   }
 }

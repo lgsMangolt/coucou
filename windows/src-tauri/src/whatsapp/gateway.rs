@@ -23,8 +23,9 @@ impl Kind {
 
     pub fn default_url(self) -> &'static str {
         match self {
-            Kind::Gowa => "http://127.0.0.1:3000",
-            Kind::Openwa => "http://127.0.0.1:2785",
+            // The second account's gateway has its own address, next to the first one's.
+            Kind::Gowa => if super::SECOND { "http://127.0.0.1:3011" } else { "http://127.0.0.1:3000" },
+            Kind::Openwa => if super::SECOND { "http://127.0.0.1:2786" } else { "http://127.0.0.1:2785" },
         }
     }
 

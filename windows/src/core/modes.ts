@@ -7,13 +7,13 @@ import { t } from "../i18n/i18n";
 
 /** The options a mode is about, in the order they are offered. */
 export const FEATURE_IDS: readonly string[] = [
-  "integration_whatsapp", "integration_mail", "integration_ytmusic",
+  "integration_whatsapp", "integration_whatsapp2", "integration_mail", "integration_ytmusic",
   "integration_printers", "integration_tasks", "integration_pad",
 ];
 
 /** Pills that warn on their own: they are never taken out of a mode for lack of use. */
 export const WATCH_IDS: ReadonlySet<string> = new Set([
-  "integration_whatsapp", "integration_mail", "integration_printers",
+  "integration_whatsapp", "integration_whatsapp2", "integration_mail", "integration_printers",
 ]);
 
 /** What a first visit starts with: the pills each mode is about, where this build has them. */
@@ -22,7 +22,7 @@ export function seedModes(offered: ReadonlySet<string>): Mode[] {
   const music = only(["integration_ytmusic"]);
   return [
     { id: "work", name: t("Work"), pills: only(["integration_whatsapp", "integration_mail", "integration_printers"]) },
-    { id: "rest", name: t("Rest"), pills: [] },
+    { id: "rest", name: t("Rest"), pills: only(["integration_whatsapp2"]) },
     { id: "music", name: t("Music"), pills: music.length ? music : only(["integration_spotify"]) },
   ];
 }

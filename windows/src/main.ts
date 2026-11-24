@@ -169,6 +169,7 @@ async function main() {
   registerVoiceHandlers();
   registerSpotifyHandlers(island);
   registerWhatsAppHandlers(island);
+  registerWhatsAppHandlers(island, 1);
   registerYtMusicHandlers();
   registerPersonalHandlers();
   registerPrintersHandlers(island);

@@ -80,10 +80,11 @@ test("the modes it starts with: Work watches, Rest is empty, Music plays", () =>
   const all = new Set(FEATURE_IDS.concat(["integration_spotify"]));
   const [work, rest, music] = seedModes(all);
   assert.deepEqual(work.pills, ["integration_whatsapp", "integration_mail", "integration_printers"]);
-  assert.deepEqual(rest.pills, []);
+  assert.deepEqual(rest.pills, ["integration_whatsapp2"], "Rest keeps only the second WhatsApp");
   assert.deepEqual(music.pills, ["integration_ytmusic"]);
   // Where this build has no YouTube Music, Music falls back to Spotify.
   const linux = seedModes(new Set(["integration_whatsapp", "integration_spotify"]));
   assert.deepEqual(linux[2].pills, ["integration_spotify"]);
   assert.deepEqual(linux[0].pills, ["integration_whatsapp"]);
+  assert.deepEqual(linux[1].pills, [], "no second WhatsApp offered: Rest is empty");
 });

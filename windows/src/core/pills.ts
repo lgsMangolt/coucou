@@ -158,6 +158,10 @@ export const PILL_CATALOG: readonly PillDefinition[] = [
   // linked and turned on in Settings → Integrations → WhatsApp, off until then.
   { id: "integration_whatsapp", name: "WhatsApp", color: "#25D366", category: "service",
     subtitle: N_("Integration"), source: "n8n", support: "yes", connect: none },
+  // A second WhatsApp number, with its own gateway and session (the same module, compiled again:
+  // src-tauri/src/lib.rs `whatsapp2`). Meant for a mode of its own, like Rest.
+  { id: "integration_whatsapp2", name: "WhatsApp 2", color: "#14B8A6", category: "service",
+    subtitle: N_("Integration"), source: "n8n", support: "yes", connect: none },
 ];
 
 /** The always-on pill unless the user picks another workspace tool. */

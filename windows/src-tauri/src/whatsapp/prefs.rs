@@ -8,7 +8,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-pub const DEFAULT_PORT: u16 = 47823;
+/// The second account listens on the next port, so the two never meet.
+pub const DEFAULT_PORT: u16 = if super::SECOND { 47824 } else { 47823 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -80,7 +81,7 @@ impl Prefs {
 }
 
 fn path() -> PathBuf {
-    crate::platform::config_dir().join("whatsapp.json")
+    crate::platform::config_dir().join(if super::SECOND { "whatsapp2.json" } else { "whatsapp.json" })
 }
 
 pub fn load() -> Prefs {

@@ -51,6 +51,11 @@ mod personal;
 mod printers;
 mod usage;
 mod whatsapp;
+// The second WhatsApp account: the same module compiled a second time, with its own state.
+#[allow(dead_code)]
+#[path = "whatsapp/mod.rs"]
+mod whatsapp2;
+mod whatsapp_cmds;
 mod ytmusic;
 
 use std::process::Command;
@@ -148,6 +153,7 @@ fn save_settings(app: AppHandle, shared: State<Shared>, settings: Settings) {
     integrations::settings_saved(&app, &settings.active_integrations);
     spotify::sync(&app, &settings.active_integrations);
     whatsapp::sync(&settings.active_integrations);
+    whatsapp2::sync(&settings.active_integrations);
     ytmusic::sync(&app, &settings.active_integrations);
     printers::sync(&app, &settings.active_integrations);
     if shortcuts_changed {
@@ -1043,17 +1049,17 @@ pub fn run() {
             spotify::spotify_control,
             spotify::spotify_open,
             spotify::spotify_installed,
-            whatsapp::whatsapp_island,
-            whatsapp::whatsapp_open,
-            whatsapp::whatsapp_close,
-            whatsapp::whatsapp_open_app,
-            whatsapp::whatsapp_send,
-            whatsapp::whatsapp_suggest,
-            whatsapp::whatsapp_ledger_save,
-            whatsapp::whatsapp_ledger_discard,
-            whatsapp::whatsapp_set_ledger,
-            whatsapp::whatsapp_set_ledger_sheet,
-            whatsapp::whatsapp_ledger_sheet_test,
+            whatsapp_cmds::whatsapp_island,
+            whatsapp_cmds::whatsapp_open,
+            whatsapp_cmds::whatsapp_close,
+            whatsapp_cmds::whatsapp_open_app,
+            whatsapp_cmds::whatsapp_send,
+            whatsapp_cmds::whatsapp_suggest,
+            whatsapp_cmds::whatsapp_ledger_save,
+            whatsapp_cmds::whatsapp_ledger_discard,
+            whatsapp_cmds::whatsapp_set_ledger,
+            whatsapp_cmds::whatsapp_set_ledger_sheet,
+            whatsapp_cmds::whatsapp_ledger_sheet_test,
             ytmusic::ytmusic_state,
             ytmusic::ytmusic_control,
             ytmusic::ytmusic_search,
@@ -1075,13 +1081,26 @@ pub fn run() {
             usage::usage_seen,
             usage::usage_notice,
             usage::usage_dismiss,
-            whatsapp::whatsapp_ignore,
-            whatsapp::whatsapp_unignore,
-            whatsapp::whatsapp_settings,
-            whatsapp::whatsapp_set_options,
-            whatsapp::whatsapp_save_gateway,
-            whatsapp::whatsapp_test,
-            whatsapp::whatsapp_install,
+            whatsapp_cmds::whatsapp_ignore,
+            whatsapp_cmds::whatsapp_unignore,
+            whatsapp_cmds::whatsapp_settings,
+            whatsapp_cmds::whatsapp_set_options,
+            whatsapp_cmds::whatsapp_save_gateway,
+            whatsapp_cmds::whatsapp_test,
+            whatsapp_cmds::whatsapp_install,
+            whatsapp_cmds::whatsapp2_island,
+            whatsapp_cmds::whatsapp2_open,
+            whatsapp_cmds::whatsapp2_close,
+            whatsapp_cmds::whatsapp2_open_app,
+            whatsapp_cmds::whatsapp2_send,
+            whatsapp_cmds::whatsapp2_suggest,
+            whatsapp_cmds::whatsapp2_ignore,
+            whatsapp_cmds::whatsapp2_unignore,
+            whatsapp_cmds::whatsapp2_settings,
+            whatsapp_cmds::whatsapp2_set_options,
+            whatsapp_cmds::whatsapp2_save_gateway,
+            whatsapp_cmds::whatsapp2_test,
+            whatsapp_cmds::whatsapp2_install,
             flow::flow_status,
             flow::flow_set_prefs,
             flow::flow_history,
@@ -1171,6 +1190,7 @@ pub fn run() {
             spotify::sync(&handle, &loaded.active_integrations);
             // WhatsApp (experimental): nothing runs unless it is turned on and its pill is active.
             whatsapp::start(&handle, &loaded.active_integrations);
+            whatsapp2::start(&handle, &loaded.active_integrations);
             ytmusic::sync(&handle, &loaded.active_integrations);
             printers::sync(&handle, &loaded.active_integrations);
             shortcuts::apply(&handle, &loaded.shortcuts);
@@ -1196,6 +1216,7 @@ pub fn run() {
                 notes::shutdown(app);
                 // GOWA started by Coucou stops with it; the conversations were only in memory.
                 whatsapp::shutdown();
+                whatsapp2::shutdown();
             }
         });
 }
