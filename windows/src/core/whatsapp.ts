@@ -104,6 +104,9 @@ export interface WaPrefs {
   gowaVersion: string | null;
   ledgerEnabled: boolean;
   ledgerDir: string;
+  /** The chat the notes are read from; "" is your own. */
+  ledgerChat: string;
+  ledgerSheetUrl: string;
 }
 
 /** SettingsView in src-tauri/src/whatsapp/mod.rs. */
@@ -123,6 +126,10 @@ export interface WaSettingsView {
   ignored: { id: string; name: string }[];
   /** Where the spreadsheet of money notes is, or will be. */
   ledgerFile: string;
+  /** The conversations Coucou has seen, groups first. */
+  chats: { id: string; name: string; isGroup: boolean }[];
+  /** A code for the Google Sheet is stored. */
+  ledgerSheetCode: boolean;
 }
 
 export type WaTestResult =

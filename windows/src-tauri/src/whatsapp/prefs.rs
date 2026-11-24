@@ -32,6 +32,10 @@ pub struct Prefs {
     pub ledger_enabled: bool,
     /// The folder of that spreadsheet; "" is Documents\Coucou.
     pub ledger_dir: String,
+    /// The conversation the notes are written in: a chat id (a group, say); "" is the user's own chat.
+    pub ledger_chat: String,
+    /// The address of the Google Apps Script that adds rows to the user's Google Sheet; "" is none.
+    pub ledger_sheet_url: String,
 }
 
 impl Default for Prefs {
@@ -48,6 +52,8 @@ impl Default for Prefs {
             gowa_version: None,
             ledger_enabled: false,
             ledger_dir: String::new(),
+            ledger_chat: String::new(),
+            ledger_sheet_url: String::new(),
         }
     }
 }
@@ -67,6 +73,8 @@ impl Prefs {
         self.ignored.truncate(500);
         self.gowa_path = self.gowa_path.trim().to_string();
         self.ledger_dir = self.ledger_dir.trim().chars().take(260).collect();
+        self.ledger_chat = self.ledger_chat.trim().chars().take(128).collect();
+        self.ledger_sheet_url = self.ledger_sheet_url.trim().chars().take(300).collect();
         self
     }
 }

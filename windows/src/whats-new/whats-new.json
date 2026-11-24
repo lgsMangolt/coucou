@@ -2,6 +2,81 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.7.2",
+      "items": [
+        {
+          "icon": "chat",
+          "title": {
+            "en": "Notes from your group",
+            "zh-Hans": "来自你的群组的记账",
+            "hi": "आपके ग्रुप से नोट्स",
+            "es": "Apuntes desde tu grupo",
+            "ar": "ملاحظات من مجموعتك",
+            "fr": "Notes depuis ton groupe",
+            "bn": "আপনার গ্রুপ থেকে নোট",
+            "pt-BR": "Anotações pelo seu grupo",
+            "ru": "Записи из вашей группы",
+            "id": "Catatan dari grup Anda",
+            "de": "Notizen aus deiner Gruppe",
+            "tr": "Grubunuzdan notlar",
+            "ko": "내 그룹에서 메모",
+            "ja": "グループからのメモ"
+          },
+          "detail": {
+            "en": "Pick the group you made for your notes: Coucou reads only what you write there.",
+            "zh-Hans": "选择你为记账建的群：Coucou 只读取你在那里写的内容。",
+            "hi": "अपने नोट्स के लिए बनाया ग्रुप चुनें: Coucou सिर्फ़ वही पढ़ता है जो आप वहाँ लिखते हैं।",
+            "es": "Elige el grupo que creaste para tus apuntes: Coucou solo lee lo que escribes allí.",
+            "ar": "اختر المجموعة التي أنشأتها لملاحظاتك: يقرأ Coucou ما تكتبه هناك فقط.",
+            "fr": "Choisis le groupe créé pour tes notes : Coucou ne lit que ce que tu y écris.",
+            "bn": "নোটের জন্য বানানো গ্রুপটি বেছে নিন: Coucou শুধু সেখানে আপনার লেখাই পড়ে।",
+            "pt-BR": "Escolha o grupo que você criou para as anotações: o Coucou lê só o que você escreve lá.",
+            "ru": "Выберите группу, созданную для записей: Coucou читает только то, что пишете вы.",
+            "id": "Pilih grup yang Anda buat untuk catatan: Coucou hanya membaca yang Anda tulis di sana.",
+            "de": "Wähle die Gruppe, die du für deine Notizen angelegt hast: Coucou liest nur, was du dort schreibst.",
+            "tr": "Notlarınız için oluşturduğunuz grubu seçin: Coucou yalnızca orada yazdıklarınızı okur.",
+            "ko": "메모용으로 만든 그룹을 고르세요. Coucou는 거기에 내가 쓴 글만 읽어요.",
+            "ja": "メモ用に作ったグループを選びます。Coucou はそこにあなたが書いたものだけを読みます。"
+          }
+        },
+        {
+          "icon": "checklist",
+          "title": {
+            "en": "Google Sheet",
+            "zh-Hans": "Google 表格",
+            "hi": "Google शीट",
+            "es": "Hoja de Google",
+            "ar": "جدول Google",
+            "fr": "Feuille Google",
+            "bn": "Google শিট",
+            "pt-BR": "Planilha Google",
+            "ru": "Таблица Google",
+            "id": "Google Sheet",
+            "de": "Google-Tabelle",
+            "tr": "Google E-Tablo",
+            "ko": "Google 시트",
+            "ja": "Google スプレッドシート"
+          },
+          "detail": {
+            "en": "Each saved note also goes to your Google Sheet, on your phone and computer.",
+            "zh-Hans": "每条保存的记录也会进入你的 Google 表格，手机和电脑上都能看到。",
+            "hi": "सहेजा गया हर नोट आपकी Google शीट में भी जाता है, फ़ोन और कंप्यूटर दोनों पर।",
+            "es": "Cada apunte guardado va también a tu hoja de Google, en el móvil y en el ordenador.",
+            "ar": "كل ملاحظة تحفظها تذهب أيضًا إلى جدول Google، على هاتفك وحاسوبك.",
+            "fr": "Chaque note enregistrée part aussi dans ta feuille Google, sur ton téléphone et ton ordinateur.",
+            "bn": "সংরক্ষিত প্রতিটি নোট আপনার Google শিটেও যায়, ফোনে ও কম্পিউটারে।",
+            "pt-BR": "Cada anotação salva vai também para a sua Planilha Google, no celular e no computador.",
+            "ru": "Каждая сохранённая запись попадает и в вашу таблицу Google — на телефоне и компьютере.",
+            "id": "Setiap catatan yang disimpan juga masuk ke Google Sheet Anda, di ponsel dan komputer.",
+            "de": "Jede gespeicherte Notiz landet auch in deiner Google-Tabelle, auf Handy und Computer.",
+            "tr": "Kaydedilen her not, telefonunuzda ve bilgisayarınızda Google E-Tablonuza da gider.",
+            "ko": "저장한 메모는 휴대폰과 컴퓨터의 Google 시트에도 들어가요.",
+            "ja": "保存したメモは、スマホとパソコンの Google スプレッドシートにも入ります。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.7.1",
       "items": [
         {

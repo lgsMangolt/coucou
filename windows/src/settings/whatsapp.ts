@@ -47,6 +47,21 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
   const ledgerSaveBtn = h("button", { text: t("Save") });
   const ledgerFileHint = h("div", { class: "hint" });
   const ledgerNote = h("div", {});
+  // Where the notes are written: your own chat, or a group made for them.
+  const ledgerChatSelect = h("select", {}) as HTMLSelectElement;
+  let chatsKey = "";
+  // The Google Sheet: the script's address and its code.
+  const sheetUrlInput = h("input", {
+    type: "text", placeholder: t("Google Sheet address"), autocomplete: "off", spellcheck: "false",
+    style: "flex:1 1 auto;min-width:0",
+  }) as HTMLInputElement;
+  const sheetCodeInput = h("input", {
+    type: "password", placeholder: t("Sheet code"), autocomplete: "off", spellcheck: "false",
+    style: "flex:1 1 auto;min-width:0",
+  }) as HTMLInputElement;
+  const sheetSaveBtn = h("button", { text: t("Save") });
+  const sheetTestBtn = h("button", { text: t("Test the sheet") });
+  const sheetNote = h("div", {});
   const body = h("div", { style: "display:flex;flex-direction:column;gap:10px" });
   const dynamic = h("div", { style: "display:flex;flex-direction:column;gap:10px" });
   const ignoredList = h("div", { style: "display:flex;flex-direction:column;gap:4px" });
@@ -102,12 +117,40 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
   async function setLedger(on: boolean) {
     ledgerNote.replaceChildren();
     try {
-      await Bridge.whatsappSetLedger(on, ledgerDirInput.value.trim());
+      await Bridge.whatsappSetLedger(on, ledgerDirInput.value.trim(), ledgerChatSelect.value);
     } catch (err) {
       ledgerNote.append(h("div", { class: "notice err", text: String(err) }));
     }
   }
   ledgerSaveBtn.addEventListener("click", () => void setLedger(view?.prefs.ledgerEnabled ?? false));
+  ledgerChatSelect.addEventListener("change", () => void setLedger(view?.prefs.ledgerEnabled ?? false));
+
+  async function saveSheet(): Promise<boolean> {
+    sheetNote.replaceChildren();
+    try {
+      await Bridge.whatsappSetLedgerSheet(sheetUrlInput.value.trim(), sheetCodeInput.value.trim() || null);
+      sheetCodeInput.value = "";
+      return true;
+    } catch (err) {
+      sheetNote.append(h("div", { class: "notice err", text: String(err) }));
+      return false;
+    }
+  }
+  sheetSaveBtn.addEventListener("click", async () => {
+    if (await saveSheet()) sheetNote.append(h("div", { class: "hint", text: t("Sheet saved.") }));
+  });
+  sheetTestBtn.addEventListener("click", async () => {
+    if (!(await saveSheet())) return;
+    sheetTestBtn.setAttribute("disabled", "");
+    try {
+      await Bridge.whatsappLedgerSheetTest();
+      sheetNote.append(h("div", { class: "hint", text: t("The sheet answered: all good.") }));
+    } catch (err) {
+      sheetNote.append(h("div", { class: "notice err", text: String(err) }));
+    } finally {
+      sheetTestBtn.removeAttribute("disabled");
+    }
+  });
   ledgerDirInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") void setLedger(view?.prefs.ledgerEnabled ?? false);
   });
@@ -278,6 +321,18 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     switchState(ledgerSwitch, v.prefs.ledgerEnabled);
     if (document.activeElement !== ledgerDirInput) ledgerDirInput.value = v.prefs.ledgerDir;
     ledgerFileHint.textContent = t("Spreadsheet: {path}", { path: v.ledgerFile });
+    // The conversations to choose from; left alone while the list is open.
+    const nextChats = [v.prefs.ledgerChat, ...v.chats.map((c) => `${c.id}|${c.name}`)].join("~");
+    if (nextChats !== chatsKey && document.activeElement !== ledgerChatSelect) {
+      chatsKey = nextChats;
+      ledgerChatSelect.replaceChildren(
+        h("option", { value: "", text: t("My own chat") }),
+        ...v.chats.filter((c) => c.name).map((c) => h("option", { value: c.id, text: c.name })),
+      );
+      ledgerChatSelect.value = v.prefs.ledgerChat;
+    }
+    if (document.activeElement !== sheetUrlInput) sheetUrlInput.value = v.prefs.ledgerSheetUrl;
+    sheetCodeInput.placeholder = v.ledgerSheetCode ? `••••••••  ${t("(stored)")}` : t("Sheet code");
     body.style.display = v.prefs.enabled ? "" : "none";
 
     const parts: HTMLElement[] = [];
@@ -316,9 +371,13 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     h("div", { class: "subhead", text: t("Money notes") }),
     h("div", { class: "row" }, h("label", { text: t("Note spending and income from my own chat") }), ledgerSwitch),
     h("div", { class: "hint", text: t("Message yourself on WhatsApp, like “spent 35 groceries” or “received 800 from Rafael”. Coucou reads only that chat and writes to the spreadsheet only after you tap Save.") }),
+    h("div", { class: "row" }, h("label", { text: t("Chat for the notes") }), ledgerChatSelect),
     h("div", { class: "row" }, ledgerDirInput, ledgerSaveBtn),
     ledgerFileHint,
     ledgerNote,
+    h("div", { class: "row" }, sheetUrlInput),
+    h("div", { class: "row" }, sheetCodeInput, sheetSaveBtn, sheetTestBtn),
+    sheetNote,
     h("div", { class: "subhead", text: t("Ignored chats") }),
     ignoredList,
     h("div", { class: "row" }, ignoreInput, addBtn),

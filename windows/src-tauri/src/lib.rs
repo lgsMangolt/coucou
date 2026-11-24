@@ -1052,6 +1052,8 @@ pub fn run() {
             whatsapp::whatsapp_ledger_save,
             whatsapp::whatsapp_ledger_discard,
             whatsapp::whatsapp_set_ledger,
+            whatsapp::whatsapp_set_ledger_sheet,
+            whatsapp::whatsapp_ledger_sheet_test,
             ytmusic::ytmusic_state,
             ytmusic::ytmusic_control,
             ytmusic::ytmusic_search,

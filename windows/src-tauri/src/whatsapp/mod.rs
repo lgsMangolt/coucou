@@ -120,6 +120,15 @@ pub struct IslandView {
     pub pending: Vec<ledger::EntryView>,
 }
 
+/// A conversation the notes can be read from.
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChatChoice {
+    pub id: String,
+    pub name: String,
+    pub is_group: bool,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IgnoredChat {
@@ -151,6 +160,10 @@ pub struct SettingsView {
     pub ignored: Vec<IgnoredChat>,
     /// Where the spreadsheet of money notes is (or will be).
     pub ledger_file: String,
+    /// The conversations Coucou has seen, groups first: where the notes can be read from.
+    pub chats: Vec<ChatChoice>,
+    /// A code for the Google Sheet is stored (it is never handed back).
+    pub ledger_sheet_code: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -202,6 +215,7 @@ struct Ctl {
     /// Read notes waiting for the click, in memory only: nothing is written before it.
     ledger_pending: Vec<(u64, ledger::Entry)>,
     ledger_next: u64,
+    ledger_sheet_code: bool,
 }
 
 static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
@@ -237,6 +251,7 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         ledger_queue: Vec::new(),
         ledger_pending: Vec::new(),
         ledger_next: 0,
+        ledger_sheet_code: false,
     })
 });
 
@@ -253,6 +268,21 @@ impl Ctl {
 
     fn should_run(&self) -> bool {
         self.prefs.enabled && self.pill_active
+    }
+
+    fn chat_choices(&self) -> Vec<ChatChoice> {
+        let mut list: Vec<ChatChoice> = self
+            .inbox
+            .conversations
+            .values()
+            .map(|c| ChatChoice { id: c.id.clone(), name: c.name.clone(), is_group: c.is_group })
+            .collect();
+        let chosen = model::normalized(&self.prefs.ledger_chat);
+        if !self.prefs.ledger_chat.is_empty() && !list.iter().any(|c| c.id == chosen) {
+            list.push(ChatChoice { id: chosen.clone(), name: model::display_number(&chosen), is_group: model::is_group(&chosen) });
+        }
+        list.sort_by(|a, b| b.is_group.cmp(&a.is_group).then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase())));
+        list
     }
 
     fn filters(&self) -> Filters {
@@ -306,6 +336,8 @@ impl Ctl {
                 })
                 .collect(),
             ledger_file: ledger::file(&self.prefs.ledger_dir).to_string_lossy().into_owned(),
+            chats: self.chat_choices(),
+            ledger_sheet_code: self.ledger_sheet_code,
         }
     }
 }
@@ -368,6 +400,7 @@ pub fn start(app: &AppHandle, active_integrations: &[String]) {
         c.prefs = prefs::load();
         c.url = crate::secrets::get_internal(URL_KEY).unwrap_or_default();
         c.has_credential = crate::secrets::get_internal(CREDENTIAL_KEY).is_some();
+        c.ledger_sheet_code = crate::secrets::get_internal(ledger::SHEET_KEY).is_some();
         c.pill_active = active_integrations.iter().any(|x| x == PILL_ID);
     }
     update();
@@ -821,11 +854,16 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
     for message in messages {
         let key = model::normalized(&message.chat);
         let from_me = message.from_me;
-        // Your own message, in your own chat, that may note money (ledger.rs).
+        // Your own message, in the chat chosen for the notes (your own chat, or a group you made for
+        // them), that may note money (ledger.rs). Only what you wrote: never anybody else's words.
+        let in_notes_chat = if c.prefs.ledger_chat.is_empty() {
+            !model::is_group(&key) && c.me.as_deref().is_some_and(|me| model::same_user(me, &key))
+        } else {
+            key == model::normalized(&c.prefs.ledger_chat)
+        };
         let note = (c.prefs.ledger_enabled
             && from_me
-            && !model::is_group(&key)
-            && c.me.as_deref().is_some_and(|me| model::same_user(me, &key))
+            && in_notes_chat
             && ledger::looks_like_a_note(&message.text))
         .then(|| message.text.clone());
         let outcome = c.inbox.add(message, &filters, None, false);
@@ -1198,12 +1236,13 @@ pub async fn whatsapp_send(window: WebviewWindow, chat: String, text: String) ->
     Ok(send(&chat, &text).await)
 }
 
-/// Save on a card of the island: the entry goes to the spreadsheet, and only then.
+/// Save on a card of the island: the entry goes to the Google Sheet (when one is set up) and to the
+/// CSV on this computer, and only then.
 #[tauri::command]
 pub async fn whatsapp_ledger_save(window: WebviewWindow, id: u64) -> Result<String, String> {
     only(&window, crate::island::WINDOW_LABEL)?;
     // Taken out first: a double click cannot write it twice.
-    let (entry, path) = {
+    let (entry, path, sheet) = {
         let mut c = ctl();
         let index = c
             .ledger_pending
@@ -1211,17 +1250,31 @@ pub async fn whatsapp_ledger_save(window: WebviewWindow, id: u64) -> Result<Stri
             .position(|(n, _)| *n == id)
             .ok_or_else(|| crate::i18n::t("That entry is no longer waiting."))?;
         let (_, entry) = c.ledger_pending.remove(index);
-        (entry, ledger::file(&c.prefs.ledger_dir))
+        let url = c.prefs.ledger_sheet_url.clone();
+        let code = crate::secrets::get_internal(ledger::SHEET_KEY);
+        (entry, ledger::file(&c.prefs.ledger_dir), if url.is_empty() { None } else { code.map(|code| (url, code)) })
     };
+    // The sheet first: if it refuses, nothing is half done and the entry waits for another click.
+    if let Some((url, code)) = &sheet {
+        if let Err(reason) = ledger::post_to_sheet(url, &ledger::sheet_payload(&entry, code)).await {
+            ctl().ledger_pending.insert(0, (id, entry));
+            changed();
+            return Err(crate::i18n::tf("Could not send the entry to the sheet: {reason}", &[("reason", ledger::sheet_reason(&reason).as_str())]));
+        }
+    }
     let (target, saved) = (path.clone(), entry.clone());
     let written = tauri::async_runtime::spawn_blocking(move || ledger::append(&target, &saved))
         .await
         .map_err(|e| e.to_string())
         .and_then(|r| r);
     if let Err(reason) = written {
-        ctl().ledger_pending.insert(0, (id, entry));
-        changed();
-        return Err(crate::i18n::tf("Could not save the entry: {reason}", &[("reason", reason.as_str())]));
+        if sheet.is_none() {
+            ctl().ledger_pending.insert(0, (id, entry));
+            changed();
+            return Err(crate::i18n::tf("Could not save the entry: {reason}", &[("reason", reason.as_str())]));
+        }
+        // It is in the sheet; only the local copy failed.
+        crate::log::line(format!("whatsapp: the local copy of a note could not be written: {reason}"));
     }
     changed();
     Ok(path.to_string_lossy().into_owned())
@@ -1237,7 +1290,7 @@ pub fn whatsapp_ledger_discard(window: WebviewWindow, id: u64) -> Result<(), Str
 
 /// Settings → WhatsApp → money notes: on or off, and the folder of the spreadsheet.
 #[tauri::command]
-pub fn whatsapp_set_ledger(window: WebviewWindow, enabled: bool, dir: String) -> Result<(), String> {
+pub fn whatsapp_set_ledger(window: WebviewWindow, enabled: bool, dir: String, chat: String) -> Result<(), String> {
     only(&window, crate::HUB_LABEL)?;
     let dir = dir.trim().to_string();
     if !dir.is_empty() && !std::path::Path::new(&dir).is_absolute() {
@@ -1247,6 +1300,7 @@ pub fn whatsapp_set_ledger(window: WebviewWindow, enabled: bool, dir: String) ->
         let mut c = ctl();
         c.prefs.ledger_enabled = enabled;
         c.prefs.ledger_dir = dir;
+        c.prefs.ledger_chat = chat.trim().to_string();
         c.prefs = std::mem::take(&mut c.prefs).cleaned();
         if !enabled {
             c.ledger_queue.clear();
@@ -1256,6 +1310,49 @@ pub fn whatsapp_set_ledger(window: WebviewWindow, enabled: bool, dir: String) ->
     }
     changed();
     Ok(())
+}
+
+/// Settings → WhatsApp → money notes → Google Sheet: the script's address and, when given, its code
+/// (None keeps the stored one, "" removes it). The code is read by Rust only.
+#[tauri::command]
+pub fn whatsapp_set_ledger_sheet(window: WebviewWindow, url: String, code: Option<String>) -> Result<(), String> {
+    only(&window, crate::HUB_LABEL)?;
+    let url = url.trim().to_string();
+    if !url.is_empty() && !ledger::valid_sheet_url(&url) {
+        return Err(crate::i18n::t("Type the address Google gave when you deployed the script (it starts with https://script.google.com/macros/s/)."));
+    }
+    let stored = match code {
+        Some(code) => {
+            crate::secrets::set_internal(ledger::SHEET_KEY, code.trim())?;
+            Some(!code.trim().is_empty())
+        }
+        None => None,
+    };
+    {
+        let mut c = ctl();
+        c.prefs.ledger_sheet_url = url;
+        c.prefs = std::mem::take(&mut c.prefs).cleaned();
+        if let Some(has) = stored {
+            c.ledger_sheet_code = has;
+        }
+        prefs::save(&c.prefs);
+    }
+    changed();
+    Ok(())
+}
+
+/// "Test the sheet": one call to the script that adds nothing; it only has to answer yes.
+#[tauri::command]
+pub async fn whatsapp_ledger_sheet_test(window: WebviewWindow) -> Result<(), String> {
+    only(&window, crate::HUB_LABEL)?;
+    let url = ctl().prefs.ledger_sheet_url.clone();
+    let code = crate::secrets::get_internal(ledger::SHEET_KEY);
+    let (Some(code), false) = (code, url.is_empty()) else {
+        return Err(crate::i18n::t("Fill in the address and the code first."));
+    };
+    ledger::post_to_sheet(&url, &serde_json::json!({ "code": code, "ping": true }))
+        .await
+        .map_err(|reason| ledger::sheet_reason(&reason))
 }
 
 /// A reply the user may send, written from the conversation's last messages (suggest.rs). ""
@@ -1411,6 +1508,7 @@ mod tests {
             ledger_queue: Vec::new(),
             ledger_pending: Vec::new(),
             ledger_next: 0,
+            ledger_sheet_code: false,
         }
     }
 
@@ -1471,13 +1569,14 @@ mod tests {
 
     #[test]
     fn the_gateways_secrets_never_reach_a_webview() {
-        for key in [URL_KEY, CREDENTIAL_KEY, SECRET_KEY] {
+        // The code of the Google Sheet is one of them: Rust reads it, no page ever does.
+        for key in [URL_KEY, CREDENTIAL_KEY, SECRET_KEY, ledger::SHEET_KEY] {
             assert!(crate::secrets::is_internal(key), "{key}");
             assert!(!crate::secrets::KNOWN_KEYS.contains(&key), "{key}");
             assert!(crate::secrets::set(key, "x").is_err(), "{key}: secret_set must refuse it");
             assert!(!crate::secrets::present(key), "{key}");
         }
-        assert_eq!(crate::secrets::INTERNAL_KEYS.iter().filter(|k| k.starts_with("whatsapp-")).count(), 3);
+        assert_eq!(crate::secrets::INTERNAL_KEYS.iter().filter(|k| k.starts_with("whatsapp-")).count(), 4);
     }
 
     #[test]

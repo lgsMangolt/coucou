@@ -239,11 +239,135 @@ pub fn append(path: &Path, entry: &Entry) -> Result<(), String> {
     out.write_all(text.as_bytes()).map_err(|e| e.to_string())
 }
 
+// ── The Google Sheet ──────────────────────────────────────────────────────────
+//
+// A Google Sheet takes the rows through a small Google Apps Script the user adds to it and deploys
+// as a web app (no sign-in, no Cloud project: the script runs as the user, in their own Google
+// account). Coucou only knows its address and a code the script checks. It goes there after the
+// click on Save and nowhere else; the CSV stays on this computer as a local copy.
+
+pub const SHEET_KEY: &str = "whatsapp-ledger-sheet-code";
+const SHEET_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// The address Google gives a deployed web app: https://script.google.com/macros/s/<id>/exec
+pub fn valid_sheet_url(url: &str) -> bool {
+    reqwest::Url::parse(url)
+        .is_ok_and(|u| u.scheme() == "https" && u.host_str() == Some("script.google.com") && u.path().starts_with("/macros/s/"))
+}
+
+/// What the script receives for one entry. "value" is signed: an expense is negative.
+pub fn sheet_payload(entry: &Entry, code: &str) -> Value {
+    let (year, month, day) = entry.date;
+    let sign = if entry.kind == Kind::Expense { -1.0 } else { 1.0 };
+    serde_json::json!({
+        "code": code,
+        "date": format!("{year:04}-{month:02}-{day:02}"),
+        "kind": if entry.kind == Kind::Expense { "Gasto" } else { "Entrada" },
+        "value": sign * (entry.cents as f64 / 100.0),
+        "category": entry.category,
+        "person": entry.person,
+        "note": entry.note,
+    })
+}
+
+/// What the script answered: {"ok":true} is a yes; anything else is why not ("login": Google asked
+/// to sign in, "code": the code is not the script's, "answer": nothing that makes sense).
+pub fn read_sheet_answer(body: &str) -> Result<(), String> {
+    let text = body.trim();
+    if text.starts_with('<') {
+        return Err("login".into());
+    }
+    match serde_json::from_str::<Value>(text) {
+        Ok(v) if v["ok"] == true => Ok(()),
+        Ok(v) => Err(v["error"].as_str().map(|e| e.chars().take(40).collect()).unwrap_or_else(|| "answer".into())),
+        Err(_) => Err("answer".into()),
+    }
+}
+
+/// A refusal in words the user reads.
+pub fn sheet_reason(reason: &str) -> String {
+    use crate::i18n::t;
+    match reason {
+        "login" => t("Google asked to sign in: deploy the script so that “Anyone” can use it."),
+        "code" => t("The code does not match the one in the script."),
+        _ => t("No answer from the sheet."),
+    }
+}
+
+/// Google only: a bare user agent, redirects followed to Google's own hosts over https.
+fn sheet_client() -> Result<reqwest::Client, String> {
+    let policy = reqwest::redirect::Policy::custom(|attempt| {
+        let trusted = attempt.url().scheme() == "https"
+            && attempt.url().host_str().is_some_and(|h| h == "script.google.com" || h.ends_with(".googleusercontent.com"));
+        if attempt.previous().len() >= 5 {
+            attempt.error("too many redirects")
+        } else if trusted {
+            attempt.follow()
+        } else {
+            attempt.stop()
+        }
+    });
+    reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(15))
+        .timeout(SHEET_TIMEOUT)
+        .user_agent("Coucou")
+        .redirect(policy)
+        .build()
+        .map_err(|e| e.to_string())
+}
+
+/// One call to the script; Ok when it says {"ok":true}.
+pub async fn post_to_sheet(url: &str, payload: &Value) -> Result<(), String> {
+    if !valid_sheet_url(url) {
+        return Err("answer".into());
+    }
+    let response = sheet_client()?
+        .post(url)
+        .header("Content-Type", "text/plain;charset=utf-8")
+        .body(payload.to_string())
+        .send()
+        .await
+        .map_err(|_| "answer".to_string())?;
+    let body = response.text().await.map_err(|_| "answer".to_string())?;
+    read_sheet_answer(&body)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     const DAY: (u32, u32, u32) = (2026, 11, 24);
+
+    #[test]
+    fn only_the_address_google_gives_a_deployed_script_is_accepted() {
+        assert!(valid_sheet_url("https://script.google.com/macros/s/AKfycbxABC123/exec"));
+        assert!(!valid_sheet_url("http://script.google.com/macros/s/AKfycbxABC123/exec"));
+        assert!(!valid_sheet_url("https://evil.example/macros/s/x/exec"));
+        assert!(!valid_sheet_url("https://script.google.com.evil.example/macros/s/x/exec"));
+        assert!(!valid_sheet_url("https://script.google.com/home"));
+        assert!(!valid_sheet_url(""));
+    }
+
+    #[test]
+    fn the_script_receives_a_signed_value_and_an_iso_date() {
+        let e = Entry { kind: Kind::Expense, cents: 3550, category: "Mercado".into(), person: "".into(), note: "pão".into(), date: DAY };
+        let p = sheet_payload(&e, "abc");
+        assert_eq!((p["code"].as_str(), p["date"].as_str(), p["kind"].as_str()), (Some("abc"), Some("2026-11-24"), Some("Gasto")));
+        assert_eq!(p["value"].as_f64(), Some(-35.5));
+        let income = Entry { kind: Kind::Income, cents: 80000, ..e };
+        assert_eq!(sheet_payload(&income, "abc")["value"].as_f64(), Some(800.0));
+    }
+
+    #[test]
+    fn the_scripts_answer_is_a_yes_or_a_reason() {
+        assert_eq!(read_sheet_answer("{\"ok\":true}"), Ok(()));
+        assert_eq!(read_sheet_answer("  {\"ok\":true,\"pong\":true}\n"), Ok(()));
+        assert_eq!(read_sheet_answer("{\"ok\":false,\"error\":\"code\"}"), Err("code".into()));
+        assert_eq!(read_sheet_answer("<!doctype html><html>Sign in</html>"), Err("login".into()));
+        assert_eq!(read_sheet_answer(""), Err("answer".into()));
+        assert_eq!(read_sheet_answer("not json"), Err("answer".into()));
+        assert_eq!(read_sheet_answer("{\"ok\":false}"), Err("answer".into()));
+    }
 
     #[test]
     fn only_short_messages_with_a_digit_go_to_the_model() {

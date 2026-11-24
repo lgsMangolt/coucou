@@ -508,7 +508,11 @@ export const Bridge = {
   whatsappLedgerSave: (id: number) => callOrThrow<string>("whatsapp_ledger_save", { id }),
   whatsappLedgerDiscard: (id: number) => call<void>("whatsapp_ledger_discard", { id }),
   /** Settings: notes on money on or off, and the spreadsheet's folder ("" is Documents\Coucou). */
-  whatsappSetLedger: (enabled: boolean, dir: string) => callOrThrow<void>("whatsapp_set_ledger", { enabled, dir }),
+  whatsappSetLedger: (enabled: boolean, dir: string, chat: string) =>
+    callOrThrow<void>("whatsapp_set_ledger", { enabled, dir, chat }),
+  /** The Google Sheet's script address, and its code (null keeps the stored one, "" removes it). */
+  whatsappSetLedgerSheet: (url: string, code: string | null) => callOrThrow<void>("whatsapp_set_ledger_sheet", { url, code }),
+  whatsappLedgerSheetTest: () => callOrThrow<void>("whatsapp_ledger_sheet_test"),
   /** A reply the user may send, for the open conversation; "" when there is nothing to answer. */
   whatsappSuggest: (chat: string) => call<string>("whatsapp_suggest", { chat }),
   /** A chat id, or (Settings) a phone number. */
