@@ -26,7 +26,9 @@ if ($aberto) {
 if (Get-Process coucou -ErrorAction SilentlyContinue) { Log 'Coucou ainda aberto: nao instalei'; exit 3 }
 
 Log ("instalando " + (Split-Path -Leaf $Instalador))
-$p = Start-Process -FilePath $Instalador -ArgumentList '/S' -Wait -PassThru
+# Espera so o instalador (nao a arvore de processos dele): -Wait ficava preso se ele abrisse o app.
+$p = Start-Process -FilePath $Instalador -ArgumentList '/S' -PassThru
+if (-not $p.WaitForExit($EsperaSegundos * 1000)) { Log 'o instalador demorou demais'; exit 4 }
 Log ("instalador terminou com codigo " + $p.ExitCode)
 if ($p.ExitCode -ne 0) { exit $p.ExitCode }
 
