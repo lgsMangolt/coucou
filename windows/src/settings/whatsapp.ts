@@ -38,6 +38,15 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
   const enableSwitch = host.toggle(false, (on) => void setEnabled(on));
   const muteSwitch = host.toggle(true, (on) => void setOptions({ muteGroups: on }));
   const readSwitch = host.toggle(true, (on) => void setOptions({ markReadOnOpen: on }));
+  // Notes on money from your own chat, written to a spreadsheet after a click (ledger.rs).
+  const ledgerSwitch = host.toggle(false, (on) => void setLedger(on));
+  const ledgerDirInput = h("input", {
+    type: "text", placeholder: t("Spreadsheet folder (empty: Documents\\Coucou)"), autocomplete: "off", spellcheck: "false",
+    style: "flex:1 1 auto;min-width:0",
+  }) as HTMLInputElement;
+  const ledgerSaveBtn = h("button", { text: t("Save") });
+  const ledgerFileHint = h("div", { class: "hint" });
+  const ledgerNote = h("div", {});
   const body = h("div", { style: "display:flex;flex-direction:column;gap:10px" });
   const dynamic = h("div", { style: "display:flex;flex-direction:column;gap:10px" });
   const ignoredList = h("div", { style: "display:flex;flex-direction:column;gap:4px" });
@@ -89,6 +98,19 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
       // The next report puts the switches back as they are.
     }
   }
+
+  async function setLedger(on: boolean) {
+    ledgerNote.replaceChildren();
+    try {
+      await Bridge.whatsappSetLedger(on, ledgerDirInput.value.trim());
+    } catch (err) {
+      ledgerNote.append(h("div", { class: "notice err", text: String(err) }));
+    }
+  }
+  ledgerSaveBtn.addEventListener("click", () => void setLedger(view?.prefs.ledgerEnabled ?? false));
+  ledgerDirInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") void setLedger(view?.prefs.ledgerEnabled ?? false);
+  });
 
   /** WhatsAppController.setEnabled: on also makes room for its pill when a slot is free. */
   async function setEnabled(on: boolean) {
@@ -253,6 +275,9 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     switchState(enableSwitch, v.prefs.enabled);
     switchState(muteSwitch, v.prefs.muteGroups);
     switchState(readSwitch, v.prefs.markReadOnOpen);
+    switchState(ledgerSwitch, v.prefs.ledgerEnabled);
+    if (document.activeElement !== ledgerDirInput) ledgerDirInput.value = v.prefs.ledgerDir;
+    ledgerFileHint.textContent = t("Spreadsheet: {path}", { path: v.ledgerFile });
     body.style.display = v.prefs.enabled ? "" : "none";
 
     const parts: HTMLElement[] = [];
@@ -288,6 +313,12 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     h("div", { class: "row" }, h("label", { text: t("Mute groups (unless I’m mentioned)") }), muteSwitch),
     h("div", { class: "row" }, h("label", { text: t("Mark as read when I open a conversation") }), readSwitch),
     h("div", { class: "hint", text: t("Off: marked read only when you reply. Never when a message just arrives.") }),
+    h("div", { class: "subhead", text: t("Money notes") }),
+    h("div", { class: "row" }, h("label", { text: t("Note spending and income from my own chat") }), ledgerSwitch),
+    h("div", { class: "hint", text: t("Message yourself on WhatsApp, like “spent 35 groceries” or “received 800 from Rafael”. Coucou reads only that chat and writes to the spreadsheet only after you tap Save.") }),
+    h("div", { class: "row" }, ledgerDirInput, ledgerSaveBtn),
+    ledgerFileHint,
+    ledgerNote,
     h("div", { class: "subhead", text: t("Ignored chats") }),
     ignoredList,
     h("div", { class: "row" }, ignoreInput, addBtn),

@@ -138,6 +138,18 @@ export const PILL_CATALOG: readonly PillDefinition[] = [
   // (src-tauri/src/spotify.rs).
   { id: "integration_spotify", name: "Spotify", color: "#1DB954", category: "service",
     subtitle: N_("Integration"), source: "n8n", support: "yes", connect: none },
+  // YouTube Music in a window of its own, signed in once with the user's Google account
+  // (src-tauri/src/ytmusic.rs). Windows only for now: it is the build that has been tried.
+  { id: "integration_ytmusic", name: "YouTube Music", color: "#FF0033", category: "service",
+    subtitle: N_("Integration"), source: "n8n", support: "windows", connect: none },
+  // The printers installed in Windows, looked at while the pill is on (src-tauri/src/printers.rs).
+  { id: "integration_printers", name: "Impressoras", color: "#A78BFA", category: "service",
+    subtitle: N_("Integration"), source: "n8n", support: "windows", connect: none },
+  // Your own list of tasks and your own page of notes, kept on this computer (src-tauri/src/personal.rs).
+  { id: "integration_tasks", name: "Tarefas", color: "#F5B83D", category: "service",
+    subtitle: N_("Integration"), source: "n8n", support: "yes", connect: none },
+  { id: "integration_pad", name: "Bloco de notas", color: "#38BDF8", category: "service",
+    subtitle: N_("Integration"), source: "n8n", support: "yes", connect: none },
   // Mail: classic Outlook on Windows, driven on this computer through its COM objects
   // (src-tauri/src/mail). The new Outlook has none, and Linux has no Outlook.
   { id: "integration_mail", name: "Mail", color: "#2F8CFF", category: "service",

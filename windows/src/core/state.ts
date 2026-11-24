@@ -97,6 +97,13 @@ export interface IntegrationInfo {
   configured: boolean;
 }
 
+/** A named set of pills (Settings → Modes). */
+export interface Mode {
+  id: string;
+  name: string;
+  pills: string[];
+}
+
 export interface Settings {
   soundEnabled: boolean;
   soundVolume: number;
@@ -114,6 +121,10 @@ export interface Settings {
   activeIntegrations: string[];
   /** The always-on workspace pill: VS Code, Cursor, Codex or Antigravity. */
   mainPill: string;
+  /** Settings → Modes: each one is a set of pills the island shows. */
+  modes: Mode[];
+  /** The id of the mode in use; "" when the pills were last changed by hand. */
+  activeMode: string;
   /** "primary", "cursor", or `at:<x>,<y>` for one display (logical origin). */
   screen: string;
   autostart: boolean;
@@ -187,6 +198,8 @@ export const DEFAULT_SETTINGS: Settings = {
     "integration_resend", "integration_n8n", "integration_vercel", "integration_github",
   ],
   mainPill: DEFAULT_MAIN_PILL,
+  modes: [],
+  activeMode: "",
   screen: "primary",
   autostart: false,
   hooksInstalled: false,

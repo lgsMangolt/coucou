@@ -47,7 +47,10 @@ mod voice;
 #[cfg(windows)]
 mod webview_drop;
 mod webview_memory;
+mod personal;
+mod printers;
 mod whatsapp;
+mod ytmusic;
 
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -144,6 +147,8 @@ fn save_settings(app: AppHandle, shared: State<Shared>, settings: Settings) {
     integrations::settings_saved(&app, &settings.active_integrations);
     spotify::sync(&app, &settings.active_integrations);
     whatsapp::sync(&settings.active_integrations);
+    ytmusic::sync(&app, &settings.active_integrations);
+    printers::sync(&app, &settings.active_integrations);
     if shortcuts_changed {
         shortcuts::apply(&app, &settings.shortcuts);
     }
@@ -1042,6 +1047,26 @@ pub fn run() {
             whatsapp::whatsapp_close,
             whatsapp::whatsapp_open_app,
             whatsapp::whatsapp_send,
+            whatsapp::whatsapp_suggest,
+            whatsapp::whatsapp_ledger_save,
+            whatsapp::whatsapp_ledger_discard,
+            whatsapp::whatsapp_set_ledger,
+            ytmusic::ytmusic_state,
+            ytmusic::ytmusic_control,
+            ytmusic::ytmusic_search,
+            ytmusic::ytmusic_play,
+            ytmusic::ytmusic_sign_in,
+            ytmusic::ytmusic_hide,
+            personal::personal_get,
+            personal::personal_add_task,
+            personal::personal_toggle_task,
+            personal::personal_delete_task,
+            personal::personal_clear_done,
+            personal::personal_set_pad,
+            printers::printers_get,
+            printers::printers_refresh,
+            printers::printers_ignore,
+            printers::printers_unignore,
             whatsapp::whatsapp_ignore,
             whatsapp::whatsapp_unignore,
             whatsapp::whatsapp_settings,
@@ -1138,6 +1163,8 @@ pub fn run() {
             spotify::sync(&handle, &loaded.active_integrations);
             // WhatsApp (experimental): nothing runs unless it is turned on and its pill is active.
             whatsapp::start(&handle, &loaded.active_integrations);
+            ytmusic::sync(&handle, &loaded.active_integrations);
+            printers::sync(&handle, &loaded.active_integrations);
             shortcuts::apply(&handle, &loaded.shortcuts);
             // New versions: nothing goes to GitHub until the user agrees (update.rs).
             update::start(handle.clone());

@@ -68,35 +68,10 @@ fn env_languages() -> Vec<String> {
     out
 }
 
-/// The language to show: `picked` when it is one of ours, else the first of
-/// the system's languages we have, else English. Same rules as resolveLanguage
-/// in src/i18n/i18n.ts.
-pub fn resolve(picked: &str, system: &[String]) -> &'static str {
-    if let Some(code) = LANGUAGES.iter().find(|c| **c == picked) {
-        return code;
-    }
-    for raw in system {
-        // "fr_FR.UTF-8" → "fr-fr"
-        let tag = raw.split('.').next().unwrap_or("").replace('_', "-").to_lowercase();
-        let base = tag.split('-').next().unwrap_or("");
-        if base.is_empty() {
-            continue;
-        }
-        if base == "zh" {
-            let traditional = ["zh-hant", "zh-tw", "zh-hk", "zh-mo"].iter().any(|p| tag.starts_with(p));
-            if traditional {
-                continue;
-            }
-            return "zh-Hans";
-        }
-        if base == "pt" {
-            return "pt-BR";
-        }
-        if let Some(code) = LANGUAGES.iter().find(|c| c.to_lowercase() == base) {
-            return code;
-        }
-    }
-    "en"
+/// The language to show: `picked` when it is one of ours, else Brazilian Portuguese. This fork
+/// does not follow the system's language (as resolveLanguage in src/i18n/i18n.ts).
+pub fn resolve(picked: &str, _system: &[String]) -> &'static str {
+    LANGUAGES.iter().find(|c| **c == picked).copied().unwrap_or("pt-BR")
 }
 
 /// Records Settings.language. Returns true when the shown language changed.
@@ -237,15 +212,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn resolves_like_the_webview() {
+    fn resolves_to_the_picked_language_else_portuguese() {
         let sys = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
         assert_eq!(resolve("fr", &sys(&["ru"])), "fr");
-        assert_eq!(resolve("", &sys(&["fr_FR.UTF-8"])), "fr");
-        assert_eq!(resolve("", &sys(&["pt-PT"])), "pt-BR");
-        assert_eq!(resolve("", &sys(&["zh-CN"])), "zh-Hans");
-        assert_eq!(resolve("", &sys(&["zh-TW", "it", "es-MX"])), "es");
-        assert_eq!(resolve("", &sys(&["it-IT"])), "en");
-        assert_eq!(resolve("xx", &[]), "en");
+        assert_eq!(resolve("en", &sys(&["pt-BR"])), "en");
+        // Nothing picked: Portuguese, whatever the system speaks.
+        assert_eq!(resolve("", &sys(&["en-US"])), "pt-BR");
+        assert_eq!(resolve("", &sys(&["fr_FR.UTF-8"])), "pt-BR");
+        assert_eq!(resolve("", &sys(&["zh-CN"])), "pt-BR");
+        assert_eq!(resolve("xx", &[]), "pt-BR");
     }
 
     #[test]
@@ -291,7 +266,8 @@ mod tests {
     #[test]
     fn german_resolves_translates_and_selects_singular_only_for_one() {
         for tag in ["de", "de-DE", "de-AT", "de-CH", "de_DE.UTF-8"] {
-            assert_eq!(resolve("", &[tag.to_string()]), "de");
+            // This fork does not follow the system: German is picked, never guessed.
+            assert_eq!(resolve("", &[tag.to_string()]), "pt-BR");
         }
         assert_eq!(resolve("de", &["fr-FR".to_string()]), "de");
         assert_eq!(resolve("fr", &["de-DE".to_string()]), "fr");
@@ -317,7 +293,7 @@ mod tests {
         let system = |tag: &str| vec![tag.to_string()];
         assert_eq!(resolve("tr", &system("en-US")), "tr");
         for tag in ["tr", "tr-TR", "tr_TR.UTF-8"] {
-            assert_eq!(resolve("", &system(tag)), "tr");
+            assert_eq!(resolve("", &system(tag)), "pt-BR");
         }
         set_for_test("tr");
         assert_eq!(t("Allow"), "İzin ver");

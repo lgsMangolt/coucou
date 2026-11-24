@@ -26,6 +26,7 @@ import { agentsSection } from "./agents";
 import { phoneSection } from "./phone";
 import { whatsappSection } from "./whatsapp";
 import { WHATSAPP_ID } from "../core/whatsapp";
+import { modesSection } from "./modes";
 import { updateRows, updatesListener } from "./updates";
 import { colorDot } from "./colors";
 import { renderDiff, statusDot } from "./parts";
@@ -897,6 +898,12 @@ const INTEGRATIONS: IntegrationDef[] = [
     fields: [{ key: "calcom-api-key", label: N_("API key"), placeholder: "cal_…", secret: true }] },
   // Nothing to enter: Spotify is read from the OS (src-tauri/src/spotify.rs).
   { id: "integration_spotify", name: "Spotify", color: "#1DB954", fields: [] },
+  // Nothing to enter here: YouTube Music is signed in from its own card (src-tauri/src/ytmusic.rs).
+  { id: "integration_ytmusic", name: "YouTube Music", color: "#FF0033", fields: [] },
+  // Nothing to enter: the printers installed in Windows, and your own tasks and notes (src-tauri/src/printers.rs, personal.rs).
+  { id: "integration_printers", name: "Impressoras", color: "#A78BFA", fields: [] },
+  { id: "integration_tasks", name: "Tarefas", color: "#F5B83D", fields: [] },
+  { id: "integration_pad", name: "Bloco de notas", color: "#38BDF8", fields: [] },
 ];
 
 const MAX_ACTIVE = MAX_DECLARED;
@@ -1550,6 +1557,16 @@ async function render() {
   const sections: Partial<Record<PageId, () => HTMLElement[]>> = {
     general: () => [generalSection()],
     pills: () => [activePillsSection(connected)],
+    modes: () => [modesSection({
+      settings: () => settings,
+      apply(pills, id) {
+        settings.activeIntegrations = pills;
+        settings.activeMode = id;
+        declaredChanged();
+      },
+      save: () => void save(),
+      toggle,
+    })],
     agents: () => [claudeSection(status), agentsSection(agents), planSection(status)],
     chat: () => [subscriptionsSection(), apiSection(hasKey, claudeRelay), chatProvidersSection(chatKeys, keyChanged), localSection(customKey)],
     integrations: () => [integrationsSection(present), ...whatsappSections()],

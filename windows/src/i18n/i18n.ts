@@ -20,6 +20,8 @@ import EXTRA from "./extra.json";
 
 export const LANGUAGE_CODES = ["en", "zh-Hans", "hi", "es", "ar", "fr", "bn", "pt-BR", "ru", "id", "de", "tr", "ko", "ja"] as const;
 export type Language = (typeof LANGUAGE_CODES)[number];
+/** Shown when nothing was picked and the system speaks a language we do not have. */
+export const DEFAULT_LANGUAGE: Language = "pt-BR";
 
 /** The picker's entries, each in its own language, in the Mac's order. */
 export const LANGUAGES: readonly { code: Language; name: string }[] = [
@@ -58,27 +60,13 @@ export function isLanguage(code: unknown): code is Language {
 }
 
 /**
- * The language to show: the one picked in Settings when it is one of ours,
- * else the first of the system's languages we have ("pt" and "pt-PT" read as
- * Brazilian Portuguese, "zh-CN", "zh-SG" and "zh" as Simplified Chinese),
- * else English.
+ * The language to show: the one picked in Settings when it is one of ours, else Brazilian
+ * Portuguese. This fork does not follow the system's language: a Windows set to English still
+ * opens Coucou in Portuguese, and only a language picked in Settings changes that.
+ * (`_system` stays in the signature: the callers pass the system's languages, unused here.)
  */
-export function resolveLanguage(picked: string | undefined | null, system: readonly string[] = []): Language {
-  if (isLanguage(picked)) return picked;
-  for (const raw of system) {
-    const tag = String(raw ?? "").replace(/_/g, "-").toLowerCase();
-    if (!tag) continue;
-    const base = tag.split("-")[0];
-    if (base === "zh") {
-      // Traditional Chinese is not one of ours: English rather than the wrong script.
-      if (/^zh-(hant|tw|hk|mo)\b/.test(tag)) continue;
-      return "zh-Hans";
-    }
-    if (base === "pt") return "pt-BR";
-    const exact = LANGUAGE_CODES.find((c) => c.toLowerCase() === base);
-    if (exact) return exact;
-  }
-  return "en";
+export function resolveLanguage(picked: string | undefined | null, _system: readonly string[] = []): Language {
+  return isLanguage(picked) ? picked : DEFAULT_LANGUAGE;
 }
 
 /** The system's languages, as the webview knows them. */

@@ -8,6 +8,9 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import type { Settings } from "./state";
 import type { RecapHistory, RecapPrefs } from "../recap/summary";
 import type { SpotifyState } from "./spotify";
+import type { YtAction, YtMusicState } from "./ytmusic";
+import type { PersonalData } from "./personal";
+import type { PrintersReport } from "./printers";
 import type { UpdateStatus } from "./update";
 import type { WaIslandView, WaSettingsView, WaTestResult } from "./whatsapp";
 
@@ -500,6 +503,13 @@ export const Bridge = {
   whatsappOpenApp: () => call<boolean>("whatsapp_open_app"),
   /** Enter or the send button only. True once the gateway took it. */
   whatsappSend: (chat: string, text: string) => call<boolean>("whatsapp_send", { chat, text }),
+  /** Saves a note on money to the spreadsheet; resolves with the file's path. Island only. */
+  whatsappLedgerSave: (id: number) => callOrThrow<string>("whatsapp_ledger_save", { id }),
+  whatsappLedgerDiscard: (id: number) => call<void>("whatsapp_ledger_discard", { id }),
+  /** Settings: notes on money on or off, and the spreadsheet's folder ("" is Documents\Coucou). */
+  whatsappSetLedger: (enabled: boolean, dir: string) => callOrThrow<void>("whatsapp_set_ledger", { enabled, dir }),
+  /** A reply the user may send, for the open conversation; "" when there is nothing to answer. */
+  whatsappSuggest: (chat: string) => call<string>("whatsapp_suggest", { chat }),
   /** A chat id, or (Settings) a phone number. */
   whatsappIgnore: (chat: string) => call<void>("whatsapp_ignore", { chat }),
   whatsappUnignore: (chat: string) => call<void>("whatsapp_unignore", { chat }),
@@ -514,6 +524,31 @@ export const Bridge = {
   whatsappTest: () => call<WaTestResult>("whatsapp_test"),
   /** "Install WhatsApp" / "Update": GOWA from its GitHub releases, on this click only. */
   whatsappInstall: () => call<void>("whatsapp_install"),
+
+  // ── YouTube Music (src-tauri/src/ytmusic.rs) ──────────────────────────────
+  ytmusicState: () => call<YtMusicState>("ytmusic_state"),
+  ytmusicControl: (action: YtAction) => call<boolean>("ytmusic_control", { action }),
+  ytmusicSearch: (query: string) => call<boolean>("ytmusic_search", { query }),
+  /** Plays one of the results of the last search. */
+  ytmusicPlay: (index: number) => call<boolean>("ytmusic_play", { index }),
+  /** Shows the player's window, to sign in to Google in it. */
+  ytmusicSignIn: () => call<boolean>("ytmusic_sign_in"),
+  ytmusicHide: () => call<void>("ytmusic_hide"),
+
+  // ── Tasks and Notepad (src-tauri/src/personal.rs): every edit answers with the new state ──
+  personalGet: () => call<PersonalData>("personal_get"),
+  personalAddTask: (text: string) => call<PersonalData>("personal_add_task", { text }),
+  personalToggleTask: (id: number) => call<PersonalData>("personal_toggle_task", { id }),
+  personalDeleteTask: (id: number) => call<PersonalData>("personal_delete_task", { id }),
+  personalClearDone: () => call<PersonalData>("personal_clear_done"),
+  personalSetPad: (text: string) => call<void>("personal_set_pad", { text }),
+
+  // ── Printers (src-tauri/src/printers.rs) ──
+  printersGet: () => call<PrintersReport>("printers_get"),
+  /** Looks now instead of waiting for the next one. */
+  printersRefresh: () => call<PrintersReport>("printers_refresh"),
+  printersIgnore: (name: string) => call<PrintersReport>("printers_ignore", { name }),
+  printersUnignore: (name: string) => call<PrintersReport>("printers_unignore", { name }),
 
   // ── New versions (src-tauri/src/update.rs) ────────────────────────────────
   updateStatus: () => call<UpdateStatus>("update_status"),

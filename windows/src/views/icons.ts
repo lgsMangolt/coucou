@@ -89,4 +89,7 @@ export const ICONS = {
   folder: "M3 6.6a2 2 0 0 1 2-2h4.3l2 2.2H19a2 2 0 0 1 2 2v8.6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6.6z",
   // chevron.down (stroked)
   chevronDown: "M5.5 9 12 15.5 18.5 9",
+  // hand.thumbsup / hand.thumbsdown (stroked)
+  thumbUp: "M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3zM7 11l4-7c1.5 0 2.5 1 2.5 2.5V9h5a2 2 0 0 1 2 2.3l-1 6.5a2 2 0 0 1-2 1.7H7",
+  thumbDown: "M7 13V4H4a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h3zM7 13l4 7c1.5 0 2.5-1 2.5-2.5V15h5a2 2 0 0 0 2-2.3l-1-6.5a2 2 0 0 0-2-1.7H7",
 } as const;

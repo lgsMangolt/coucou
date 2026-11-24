@@ -101,19 +101,16 @@ test("labels() tables and dates read in the current language", () => {
 
 // ── Choosing the language ─────────────────────────────────────────────────────
 
-test("System follows the system's language when Coucou has it, else English", () => {
-  assert.equal(resolveLanguage("", ["fr-FR", "en-US"]), "fr");
-  assert.equal(resolveLanguage("", ["it-IT", "es-MX"]), "es");
-  assert.equal(resolveLanguage("", ["pt-PT"]), "pt-BR");
-  assert.equal(resolveLanguage("", ["pt"]), "pt-BR");
-  assert.equal(resolveLanguage("", ["zh-CN"]), "zh-Hans");
-  assert.equal(resolveLanguage("", ["zh-TW"]), "en"); // Traditional is not one of ours
-  assert.equal(resolveLanguage("", ["ar-EG"]), "ar");
-  assert.equal(resolveLanguage("", ["it-IT"]), "en");
-  assert.equal(resolveLanguage("", []), "en");
-  // A picked language wins; one this build doesn't know means System.
+test("nothing picked means Brazilian Portuguese, whatever the system speaks (this fork)", () => {
+  assert.equal(resolveLanguage("", ["en-US"]), "pt-BR");
+  assert.equal(resolveLanguage("", ["fr-FR", "en-US"]), "pt-BR");
+  assert.equal(resolveLanguage("", ["zh-CN"]), "pt-BR");
+  assert.equal(resolveLanguage("", []), "pt-BR");
+  assert.equal(resolveLanguage(undefined, ["de"]), "pt-BR");
+  // A picked language wins; one this build doesn't know means Portuguese again.
   assert.equal(resolveLanguage("ru", ["fr-FR"]), "ru");
-  assert.equal(resolveLanguage("xx", ["bn-IN"]), "bn");
+  assert.equal(resolveLanguage("en", ["pt-BR"]), "en");
+  assert.equal(resolveLanguage("xx", ["bn-IN"]), "pt-BR");
 });
 
 test("the picker offers the Mac's languages, Arabic reads right to left", () => {
@@ -150,12 +147,12 @@ test("German selects singular only for one in both plural catalogs", () => {
 });
 
 test("German regional locales select Deutsch and apply left-to-right document metadata", () => {
+  // This fork does not follow the system's language: German is picked, never guessed.
   for (const tag of ["de", "de-DE", "de-AT", "de-CH", "de_DE.UTF-8"]) {
-    assert.equal(resolveLanguage("", [tag]), "de");
+    assert.equal(resolveLanguage("", [tag]), "pt-BR");
   }
   assert.equal(resolveLanguage("de", ["fr-FR"]), "de");
   assert.equal(resolveLanguage("fr", ["de-DE"]), "fr");
-  assert.equal(resolveLanguage("", ["it-IT", "de-DE", "es-MX"]), "de");
   assert.equal(LANGUAGES.find((l) => l.code === "de")?.name, "Deutsch");
   const previousRoot = document.documentElement;
   document.documentElement = { lang: "en", dataset: {} };
@@ -224,11 +221,11 @@ test("Turkish keeps nouns singular after counts in both tables", () => {
   });
 });
 
-test("Turkish can be selected or resolved from regional system languages", () => {
+test("Turkish can be selected, and the system's language never picks it", () => {
   assert.equal(LANGUAGES.find((l) => l.code === "tr").name, "Türkçe");
   assert.equal(resolveLanguage("tr", ["en-US"]), "tr");
   for (const tag of ["tr", "tr-TR", "tr_TR"]) {
-    assert.equal(resolveLanguage("", [tag, "en-US"]), "tr");
+    assert.equal(resolveLanguage("", [tag, "en-US"]), "pt-BR");
   }
 });
 
@@ -256,11 +253,11 @@ test("Korean has one form after any count in both tables", () => {
   });
 });
 
-test("Korean can be selected or resolved from regional system languages", () => {
+test("Korean can be selected, and the system's language never picks it", () => {
   assert.equal(LANGUAGES.find((l) => l.code === "ko").name, "한국어");
   assert.equal(resolveLanguage("ko", ["en-US"]), "ko");
   for (const tag of ["ko", "ko-KR", "ko_KR.UTF-8"]) {
-    assert.equal(resolveLanguage("", [tag, "en-US"]), "ko");
+    assert.equal(resolveLanguage("", [tag, "en-US"]), "pt-BR");
   }
 });
 
@@ -287,10 +284,11 @@ test("Japanese has one form after any count in both tables", () => {
   });
 });
 
-test("Japanese can be selected or resolved from regional system languages", () => {
+test("Japanese can be selected, and the system's language never picks it", () => {
   assert.equal(LANGUAGES.find((l) => l.code === "ja").name, "日本語");
+  assert.equal(resolveLanguage("ja", ["en-US"]), "ja");
   for (const tag of ["ja", "ja-JP", "ja_JP.UTF-8"]) {
-    assert.equal(resolveLanguage("", [tag, "en-US"]), "ja");
+    assert.equal(resolveLanguage("", [tag, "en-US"]), "pt-BR");
   }
 });
 

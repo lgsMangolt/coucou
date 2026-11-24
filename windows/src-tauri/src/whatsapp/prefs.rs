@@ -28,6 +28,10 @@ pub struct Prefs {
     pub gowa_path: String,
     /// GOWA's version once installed by Coucou.
     pub gowa_version: Option<String>,
+    /// Notes on money written to yourself on WhatsApp become entries in a spreadsheet (ledger.rs).
+    pub ledger_enabled: bool,
+    /// The folder of that spreadsheet; "" is Documents\Coucou.
+    pub ledger_dir: String,
 }
 
 impl Default for Prefs {
@@ -42,6 +46,8 @@ impl Default for Prefs {
             auto_start: false,
             gowa_path: String::new(),
             gowa_version: None,
+            ledger_enabled: false,
+            ledger_dir: String::new(),
         }
     }
 }
@@ -60,6 +66,7 @@ impl Prefs {
         self.ignored.dedup();
         self.ignored.truncate(500);
         self.gowa_path = self.gowa_path.trim().to_string();
+        self.ledger_dir = self.ledger_dir.trim().chars().take(260).collect();
         self
     }
 }

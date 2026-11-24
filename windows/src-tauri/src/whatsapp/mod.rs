@@ -15,10 +15,12 @@
 pub mod archive;
 pub mod gateway;
 pub mod install;
+pub mod ledger;
 pub mod model;
 pub mod prefs;
 pub mod process;
 pub mod provider;
+pub mod suggest;
 pub mod webhook;
 
 use std::collections::HashSet;
@@ -114,6 +116,8 @@ pub struct IslandView {
     pub send_error: Option<SendError>,
     /// The gateway failed twice in a row: a small red dot on the pill.
     pub down: bool,
+    /// Notes on money waiting for the click that saves them to the spreadsheet (ledger.rs).
+    pub pending: Vec<ledger::EntryView>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -145,6 +149,8 @@ pub struct SettingsView {
     pub gowa_dir: String,
     pub pill_active: bool,
     pub ignored: Vec<IgnoredChat>,
+    /// Where the spreadsheet of money notes is (or will be).
+    pub ledger_file: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -191,6 +197,11 @@ struct Ctl {
     sending: bool,
     send_error: Option<SendError>,
     install: Step,
+    /// What you wrote to yourself that may be a note on money, waiting to be read (ledger.rs).
+    ledger_queue: Vec<String>,
+    /// Read notes waiting for the click, in memory only: nothing is written before it.
+    ledger_pending: Vec<(u64, ledger::Entry)>,
+    ledger_next: u64,
 }
 
 static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
@@ -223,6 +234,9 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         sending: false,
         send_error: None,
         install: Step::Idle,
+        ledger_queue: Vec::new(),
+        ledger_pending: Vec::new(),
+        ledger_next: 0,
     })
 });
 
@@ -263,6 +277,7 @@ impl Ctl {
             sending: self.sending,
             send_error: self.send_error.clone(),
             down: self.down,
+            pending: self.ledger_pending.iter().map(|(id, entry)| entry.view(*id)).collect(),
         }
     }
 
@@ -290,6 +305,7 @@ impl Ctl {
                     name: self.inbox.conversations.get(id).map(|c| c.name.clone()).unwrap_or_else(|| model::display_number(id)),
                 })
                 .collect(),
+            ledger_file: ledger::file(&self.prefs.ledger_dir).to_string_lossy().into_owned(),
         }
     }
 }
@@ -805,7 +821,17 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
     for message in messages {
         let key = model::normalized(&message.chat);
         let from_me = message.from_me;
+        // Your own message, in your own chat, that may note money (ledger.rs).
+        let note = (c.prefs.ledger_enabled
+            && from_me
+            && !model::is_group(&key)
+            && c.me.as_deref().is_some_and(|me| model::same_user(me, &key))
+            && ledger::looks_like_a_note(&message.text))
+        .then(|| message.text.clone());
         let outcome = c.inbox.add(message, &filters, None, false);
+        if let (Some(text), true) = (note, outcome != Outcome::Duplicate) {
+            c.ledger_queue.push(text);
+        }
         if let Some(g) = needs_name(c, &key) {
             groups.push(g);
         }
@@ -827,10 +853,40 @@ fn after_ingest(gen: u64, fresh: Option<String>, groups: Vec<String>) {
     if let Some(name) = fresh {
         pill(PillEvent::Message { name });
     }
+    let notes = std::mem::take(&mut ctl().ledger_queue);
+    for text in notes {
+        spawn(read_note(gen, text));
+    }
     if let Some(provider) = ctl().provider.clone() {
         name_groups(provider, gen, groups);
     }
     changed();
+}
+
+/// One message you wrote to yourself, read by the model: a note on money waits for your click,
+/// anything else is forgotten (ledger.rs).
+async fn read_note(gen: u64, text: String) {
+    let today = crate::platform::local_time();
+    match ledger::read(&text, (today.year, today.month, today.day)).await {
+        Ok(Some(entry)) => {
+            {
+                let mut c = ctl();
+                if c.generation != gen || !c.prefs.ledger_enabled {
+                    return;
+                }
+                c.ledger_next += 1;
+                let id = c.ledger_next;
+                c.ledger_pending.push((id, entry));
+                if c.ledger_pending.len() > 20 {
+                    c.ledger_pending.remove(0);
+                }
+            }
+            pill(PillEvent::Message { name: crate::i18n::t("New entry to confirm") });
+            changed();
+        }
+        Ok(None) => {}
+        Err(reason) => crate::log::line(format!("whatsapp: could not read a note on money: {reason}")),
+    }
 }
 
 /// Groups arrive under their id (GOWA's webhook carries no group name): asked once.
@@ -1142,6 +1198,78 @@ pub async fn whatsapp_send(window: WebviewWindow, chat: String, text: String) ->
     Ok(send(&chat, &text).await)
 }
 
+/// Save on a card of the island: the entry goes to the spreadsheet, and only then.
+#[tauri::command]
+pub async fn whatsapp_ledger_save(window: WebviewWindow, id: u64) -> Result<String, String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    // Taken out first: a double click cannot write it twice.
+    let (entry, path) = {
+        let mut c = ctl();
+        let index = c
+            .ledger_pending
+            .iter()
+            .position(|(n, _)| *n == id)
+            .ok_or_else(|| crate::i18n::t("That entry is no longer waiting."))?;
+        let (_, entry) = c.ledger_pending.remove(index);
+        (entry, ledger::file(&c.prefs.ledger_dir))
+    };
+    let (target, saved) = (path.clone(), entry.clone());
+    let written = tauri::async_runtime::spawn_blocking(move || ledger::append(&target, &saved))
+        .await
+        .map_err(|e| e.to_string())
+        .and_then(|r| r);
+    if let Err(reason) = written {
+        ctl().ledger_pending.insert(0, (id, entry));
+        changed();
+        return Err(crate::i18n::tf("Could not save the entry: {reason}", &[("reason", reason.as_str())]));
+    }
+    changed();
+    Ok(path.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+pub fn whatsapp_ledger_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    ctl().ledger_pending.retain(|(n, _)| *n != id);
+    changed();
+    Ok(())
+}
+
+/// Settings → WhatsApp → money notes: on or off, and the folder of the spreadsheet.
+#[tauri::command]
+pub fn whatsapp_set_ledger(window: WebviewWindow, enabled: bool, dir: String) -> Result<(), String> {
+    only(&window, crate::HUB_LABEL)?;
+    let dir = dir.trim().to_string();
+    if !dir.is_empty() && !std::path::Path::new(&dir).is_absolute() {
+        return Err(crate::i18n::t("Type the whole folder path, like C:\\Users\\you\\OneDrive\\Coucou."));
+    }
+    {
+        let mut c = ctl();
+        c.prefs.ledger_enabled = enabled;
+        c.prefs.ledger_dir = dir;
+        c.prefs = std::mem::take(&mut c.prefs).cleaned();
+        if !enabled {
+            c.ledger_queue.clear();
+            c.ledger_pending.clear();
+        }
+        prefs::save(&c.prefs);
+    }
+    changed();
+    Ok(())
+}
+
+/// A reply the user may send, written from the conversation's last messages (suggest.rs). ""
+/// when there is nothing to answer. Shown in the card only: sending stays `whatsapp_send`.
+#[tauri::command]
+pub async fn whatsapp_suggest(window: WebviewWindow, chat: String) -> Result<String, String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    let prompt = ctl().inbox.conversations.get(&chat).and_then(suggest::prompt);
+    match prompt {
+        Some(prompt) => suggest::suggest(&prompt).await,
+        None => Ok(String::new()),
+    }
+}
+
 #[tauri::command]
 pub fn whatsapp_ignore(window: WebviewWindow, chat: String) -> Result<(), String> {
     if window.label() != crate::island::WINDOW_LABEL {
@@ -1280,6 +1408,9 @@ mod tests {
             sending: false,
             send_error: None,
             install: Step::Idle,
+            ledger_queue: Vec::new(),
+            ledger_pending: Vec::new(),
+            ledger_next: 0,
         }
     }
 

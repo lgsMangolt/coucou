@@ -27,6 +27,13 @@ import { buildLaunch } from "./launch";
 import { buildSpotifyCard, buildSpotifyPill, type SpotifyPillHost } from "./spotify";
 import { SPOTIFY_ID } from "../core/spotify";
 import { buildWhatsAppCard } from "./whatsapp";
+import { buildYtMusicCard } from "./ytmusic";
+import { buildTodoCard } from "./todo";
+import { buildPadCard } from "./pad";
+import { buildPrintersCard } from "./printers";
+import { PAD_ID, TASKS_ID } from "../core/personal";
+import { PRINTERS_ID } from "../core/printers";
+import { YTMUSIC_ID } from "../core/ytmusic";
 import { WHATSAPP_ID } from "../core/whatsapp";
 import { MAIL_ID } from "../core/mail";
 import { buildMailCard } from "./mail";
@@ -226,6 +233,10 @@ function buildOverview(actions: ViewActions): ViewHost {
   // WhatsApp's card too: its reply field keeps the draft and the keyboard while messages arrive.
   // Mail's card too (classic Outlook): the search field keeps its text and the keyboard.
   const mailCard = buildMailCard({ keyboard: (on) => actions.keyboard(on) });
+  const todoCard = buildTodoCard({ keyboard: (on) => actions.keyboard(on), holdOpen: (on) => actions.holdOpen(on) });
+  const padCard = buildPadCard({ keyboard: (on) => actions.keyboard(on), holdOpen: (on) => actions.holdOpen(on) });
+  const printersCard = buildPrintersCard();
+  const ytCard = buildYtMusicCard({ keyboard: (on) => actions.keyboard(on), holdOpen: (on) => actions.holdOpen(on) });
   const whatsappCard = buildWhatsAppCard({
     openSettings: () => actions.openSettingsWindow(),
     keyboard: (on) => actions.keyboard(on),
@@ -240,7 +251,7 @@ function buildOverview(actions: ViewActions): ViewHost {
   let pillIds = "";
   let detailOpen = false;
   let lastFocus: string | null = null;
-  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | null = null;
+  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | "ytmusic" | "todo" | "pad" | "printers" | null = null;
   let cardKey = "";
   /** The list row highlighted at the last sync, to scroll only when it moves. */
   let shownSelection: number | null = null;
@@ -414,6 +425,39 @@ function buildOverview(actions: ViewActions): ViewHost {
           cardKey = "";
         }
         whatsappCard.sync();
+      } else if (task && task.id === YTMUSIC_ID) {
+        // Its own card in every state: starting, waiting for the sign-in, the player.
+        if (mode !== "ytmusic") {
+          clear(leftBody);
+          leftBody.append(ytCard.el);
+          mode = "ytmusic";
+          cardKey = "";
+        }
+        ytCard.sync();
+      } else if (task && task.id === TASKS_ID) {
+        if (mode !== "todo") {
+          clear(leftBody);
+          leftBody.append(todoCard.el);
+          mode = "todo";
+          cardKey = "";
+        }
+        todoCard.sync();
+      } else if (task && task.id === PAD_ID) {
+        if (mode !== "pad") {
+          clear(leftBody);
+          leftBody.append(padCard.el);
+          mode = "pad";
+          cardKey = "";
+        }
+        padCard.sync();
+      } else if (task && task.id === PRINTERS_ID) {
+        if (mode !== "printers") {
+          clear(leftBody);
+          leftBody.append(printersCard.el);
+          mode = "printers";
+          cardKey = "";
+        }
+        printersCard.sync();
       } else if (task) {
         const info = State.integrations[task.id];
         const key = [

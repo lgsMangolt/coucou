@@ -45,6 +45,19 @@ export type WaSendError =
   | { code: "tooLong" | "tooFast" | "unreachable" | "unauthorized" | "needsQr" }
   | { code: "refused"; detail: string };
 
+/** A note on money read from your own chat, waiting for the click that saves it (ledger.rs). */
+export interface WaEntry {
+  id: number;
+  kind: "expense" | "income";
+  /** "R$ 35,00" */
+  amount: string;
+  category: string;
+  person: string;
+  note: string;
+  /** "24/11/2026" */
+  date: string;
+}
+
 /** IslandView in src-tauri/src/whatsapp/mod.rs. */
 export interface WaIslandView {
   on: boolean;
@@ -56,10 +69,11 @@ export interface WaIslandView {
   sendError: WaSendError | null;
   /** The gateway failed twice in a row: the pill's red dot. */
   down: boolean;
+  pending: WaEntry[];
 }
 
 export const IDLE_WHATSAPP: WaIslandView = {
-  on: false, link: { state: "off" }, conversations: [], unread: 0, sending: false, sendError: null, down: false,
+  on: false, link: { state: "off" }, conversations: [], unread: 0, sending: false, sendError: null, down: false, pending: [],
 };
 
 /** The page's copy of what Rust keeps. */
@@ -88,6 +102,8 @@ export interface WaPrefs {
   autoStart: boolean;
   gowaPath: string;
   gowaVersion: string | null;
+  ledgerEnabled: boolean;
+  ledgerDir: string;
 }
 
 /** SettingsView in src-tauri/src/whatsapp/mod.rs. */
@@ -105,6 +121,8 @@ export interface WaSettingsView {
   gowaDir: string;
   pillActive: boolean;
   ignored: { id: string; name: string }[];
+  /** Where the spreadsheet of money notes is, or will be. */
+  ledgerFile: string;
 }
 
 export type WaTestResult =

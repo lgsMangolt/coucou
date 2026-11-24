@@ -24,6 +24,10 @@ pub struct Settings {
     pub active_integrations: Vec<String>,
     /// The always-on workspace pill (src/core/pills.ts checks it is one).
     pub main_pill: String,
+    /// The modes (Settings → Modes): each one is a set of pills the island shows.
+    pub modes: Vec<Mode>,
+    /// The id of the mode in use; "" when the pills were last changed by hand.
+    pub active_mode: String,
     /// "primary" = the main display, "cursor" = whichever display the mouse is on.
     pub screen: String,
     pub autostart: bool,
@@ -161,6 +165,8 @@ impl Default for Settings {
                 "integration_github".into(),
             ],
             main_pill: "integration_claude".into(),
+            modes: Vec::new(),
+            active_mode: String::new(),
             screen: "primary".into(),
             autostart: false,
             hooks_installed: false,
@@ -465,6 +471,8 @@ mod tests {
   "absenceInterval": 60.0,
   "activeIntegrations": ["integration_notion"],
   "mainPill": "agent_cursor",
+  "modes": [{"id": "work", "name": "Trabalho", "pills": ["integration_whatsapp"]}],
+  "activeMode": "work",
   "screen": "cursor",
   "autostart": true,
   "hooksInstalled": true,
@@ -998,6 +1006,8 @@ mod tests {
                 "absenceInterval",
                 "activeIntegrations",
                 "mainPill",
+                "modes",
+                "activeMode",
                 "screen",
                 "autostart",
                 "hooksInstalled",
@@ -1092,4 +1102,13 @@ mod tests {
         assert!(loaded.sound_volume >= 0.0);
         let _ = std::fs::remove_dir_all(&dir);
     }
+}
+
+/// A named set of pills (Settings → Modes). Switching modes only changes `active_integrations`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Mode {
+    pub id: String,
+    pub name: String,
+    pub pills: Vec<String>,
 }

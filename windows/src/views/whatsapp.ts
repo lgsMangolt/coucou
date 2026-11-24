@@ -15,7 +15,7 @@ import { Bridge } from "../core/bridge";
 import { State } from "../core/state";
 import {
   WHATSAPP_GREEN, WHATSAPP_ID, WhatsApp, canSend, initials, keyAction, lastMessages, linkColor, linkLabel,
-  preview, previewParts, sendErrorLabel, timeAgo, type WaConversation, type WaMessage,
+  preview, previewParts, sendErrorLabel, timeAgo, type WaConversation, type WaEntry, type WaMessage,
 } from "../core/whatsapp";
 import { language, t, tl } from "../i18n/i18n";
 
@@ -55,7 +55,9 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
   const unreadTag = h("span", { class: "wa-unread" });
   const head = h("div", { class: "int-head" }, dot(WHATSAPP_GREEN, 7), h("b", { text: "WhatsApp" }), unreadTag);
   const listBody = h("div", {});
-  const listView = h("div", { class: "wa-list" }, head, listBody);
+  // Notes on money read from your own chat, each waiting for your click (ledger.rs).
+  const pendingBox = h("div", { class: "wa-pending" });
+  const listView = h("div", { class: "wa-list" }, head, pendingBox, listBody);
 
   // ── The conversation ──
   const back = h("button", { class: "int-back wa-back", title: tl("Back") }, svg(ICONS.chevronLeft, 10, { stroke: 2.4 }));
@@ -67,7 +69,11 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
   const sendBtn = h("button", { class: "wa-send", title: tl("Send") }, svg(ICONS.arrowUp, 12, { fill: "#0B0C0E" }));
   const reply = h("div", { class: "wa-reply" }, field, sendBtn);
   const note = h("div", { class: "wa-note" });
-  const convoView = h("div", { class: "wa-convo" }, convoHead, messages, reply, note);
+  // A reply Coucou suggests for the last message received. A click puts it in the field; it is
+  // never sent by itself.
+  const suggestion = h("button", { class: "wa-suggest", title: tl("Use this reply") });
+  suggestion.style.display = "none";
+  const convoView = h("div", { class: "wa-convo" }, convoHead, messages, suggestion, reply, note);
 
   const el = h("div", { class: "int-card wa-card" }, listView, convoView);
 
@@ -76,6 +82,43 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
   let ignoring: string | null = null;
   let listKey = "";
   let convoKey = "";
+  /** The conversation and last received message the suggestion was asked for. */
+  let suggestKey = "";
+  let suggested = "";
+
+  function showSuggestion(state: "none" | "writing" | "ready") {
+    suggestion.style.display = state === "none" ? "none" : "";
+    suggestion.classList.toggle("writing", state === "writing");
+    suggestion.disabled = state !== "ready";
+    suggestion.textContent = state === "writing" ? t("Writing a suggestion…") : state === "ready" ? suggested : "";
+  }
+
+  /** Asked once per received message, and only for the conversation that is open. */
+  function syncSuggestion(c: WaConversation) {
+    const last = c.messages[c.messages.length - 1];
+    const key = last && !last.fromMe && WhatsApp.view.link.state === "connected" ? `${c.id}~${last.id}` : "";
+    if (key === suggestKey) return;
+    suggestKey = key;
+    suggested = "";
+    if (!key) {
+      showSuggestion("none");
+      return;
+    }
+    showSuggestion("writing");
+    void Bridge.whatsappSuggest(c.id).then((text) => {
+      if (suggestKey !== key) return;
+      suggested = (text ?? "").trim();
+      showSuggestion(suggested ? "ready" : "none");
+    });
+  }
+
+  suggestion.addEventListener("click", () => {
+    if (!suggested) return;
+    field.value = suggested;
+    host.holdOpen(true);
+    syncSendButton();
+    field.focus();
+  });
 
   const current = (): WaConversation | undefined =>
     openChat ? WhatsApp.view.conversations.find((c) => c.id === openChat) : undefined;
@@ -85,6 +128,8 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
     ignoring = null;
     field.value = "";
     convoKey = "";
+    suggestKey = "";
+    showSuggestion("none");
     void Bridge.whatsappOpen(id);
     host.keyboard(true);
     window.setTimeout(() => field.focus(), 120);
@@ -96,6 +141,8 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
     void Bridge.whatsappClose(openChat);
     openChat = null;
     field.value = "";
+    suggestKey = "";
+    showSuggestion("none");
     host.holdOpen(false);
     host.keyboard(false);
     listKey = "";
@@ -182,10 +229,41 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
     return r;
   }
 
+  function entryCard(e: WaEntry): HTMLElement {
+    const out = e.kind === "expense";
+    const label = h("div", { class: "wa-entry-line" },
+      h("b", { class: out ? "wa-entry-kind out" : "wa-entry-kind in", text: out ? t("Expense") : t("Income") }),
+      h("span", { class: "wa-entry-amount", text: e.amount }),
+    );
+    const detail = [e.category, e.person, e.note].filter(Boolean).join(" · ");
+    const save = h("button", { class: "wa-entry-save", text: t("Save") }) as HTMLButtonElement;
+    const drop = h("button", { class: "wa-entry-drop", text: t("Discard") }) as HTMLButtonElement;
+    const problem = h("div", { class: "wa-note err" });
+    save.addEventListener("click", () => {
+      save.disabled = drop.disabled = true;
+      problem.textContent = "";
+      Bridge.whatsappLedgerSave(e.id).catch((error) => {
+        save.disabled = drop.disabled = false;
+        problem.textContent = String(error);
+      });
+    });
+    drop.addEventListener("click", () => {
+      save.disabled = drop.disabled = true;
+      void Bridge.whatsappLedgerDiscard(e.id);
+    });
+    return h("div", { class: "wa-entry" },
+      label,
+      h("div", { class: "wa-entry-detail", text: detail ? `${detail} · ${e.date}` : e.date }),
+      h("div", { class: "wa-entry-actions" }, save, drop),
+      problem,
+    );
+  }
+
   function syncList() {
     const v = WhatsApp.view;
     const key = [
       language(), v.link.state, "detail" in v.link ? v.link.detail : "", v.unread, ignoring,
+      ...v.pending.map((e) => `${e.id}|${e.amount}|${e.kind}|${e.category}|${e.person}|${e.note}`),
       // The ages move on a minute at a time.
       Math.floor(Date.now() / 60_000),
       ...v.conversations.map((c) => `${c.id}|${c.name}|${c.unread}|${c.lastActivity}|${c.messages[c.messages.length - 1]?.id ?? ""}`),
@@ -194,6 +272,8 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
     listKey = key;
     unreadTag.textContent = v.unread > 0 ? t("{0} unread", { 0: v.unread }) : "";
     unreadTag.style.display = v.unread > 0 ? "" : "none";
+    clear(pendingBox);
+    pendingBox.append(...v.pending.map(entryCard));
     clear(listBody);
     if (v.link.state !== "connected") {
       listBody.append(
@@ -227,6 +307,9 @@ export function buildWhatsAppCard(host: WhatsAppCardHost): WhatsAppCard {
       if (first || wasAtBottom) messages.scrollTop = messages.scrollHeight;
     }
     field.placeholder = t("Reply…  (Shift+Enter: new line)");
+    suggestion.title = t("Use this reply");
+    if (suggestion.classList.contains("writing")) suggestion.textContent = t("Writing a suggestion…");
+    syncSuggestion(c);
     note.className = "wa-note";
     if (v.link.state !== "connected") {
       note.textContent = linkLabel(v.link);
