@@ -123,6 +123,8 @@ export interface WaPrefs {
   /** The chat the notes are read from; "" is your own. */
   ledgerChat: string;
   ledgerSheetUrl: string;
+  /** Groups with more people than this are ignored; 0 is off. */
+  ignoreGroupsOver: number;
 }
 
 /** SettingsView in src-tauri/src/whatsapp/mod.rs. */

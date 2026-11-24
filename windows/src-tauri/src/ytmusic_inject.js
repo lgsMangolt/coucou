@@ -11,7 +11,7 @@
 (() => {
   if (window.__coucou || location.hostname !== "music.youtube.com") return;
 
-  const MARK = "\u0001coucou:";
+  const MARK = "[coucou-ytm]";
   const $ = (selector) => document.querySelector(selector);
   const clean = (el) => ((el && el.textContent) || "").replace(/\s+/g, " ").trim();
   const click = (el) => {

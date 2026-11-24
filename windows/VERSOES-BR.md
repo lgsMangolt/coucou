@@ -10,6 +10,7 @@ Cada versão é um commit marcado com a tag `br-v<número>` neste repositório.
 | 0.7.1 | Acesso rápido | Seletor de modos no cabeçalho da ilha. Linha "Ligar" sob as pílulas com as opções que estão fora do modo, as mais usadas primeiro. O Coucou aprende o seu uso: uma ferramenta não aberta por 14 dias sai do modo (com aviso e Desfazer), e uma opção oferecida por 30 dias sem uso deixa de aparecer. Pílulas que avisam sozinhas (WhatsApp, e-mail, impressoras) nunca saem por falta de uso. |
 | 0.7.2 | Planilha e grupo | As anotações de dinheiro podem vir de um grupo do WhatsApp que você criou (não só da conversa com você mesmo) e vão também para uma Planilha Google, pelo celular ou pelo computador, por um script do próprio Google. O CSV local continua como cópia. Inclui o gerador da planilha (scripts/gerar-planilha.py). |
 | 0.8.0 | Dois WhatsApps | Uma segunda conta de WhatsApp, com número, pílula, conversas e gateway próprios (o mesmo módulo compilado duas vezes, então a primeira conta não muda). O modo Descanso mantém só o WhatsApp 2, para você ser avisado e responder com um clique. Cada conta guarda a sessão em pasta separada (GOWA e GOWA2). |
+| 0.8.1 | Descanso tranquilo | Ignorar grupos do WhatsApp com mais pessoas que um limite (por conta). Correção: o cartão do YouTube Music não saía de "Entrar" depois do login. O Claude Desktop pode ser a ferramenta principal. A linha "Ligar" não passa mais da borda do cartão. |
 
 ## Como gerar e instalar
 

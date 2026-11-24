@@ -21,7 +21,8 @@ const LABEL: &str = "ytmusic";
 const START_URL: &str = "https://music.youtube.com/";
 const EVENT: &str = "ytmusic";
 /// What the injected script puts in front of its report in the page's title.
-const TITLE_MARK: &str = "\u{1}coucou:";
+// Plain characters only: the browser drops control characters from a page's title.
+const TITLE_MARK: &str = "[coucou-ytm]";
 const INJECT: &str = include_str!("ytmusic_inject.js");
 const MAX_TEXT: usize = 200;
 const MAX_QUERY: usize = 100;
@@ -257,6 +258,7 @@ mod tests {
         // An ordinary page title carries no mark: handle_title returns before parsing anything.
         assert!("Some song - YouTube Music".strip_prefix(TITLE_MARK).is_none());
         assert!(format!("{TITLE_MARK}{{}}").strip_prefix(TITLE_MARK).is_some());
+        assert!(TITLE_MARK.chars().all(|c| !c.is_control()), "a control character would be dropped from the title");
     }
 
     #[test]

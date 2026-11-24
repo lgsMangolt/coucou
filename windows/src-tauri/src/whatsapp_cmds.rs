@@ -99,6 +99,11 @@ pub async fn whatsapp_ledger_sheet_test(window: WebviewWindow) -> Result<(), Str
     whatsapp::whatsapp_ledger_sheet_test(window).await
 }
 
+#[tauri::command]
+pub fn whatsapp_set_group_limit(window: WebviewWindow, limit: u32) -> Result<(), String> {
+    whatsapp::whatsapp_set_group_limit(window, limit)
+}
+
 // ── The second account ──
 #[tauri::command]
 pub fn whatsapp2_island(window: WebviewWindow) -> Result<whatsapp2::IslandView, String> {
@@ -165,3 +170,7 @@ pub fn whatsapp2_install(window: WebviewWindow) -> Result<(), String> {
     whatsapp2::whatsapp_install(window)
 }
 
+#[tauri::command]
+pub fn whatsapp2_set_group_limit(window: WebviewWindow, limit: u32) -> Result<(), String> {
+    whatsapp2::whatsapp_set_group_limit(window, limit)
+}

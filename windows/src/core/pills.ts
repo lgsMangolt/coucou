@@ -196,9 +196,12 @@ export function isHookPill(id: string): boolean {
   return pillDefinition(id)?.connect.kind === "hooks";
 }
 
-/** Workspace tools that can be the main pill. */
+/** Claude Desktop: not a workspace tool, but this fork lets it be the main pill. */
+export const CLAUDE_DESKTOP_ID = "agent_claude-desktop";
+
+/** Workspace tools that can be the main pill, and Claude Desktop (for whoever works in the app, not the CLI). */
 export function mainPillChoices(os: HostOs = HOST_OS): PillDefinition[] {
-  return availablePills(os).filter((p) => p.category === "workspace" && p.support !== "soon");
+  return availablePills(os).filter((p) => (p.category === "workspace" || p.id === CLAUDE_DESKTOP_ID) && p.support !== "soon");
 }
 
 /** PillDefinition.sessionSubtitle — next to the name in a live session's card. */

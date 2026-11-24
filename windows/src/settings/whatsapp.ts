@@ -48,6 +48,12 @@ export function whatsappSection(host: WhatsAppSettingsHost, account = 0): HTMLEl
   const ledgerSaveBtn = h("button", { text: t("Save") });
   const ledgerFileHint = h("div", { class: "hint" });
   const ledgerNote = h("div", {});
+  // Groups with more people than this are ignored (0 or empty: none is).
+  const groupLimitInput = h("input", { type: "number", min: "0", max: "1024", style: "width:70px" }) as HTMLInputElement;
+  groupLimitInput.addEventListener("change", () => {
+    const n = Math.max(0, Math.min(1024, Math.floor(Number(groupLimitInput.value) || 0)));
+    void Bridge.whatsappSetGroupLimit(n, account).catch(() => {});
+  });
   // Where the notes are written: your own chat, or a group made for them.
   const ledgerChatSelect = h("select", {}) as HTMLSelectElement;
   let chatsKey = "";
@@ -320,6 +326,7 @@ export function whatsappSection(host: WhatsAppSettingsHost, account = 0): HTMLEl
     switchState(muteSwitch, v.prefs.muteGroups);
     switchState(readSwitch, v.prefs.markReadOnOpen);
     switchState(ledgerSwitch, v.prefs.ledgerEnabled);
+    if (document.activeElement !== groupLimitInput) groupLimitInput.value = v.prefs.ignoreGroupsOver ? String(v.prefs.ignoreGroupsOver) : "";
     if (document.activeElement !== ledgerDirInput) ledgerDirInput.value = v.prefs.ledgerDir;
     ledgerFileHint.textContent = t("Spreadsheet: {path}", { path: v.ledgerFile });
     // The conversations to choose from; left alone while the list is open.
@@ -367,6 +374,8 @@ export function whatsappSection(host: WhatsAppSettingsHost, account = 0): HTMLEl
   body.append(
     dynamic,
     h("div", { class: "row" }, h("label", { text: t("Mute groups (unless I’m mentioned)") }), muteSwitch),
+    h("div", { class: "row" }, h("label", { text: t("Ignore groups with more people than") }), groupLimitInput),
+    h("div", { class: "hint", text: t("Empty: no group is ignored for its size. An ignored group does not notify and is not listed.") }),
     h("div", { class: "row" }, h("label", { text: t("Mark as read when I open a conversation") }), readSwitch),
     h("div", { class: "hint", text: t("Off: marked read only when you reply. Never when a message just arrives.") }),
     // Money notes are read from the first account only.

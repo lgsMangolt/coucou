@@ -91,7 +91,7 @@ export function chipOrder(candidates: readonly string[], usage: UsageData): stri
 }
 
 /** The chips worth showing: most used first, without those offered for CHIP_DAYS and never used. */
-export function visibleChips(candidates: readonly string[], usage: UsageData, now: number, limit = 4): string[] {
+export function visibleChips(candidates: readonly string[], usage: UsageData, now: number, limit = 3): string[] {
   const alive = candidates.filter((id) => {
     const u = usage.pills[id];
     return !(u && u.uses === 0 && u.since > 0 && now - u.since >= CHIP_DAYS * DAY);

@@ -2,6 +2,81 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.8.1",
+      "items": [
+        {
+          "icon": "bell",
+          "title": {
+            "en": "Quiet big groups",
+            "zh-Hans": "安静的大群",
+            "hi": "बड़े ग्रुप शांत",
+            "es": "Grupos grandes en silencio",
+            "ar": "مجموعات كبيرة هادئة",
+            "fr": "Grands groupes au calme",
+            "bn": "বড় গ্রুপ চুপ",
+            "pt-BR": "Grupos grandes em silêncio",
+            "ru": "Большие группы молчат",
+            "id": "Grup besar senyap",
+            "de": "Große Gruppen bleiben still",
+            "tr": "Büyük gruplar sessiz",
+            "ko": "큰 그룹은 조용히",
+            "ja": "大きなグループは静かに"
+          },
+          "detail": {
+            "en": "Ignore WhatsApp groups with more people than a number you choose.",
+            "zh-Hans": "忽略人数超过你设定数量的 WhatsApp 群组。",
+            "hi": "आपकी चुनी संख्या से ज़्यादा लोगों वाले WhatsApp ग्रुप अनदेखा करें।",
+            "es": "Ignora los grupos de WhatsApp con más personas que el número que elijas.",
+            "ar": "تجاهل مجموعات واتساب التي يزيد عدد أعضائها عن رقم تختاره.",
+            "fr": "Ignore les groupes WhatsApp de plus de personnes que le nombre choisi.",
+            "bn": "আপনার বেছে নেওয়া সংখ্যার চেয়ে বেশি সদস্যের WhatsApp গ্রুপ উপেক্ষা করুন।",
+            "pt-BR": "Ignore grupos do WhatsApp com mais pessoas que o número que você escolher.",
+            "ru": "Игнорируйте группы WhatsApp, где людей больше выбранного числа.",
+            "id": "Abaikan grup WhatsApp dengan anggota lebih dari angka yang Anda pilih.",
+            "de": "Ignoriere WhatsApp-Gruppen mit mehr Personen als einer Zahl deiner Wahl.",
+            "tr": "Seçtiğiniz sayıdan fazla kişili WhatsApp gruplarını yok sayın.",
+            "ko": "정한 인원보다 많은 WhatsApp 그룹을 무시해요.",
+            "ja": "決めた人数を超える WhatsApp グループを無視します。"
+          }
+        },
+        {
+          "icon": "bug",
+          "title": {
+            "en": "YouTube Music fixed",
+            "zh-Hans": "YouTube Music 已修复",
+            "hi": "YouTube Music ठीक हुआ",
+            "es": "YouTube Music corregido",
+            "ar": "إصلاح YouTube Music",
+            "fr": "YouTube Music corrigé",
+            "bn": "YouTube Music ঠিক হয়েছে",
+            "pt-BR": "YouTube Music corrigido",
+            "ru": "YouTube Music исправлен",
+            "id": "YouTube Music diperbaiki",
+            "de": "YouTube Music repariert",
+            "tr": "YouTube Music düzeltildi",
+            "ko": "YouTube Music 수정",
+            "ja": "YouTube Music を修正"
+          },
+          "detail": {
+            "en": "After signing in, the card now shows the song and its controls.",
+            "zh-Hans": "登录后，卡片现在会显示歌曲和控制按钮。",
+            "hi": "साइन इन के बाद कार्ड अब गाना और उसके कंट्रोल दिखाता है।",
+            "es": "Tras iniciar sesión, la tarjeta ya muestra la canción y sus controles.",
+            "ar": "بعد تسجيل الدخول، تعرض البطاقة الآن الأغنية وعناصر التحكم.",
+            "fr": "Après la connexion, la carte affiche le titre et ses commandes.",
+            "bn": "সাইন ইনের পর কার্ড এখন গান ও তার নিয়ন্ত্রণ দেখায়।",
+            "pt-BR": "Depois do login, o cartão agora mostra a música e os controles.",
+            "ru": "После входа карточка показывает песню и элементы управления.",
+            "id": "Setelah masuk, kartu kini menampilkan lagu dan kontrolnya.",
+            "de": "Nach der Anmeldung zeigt die Karte jetzt den Song und seine Steuerung.",
+            "tr": "Oturum açtıktan sonra kart artık şarkıyı ve denetimlerini gösteriyor.",
+            "ko": "로그인하면 이제 카드에 노래와 컨트롤이 보여요.",
+            "ja": "ログイン後、カードに曲と操作ボタンが表示されます。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.8.0",
       "items": [
         {

@@ -159,9 +159,9 @@ test("no chat provider that works here says Coming soon", () => {
   assert.equal(pillDefinition("ai_google").connect.key, "google-api-key");
 });
 
-test("the main pill is a workspace tool that works here", () => {
+test("the main pill is a workspace tool that works here, or Claude Desktop (this fork)", () => {
   assert.deepEqual(mainPillChoices("linux").map((p) => p.id), [
-    "integration_claude", "agent_cursor", "agent_antigravity", "agent_codex",
+    "integration_claude", "agent_cursor", "agent_antigravity", "agent_codex", "agent_claude-desktop",
   ]);
   assert.equal(DEFAULT_MAIN_PILL, "integration_claude");
 });
@@ -199,8 +199,12 @@ test("a declaration from an older or edited settings file is made usable", () =>
     sanitizeDeclared({ activeIntegrations: ["integration_github"] }, "windows"),
     { mainPill: "integration_claude", activeIntegrations: ["integration_github"] },
   );
-  assert.equal(sanitizeDeclared({ mainPill: "agent_claude-desktop", activeIntegrations: [] }, "windows").mainPill,
-    "integration_claude");
+  // This fork: Claude Desktop may be the main pill, and then takes no slot.
+  assert.deepEqual(
+    sanitizeDeclared({ mainPill: "agent_claude-desktop", activeIntegrations: ["agent_claude-desktop", "agent_codex"] }, "windows"),
+    { mainPill: "agent_claude-desktop", activeIntegrations: ["agent_codex"] },
+  );
+  assert.equal(sanitizeDeclared({ mainPill: "agent_gemini", activeIntegrations: [] }, "windows").mainPill, "integration_claude");
 });
 
 test("up to four pills next to the main one, never the main one itself", () => {

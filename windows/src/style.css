@@ -3636,6 +3636,8 @@ input[type="range"]::-webkit-slider-thumb {
   min-height: 20px;
   padding: 0 8px;
   overflow: hidden;
+  /* Its width is the card's: what it holds never widens the card. */
+  contain: inline-size;
 }
 
 .chips-label {
@@ -3650,6 +3652,7 @@ input[type="range"]::-webkit-slider-thumb {
   flex: 0 1 auto;
   gap: 4px;
   height: 20px;
+  min-width: 0;
   max-width: 88px;
   padding: 0 8px;
   border: 1px dashed rgba(255, 255, 255, 0.22);

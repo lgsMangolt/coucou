@@ -64,14 +64,14 @@ test("the options outside the mode come most used first, then the given order", 
   );
 });
 
-test("an option offered for a month and never used stops being offered; the rest stay, four at most", () => {
+test("an option offered for a month and never used stops being offered; the rest stay, three at most", () => {
   const u = usage({
     integration_pad: use(0, null, CHIP_DAYS + 1),
     integration_tasks: use(0, null, CHIP_DAYS - 1),
     integration_ytmusic: use(4, 2, 80),
   });
   const shown = visibleChips(["integration_pad", "integration_tasks", "integration_ytmusic", "integration_printers", "integration_mail", "integration_whatsapp"], u, NOW);
-  assert.deepEqual(shown, ["integration_ytmusic", "integration_tasks", "integration_printers", "integration_mail"]);
+  assert.deepEqual(shown, ["integration_ytmusic", "integration_tasks", "integration_printers"]);
   assert.ok(!shown.includes("integration_pad"));
   assert.deepEqual(visibleChips(["integration_pad"], usage({}), NOW), ["integration_pad"], "never seen: offered");
 });

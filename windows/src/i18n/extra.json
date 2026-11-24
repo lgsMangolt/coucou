@@ -8628,6 +8628,36 @@
       "tr": "Önce ilk WhatsApp'ı kurup bağlayın: bu, onun programını yeniden kullanır.",
       "ko": "먼저 첫 번째 WhatsApp을 설치하고 연결하세요. 이쪽은 그 프로그램을 다시 사용해요.",
       "ja": "先に1つ目の WhatsApp をインストールしてリンクしてください。こちらはそのプログラムを再利用します。"
+    },
+    "Ignore groups with more people than": {
+      "zh-Hans": "忽略人数超过此数的群组",
+      "hi": "इतने से ज़्यादा लोगों वाले ग्रुप अनदेखा करें",
+      "es": "Ignorar grupos con más personas que",
+      "ar": "تجاهل المجموعات التي يزيد عدد أعضائها عن",
+      "fr": "Ignorer les groupes de plus de (personnes)",
+      "bn": "এর চেয়ে বেশি সদস্যের গ্রুপ উপেক্ষা করুন",
+      "pt-BR": "Ignorar grupos com mais pessoas que",
+      "ru": "Игнорировать группы, где людей больше чем",
+      "id": "Abaikan grup dengan anggota lebih dari",
+      "de": "Gruppen ignorieren mit mehr Personen als",
+      "tr": "Şundan fazla kişili grupları yok say",
+      "ko": "인원이 이보다 많은 그룹 무시",
+      "ja": "この人数を超えるグループを無視"
+    },
+    "Empty: no group is ignored for its size. An ignored group does not notify and is not listed.": {
+      "zh-Hans": "留空：不因人数忽略任何群组。被忽略的群组不提醒，也不显示。",
+      "hi": "खाली: आकार के कारण कोई ग्रुप अनदेखा नहीं होता। अनदेखा ग्रुप सूचना नहीं देता और सूची में नहीं दिखता।",
+      "es": "Vacío: no se ignora ningún grupo por su tamaño. Un grupo ignorado no avisa ni aparece en la lista.",
+      "ar": "فارغ: لا تُتجاهل أي مجموعة بسبب حجمها. المجموعة المتجاهَلة لا تُنبّه ولا تظهر في القائمة.",
+      "fr": "Vide : aucun groupe n'est ignoré pour sa taille. Un groupe ignoré ne notifie pas et n'est pas listé.",
+      "bn": "খালি: আকারের কারণে কোনো গ্রুপ উপেক্ষিত হয় না। উপেক্ষিত গ্রুপ জানায় না, তালিকাতেও থাকে না।",
+      "pt-BR": "Vazio: nenhum grupo é ignorado pelo tamanho. Um grupo ignorado não avisa e não aparece na lista.",
+      "ru": "Пусто: группы не игнорируются по размеру. Игнорируемая группа не уведомляет и не показывается.",
+      "id": "Kosong: tidak ada grup yang diabaikan karena ukurannya. Grup yang diabaikan tidak memberi notifikasi dan tidak ditampilkan.",
+      "de": "Leer: Keine Gruppe wird wegen ihrer Größe ignoriert. Eine ignorierte Gruppe meldet sich nicht und wird nicht aufgelistet.",
+      "tr": "Boş: hiçbir grup boyutu yüzünden yok sayılmaz. Yok sayılan grup bildirim göndermez ve listelenmez.",
+      "ko": "비워 두면 인원 때문에 무시되는 그룹이 없어요. 무시된 그룹은 알리지 않고 목록에도 없어요.",
+      "ja": "空欄：人数を理由に無視されるグループはありません。無視されたグループは通知されず、一覧にも出ません。"
     }
   }
 }

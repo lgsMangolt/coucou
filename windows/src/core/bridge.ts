@@ -532,6 +532,8 @@ export const Bridge = {
   whatsappTest: (account = 0) => call<WaTestResult>(wa(account, "test")),
   /** "Install WhatsApp" / "Update": GOWA from its GitHub releases, on this click only. */
   whatsappInstall: (account = 0) => call<void>(wa(account, "install")),
+  /** Groups with more people than `limit` are ignored; 0 turns it off. */
+  whatsappSetGroupLimit: (limit: number, account = 0) => callOrThrow<void>(wa(account, "set_group_limit"), { limit }),
 
   // ── YouTube Music (src-tauri/src/ytmusic.rs) ──────────────────────────────
   ytmusicState: () => call<YtMusicState>("ytmusic_state"),

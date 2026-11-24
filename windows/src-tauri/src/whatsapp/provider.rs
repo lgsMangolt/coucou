@@ -386,20 +386,30 @@ impl Provider {
         }
     }
 
-    /// A group's name, when the messages don't carry it.
-    pub async fn group_name(&self, chat: &str) -> Option<String> {
+    /// A group's name and how many people it has, asked of the gateway (the messages carry neither).
+    pub async fn group_info(&self, chat: &str) -> Option<super::gateway::GroupInfo> {
         if !model::is_group(chat) {
             return None;
         }
         match self {
             Provider::Gowa { http, device } => {
                 let data = Self::gowa_scoped(http, device, Method::GET, "/group/info", &[("group_id", chat.to_string())], None).await.ok()?;
-                gowa::group_name(&data)
+                gowa::group_info(&data)
             }
             Provider::Openwa { http, session } => {
                 let data = Self::openwa_scoped(http, session, Method::GET, &format!("/groups/{}", path_component(chat)), &[], None).await.ok()?;
                 let v: Value = serde_json::from_slice(&data).ok()?;
-                v.get("name").and_then(Value::as_str).filter(|s| !s.is_empty()).map(str::to_string)
+                let size = v
+                    .get("participants")
+                    .and_then(Value::as_array)
+                    .map(|a| a.len() as u64)
+                    .or_else(|| v.get("participantsCount").and_then(Value::as_u64))
+                    .filter(|n| *n > 0)
+                    .and_then(|n| u32::try_from(n).ok());
+                Some(super::gateway::GroupInfo {
+                    name: v.get("name").and_then(Value::as_str).filter(|s| !s.is_empty()).map(str::to_string),
+                    size,
+                })
             }
         }
     }

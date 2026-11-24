@@ -23,7 +23,7 @@ pub mod provider;
 pub mod suggest;
 pub mod webhook;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, LazyLock, Mutex, MutexGuard, OnceLock, PoisonError};
 use std::time::{Duration, Instant};
@@ -225,6 +225,10 @@ struct Ctl {
     last_webhook: Option<Instant>,
     last_poll_ms: i64,
     naming: HashSet<String>,
+    /// Group chat → how many people it has (None: the gateway did not say). Memory only.
+    group_sizes: HashMap<String, Option<u32>>,
+    /// Groups whose size was already asked: it is asked once.
+    sizing: HashSet<String>,
     /// The conversation open in the card: what arrives there is seen, so it isn't unread.
     open_chat: Option<String>,
     rate: RateLimit,
@@ -265,6 +269,8 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         last_webhook: None,
         last_poll_ms: 0,
         naming: HashSet::new(),
+        group_sizes: HashMap::new(),
+        sizing: HashSet::new(),
         open_chat: None,
         rate: RateLimit::default(),
         failures: 0,
@@ -310,7 +316,13 @@ impl Ctl {
     }
 
     fn filters(&self) -> Filters {
-        Filters { mute_groups: self.prefs.mute_groups, ignored: self.prefs.ignored.iter().cloned().collect() }
+        let mut ignored: std::collections::BTreeSet<String> = self.prefs.ignored.iter().cloned().collect();
+        // Groups bigger than the limit are ignored like the chats the user ignored by hand.
+        let limit = self.prefs.ignore_groups_over;
+        if limit > 0 {
+            ignored.extend(self.group_sizes.iter().filter(|(_, size)| size.is_some_and(|n| n > limit)).map(|(chat, _)| chat.clone()));
+        }
+        Filters { mute_groups: self.prefs.mute_groups, ignored }
     }
 
     fn effective_url(&self) -> String {
@@ -838,7 +850,7 @@ async fn backfill(provider: &Arc<Provider>, gen: u64) {
         c.last_poll_ms = gateway::now_ms();
         groups
     };
-    name_groups(provider.clone(), gen, groups);
+    name_groups(provider.clone(), gen, groups, true);
     changed();
 }
 
@@ -890,6 +902,8 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
             && in_notes_chat
             && ledger::looks_like_a_note(&message.text))
         .then(|| message.text.clone());
+        // Big groups are ignored; one whose size is not known yet waits for the answer before it is announced.
+        let waiting_for_size = c.prefs.ignore_groups_over > 0 && model::is_group(&key) && !c.group_sizes.contains_key(&key);
         let outcome = c.inbox.add(message, &filters, None, false);
         if let (Some(text), true) = (note, outcome != Outcome::Duplicate) {
             c.ledger_queue.push(text);
@@ -903,7 +917,7 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
             c.inbox.mark_read(&key);
             continue;
         }
-        if outcome == Outcome::Notify && !from_me {
+        if outcome == Outcome::Notify && !from_me && !waiting_for_size {
             fresh = Some(key);
         }
     }
@@ -920,7 +934,7 @@ fn after_ingest(gen: u64, fresh: Option<String>, groups: Vec<String>) {
         spawn(read_note(gen, text));
     }
     if let Some(provider) = ctl().provider.clone() {
-        name_groups(provider, gen, groups);
+        name_groups(provider, gen, groups, true);
     }
     changed();
 }
@@ -953,31 +967,55 @@ async fn read_note(gen: u64, text: String) {
 
 /// Groups arrive under their id (GOWA's webhook carries no group name): asked once.
 fn needs_name(c: &mut Ctl, chat: &str) -> Option<String> {
-    if !model::is_group(chat) || c.naming.contains(chat) {
+    if !model::is_group(chat) {
         return None;
     }
     let conv = c.inbox.conversations.get(chat)?;
-    if conv.name != model::display_number(chat) {
+    let wants_name = conv.name == model::display_number(chat) && !c.naming.contains(chat);
+    // How many people it has, only while big groups are ignored.
+    let wants_size = c.prefs.ignore_groups_over > 0 && !c.sizing.contains(chat);
+    if !wants_name && !wants_size {
         return None;
     }
-    c.naming.insert(chat.to_string());
+    if wants_name {
+        c.naming.insert(chat.to_string());
+    }
+    if wants_size {
+        c.sizing.insert(chat.to_string());
+    }
     Some(chat.to_string())
 }
 
-fn name_groups(provider: Arc<Provider>, gen: u64, groups: Vec<String>) {
+/// Asks the gateway about each group (its name and its size, one call). `announce`: a message held back
+/// while the size was unknown is announced now, if the group is allowed.
+fn name_groups(provider: Arc<Provider>, gen: u64, groups: Vec<String>, announce: bool) {
     if groups.is_empty() {
         return;
     }
     spawn(async move {
         for chat in groups {
-            let Some(name) = provider.group_name(&chat).await else { continue };
-            let mut c = ctl();
-            if c.generation != gen {
-                return;
-            }
-            c.inbox.rename(&chat, &name);
-            drop(c);
+            let info = provider.group_info(&chat).await;
+            let late = {
+                let mut c = ctl();
+                if c.generation != gen {
+                    return;
+                }
+                if let Some(name) = info.as_ref().and_then(|i| i.name.as_deref()) {
+                    c.inbox.rename(&chat, name);
+                }
+                // None when the gateway did not say: a group of unknown size is allowed.
+                c.group_sizes.insert(chat.clone(), info.as_ref().and_then(|i| i.size));
+                let filters = c.filters();
+                let held = announce
+                    && c.prefs.ignore_groups_over > 0
+                    && c.open_chat.as_deref() != Some(chat.as_str())
+                    && c.inbox.visible(&filters).iter().any(|conv| conv.id == chat && conv.unread > 0);
+                held.then(|| c.inbox.conversations.get(&chat).map(|conv| conv.name.clone()).unwrap_or_else(|| model::display_number(&chat)))
+            };
             changed();
+            if let Some(name) = late {
+                pill(PillEvent::Message { name });
+            }
         }
     });
 }
@@ -1369,6 +1407,25 @@ pub async fn whatsapp_ledger_sheet_test(window: WebviewWindow) -> Result<(), Str
         .map_err(|reason| ledger::sheet_reason(&reason))
 }
 
+/// Settings → ignore groups with more than this many people (you included); 0 turns it off. The groups
+/// already seen are asked about at once, without announcing what was waiting.
+pub fn whatsapp_set_group_limit(window: WebviewWindow, limit: u32) -> Result<(), String> {
+    only(&window, crate::HUB_LABEL)?;
+    let (provider, gen, groups) = {
+        let mut c = ctl();
+        c.prefs.ignore_groups_over = limit.min(1024);
+        prefs::save(&c.prefs);
+        let chats: Vec<String> = c.inbox.conversations.keys().cloned().collect();
+        let groups = chats.iter().filter_map(|chat| needs_name(&mut c, chat)).collect::<Vec<_>>();
+        (c.provider.clone(), c.generation, groups)
+    };
+    if let Some(provider) = provider {
+        name_groups(provider, gen, groups, false);
+    }
+    changed();
+    Ok(())
+}
+
 /// A reply the user may send, written from the conversation's last messages (suggest.rs). ""
 /// when there is nothing to answer. Shown in the card only: sending stays `whatsapp_send`.
 pub async fn whatsapp_suggest(window: WebviewWindow, chat: String) -> Result<String, String> {
@@ -1504,6 +1561,8 @@ mod tests {
             last_webhook: None,
             last_poll_ms: 0,
             naming: HashSet::new(),
+            group_sizes: HashMap::new(),
+            sizing: HashSet::new(),
             open_chat: None,
             rate: RateLimit::default(),
             failures: 0,
@@ -1584,6 +1643,52 @@ mod tests {
         }
         // Four for each of the two accounts.
         assert_eq!(crate::secrets::INTERNAL_KEYS.iter().filter(|k| k.starts_with("whatsapp-")).count(), 8);
+    }
+
+
+    #[test]
+    fn big_groups_are_ignored_and_a_group_of_unknown_size_waits_for_its_size() {
+        let group = "120363000000000001@g.us";
+        let other = "120363000000000002@g.us";
+        let mut c = fresh_ctl();
+        c.prefs.mute_groups = false;
+        c.prefs.ignore_groups_over = 4;
+
+        // Size unknown: kept and looked up, not announced yet.
+        let (fresh, asked) = ingest(&mut c, vec![msg("g1", group, "oi")]);
+        assert_eq!((fresh, asked), (None, vec![group.to_string()]));
+        assert!(c.sizing.contains(group), "asked once");
+
+        // The answer: 6 people. Hidden from the list, later messages dropped, nothing announced.
+        c.group_sizes.insert(group.into(), Some(6));
+        assert!(c.inbox.visible(&c.filters()).is_empty());
+        let (fresh, _) = ingest(&mut c, vec![msg("g2", group, "de novo")]);
+        assert_eq!(fresh, None);
+
+        // 4 people is allowed ("more than 4" is what is ignored).
+        c.group_sizes.insert(group.into(), Some(4));
+        let (fresh, _) = ingest(&mut c, vec![msg("g3", group, "oi")]);
+        assert!(fresh.is_some(), "a group of four is announced");
+
+        // The gateway did not say: allowed.
+        c.group_sizes.insert(other.into(), None);
+        let (fresh, _) = ingest(&mut c, vec![msg("o1", other, "oi")]);
+        assert!(fresh.is_some());
+
+        // Off: never held back, whatever the size.
+        c.prefs.ignore_groups_over = 0;
+        c.group_sizes.insert(group.into(), Some(50));
+        let (fresh, _) = ingest(&mut c, vec![msg("g4", group, "oi")]);
+        assert!(fresh.is_some());
+        assert_eq!(c.filters().ignored.len(), 0);
+    }
+
+    #[test]
+    fn a_private_chat_is_never_held_for_a_size() {
+        let mut c = fresh_ctl();
+        c.prefs.ignore_groups_over = 4;
+        let (fresh, asked) = ingest(&mut c, vec![msg("p1", "336@s.whatsapp.net", "oi")]);
+        assert!(fresh.is_some() && asked.is_empty());
     }
 
     #[test]

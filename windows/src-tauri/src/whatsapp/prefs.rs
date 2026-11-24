@@ -37,6 +37,9 @@ pub struct Prefs {
     pub ledger_chat: String,
     /// The address of the Google Apps Script that adds rows to the user's Google Sheet; "" is none.
     pub ledger_sheet_url: String,
+    /// Groups with more people than this (you included) are ignored: no notification, not listed.
+    /// 0 turns it off.
+    pub ignore_groups_over: u32,
 }
 
 impl Default for Prefs {
@@ -55,6 +58,7 @@ impl Default for Prefs {
             ledger_dir: String::new(),
             ledger_chat: String::new(),
             ledger_sheet_url: String::new(),
+            ignore_groups_over: 0,
         }
     }
 }
@@ -76,6 +80,7 @@ impl Prefs {
         self.ledger_dir = self.ledger_dir.trim().chars().take(260).collect();
         self.ledger_chat = self.ledger_chat.trim().chars().take(128).collect();
         self.ledger_sheet_url = self.ledger_sheet_url.trim().chars().take(300).collect();
+        self.ignore_groups_over = self.ignore_groups_over.min(1024);
         self
     }
 }

@@ -65,6 +65,13 @@ pub fn verify(kind: Kind, headers: &HashMap<String, String>, body: &[u8], secret
     sent.starts_with("sha256=") && constant_time_eq(sent, &signature(body, secret))
 }
 
+/// What the gateway says about a group: its name, and how many people are in it (you included).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct GroupInfo {
+    pub name: Option<String>,
+    pub size: Option<u32>,
+}
+
 fn text(v: Option<&Value>) -> Option<String> {
     v.and_then(Value::as_str).filter(|s| !s.is_empty()).map(str::to_string)
 }
@@ -298,6 +305,19 @@ pub mod gowa {
     /// `GET /group/info?group_id=…` → `results: {Name, …}`.
     pub fn group_name(data: &[u8]) -> Option<String> {
         text(results(data)?.get("Name"))
+    }
+
+    /// `GET /group/info?group_id=…` → `results: {Name, ParticipantCount, Participants: […]}`: the name
+    /// and the number of people, from the count or else from the list.
+    pub fn group_info(data: &[u8]) -> Option<GroupInfo> {
+        let r = results(data)?;
+        let size = r
+            .get("ParticipantCount")
+            .and_then(Value::as_u64)
+            .filter(|n| *n > 0)
+            .or_else(|| r.get("Participants").and_then(Value::as_array).map(|a| a.len() as u64).filter(|n| *n > 0))
+            .and_then(|n| u32::try_from(n).ok());
+        Some(GroupInfo { name: text(r.get("Name")), size })
     }
 
     /// `POST /send/message` → `results: {message_id, status}`.
@@ -790,5 +810,16 @@ mod tests {
         assert_eq!(release::binary_entry(&names, "windows", "amd64").map(String::as_str), Some("windows-amd64.exe"));
         let names = vec!["linux-amd64".to_string()];
         assert_eq!(release::binary_entry(&names, "linux", "amd64").map(String::as_str), Some("linux-amd64"));
+    }
+
+    #[test]
+    fn a_groups_size_comes_from_the_count_else_from_the_list() {
+        let with_count = br#"{"code":"SUCCESS","results":{"Name":"Familia","ParticipantCount":6,"Participants":[{"JID":"1"},{"JID":"2"}]}}"#;
+        assert_eq!(gowa::group_info(with_count), Some(GroupInfo { name: Some("Familia".into()), size: Some(6) }));
+        let only_list = br#"{"results":{"Name":"Dois","Participants":[{"JID":"1"},{"JID":"2"}]}}"#;
+        assert_eq!(gowa::group_info(only_list), Some(GroupInfo { name: Some("Dois".into()), size: Some(2) }));
+        let nothing = br#"{"results":{"Name":"Sem numero"}}"#;
+        assert_eq!(gowa::group_info(nothing), Some(GroupInfo { name: Some("Sem numero".into()), size: None }));
+        assert_eq!(gowa::group_info(b"not json"), None);
     }
 }
