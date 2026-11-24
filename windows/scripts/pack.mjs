@@ -12,6 +12,16 @@ const outDir = join(root, "release");
 
 const { version } = JSON.parse(readFileSync(join(root, "src-tauri", "tauri.conf.json"), "utf8"));
 
+// Este fork da um nome a cada versao (versao-br.json); o nome vai no arquivo do instalador:
+// Coucou-BR-0.7.0-base-brasileira-setup.exe. "Coucou-BR-setup.exe" e sempre a mais nova.
+const { nome } = JSON.parse(readFileSync(join(root, "versao-br.json"), "utf8"));
+const slug = nome
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-+|-+$/g, "");
+
 // What each platform ships: where Tauri puts it, how to recognise it, and the
 // names it is published under (the rolling name, when there is one, always
 // points at the latest release).
@@ -22,12 +32,12 @@ const PACKAGES = {
     {
       dir: "nsis",
       suffix: "-setup.exe",
-      names: [`Coucou-Windows-${version}-setup.exe`, "Coucou-Windows-setup.exe"],
+      names: [`Coucou-BR-${version}-${slug}-setup.exe`, "Coucou-BR-setup.exe"],
     },
     {
       dir: "msi",
       suffix: ".msi",
-      names: [`Coucou-Windows-${version}.msi`, "Coucou-Windows.msi"],
+      names: [`Coucou-BR-${version}-${slug}.msi`, "Coucou-BR.msi"],
     },
   ],
   linux: [

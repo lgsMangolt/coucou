@@ -2,6 +2,151 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.7.0",
+      "items": [
+        {
+          "icon": "languages",
+          "title": {
+            "en": "Brazilian Portuguese",
+            "zh-Hans": "巴西葡萄牙语",
+            "hi": "ब्राज़ीली पुर्तगाली",
+            "es": "Portugués de Brasil",
+            "ar": "البرتغالية البرازيلية",
+            "fr": "Portugais du Brésil",
+            "bn": "ব্রাজিলীয় পর্তুগিজ",
+            "pt-BR": "Português do Brasil",
+            "ru": "Бразильский португальский",
+            "id": "Portugis Brasil",
+            "de": "Brasilianisches Portugiesisch",
+            "tr": "Brezilya Portekizcesi",
+            "ko": "브라질 포르투갈어",
+            "ja": "ブラジルポルトガル語"
+          },
+          "detail": {
+            "en": "Coucou opens in Portuguese and only changes if you pick another language.",
+            "zh-Hans": "Coucou 默认以葡萄牙语打开，只有你选择其他语言时才会改变。",
+            "hi": "Coucou पुर्तगाली में खुलता है और तभी बदलता है जब आप कोई और भाषा चुनते हैं।",
+            "es": "Coucou se abre en portugués y solo cambia si eliges otro idioma.",
+            "ar": "يُفتح Coucou بالبرتغالية ولا يتغيّر إلا إذا اخترت لغة أخرى.",
+            "fr": "Coucou s'ouvre en portugais et ne change que si tu choisis une autre langue.",
+            "bn": "Coucou পর্তুগিজে খোলে এবং আপনি অন্য ভাষা বেছে নিলেই শুধু বদলায়।",
+            "pt-BR": "O Coucou abre em português e só muda se você escolher outro idioma.",
+            "ru": "Coucou открывается на португальском и меняет язык, только если вы выберете другой.",
+            "id": "Coucou terbuka dalam bahasa Portugis dan hanya berubah jika Anda memilih bahasa lain.",
+            "de": "Coucou startet auf Portugiesisch und wechselt nur, wenn du eine andere Sprache wählst.",
+            "tr": "Coucou Portekizce açılır ve yalnızca başka bir dil seçerseniz değişir.",
+            "ko": "Coucou는 포르투갈어로 열리고, 다른 언어를 고를 때만 바뀌어요.",
+            "ja": "Coucou はポルトガル語で起動し、別の言語を選んだときだけ変わります。"
+          }
+        },
+        {
+          "icon": "chat",
+          "title": {
+            "en": "WhatsApp: suggestions and expenses",
+            "zh-Hans": "WhatsApp：回复建议与记账",
+            "hi": "WhatsApp: जवाब के सुझाव और खर्च",
+            "es": "WhatsApp: sugerencias y gastos",
+            "ar": "واتساب: اقتراحات الرد والمصروفات",
+            "fr": "WhatsApp : suggestions et dépenses",
+            "bn": "WhatsApp: উত্তরের পরামর্শ ও খরচ",
+            "pt-BR": "WhatsApp: sugestões e gastos",
+            "ru": "WhatsApp: подсказки ответов и расходы",
+            "id": "WhatsApp: saran balasan dan pengeluaran",
+            "de": "WhatsApp: Vorschläge und Ausgaben",
+            "tr": "WhatsApp: öneriler ve harcamalar",
+            "ko": "WhatsApp: 답장 제안과 지출",
+            "ja": "WhatsApp：返信案と支出メモ"
+          },
+          "detail": {
+            "en": "A suggested reply in each chat, and notes to yourself that become a spreadsheet.",
+            "zh-Hans": "每个聊天里都有建议回复，给自己发的消息可以记成表格。",
+            "hi": "हर चैट में सुझाया गया जवाब, और खुद को भेजे नोट्स जो स्प्रेडशीट बन जाते हैं।",
+            "es": "Una respuesta sugerida en cada chat y notas a ti mismo que pasan a una hoja de cálculo.",
+            "ar": "رد مقترح في كل محادثة، وملاحظات ترسلها لنفسك تتحول إلى جدول بيانات.",
+            "fr": "Une réponse suggérée dans chaque discussion, et des notes à toi-même qui deviennent un tableur.",
+            "bn": "প্রতিটি চ্যাটে একটি প্রস্তাবিত উত্তর, আর নিজেকে পাঠানো নোট স্প্রেডশিটে রূপ নেয়।",
+            "pt-BR": "Uma resposta sugerida em cada conversa e anotações para você mesmo que viram planilha.",
+            "ru": "Подсказка ответа в каждом чате и заметки самому себе, которые попадают в таблицу.",
+            "id": "Balasan yang disarankan di setiap obrolan, dan catatan untuk diri sendiri yang menjadi spreadsheet.",
+            "de": "Ein Antwortvorschlag in jedem Chat und Notizen an dich selbst, die zur Tabelle werden.",
+            "tr": "Her sohbette önerilen bir yanıt ve kendinize yazdığınız notlar tabloya dönüşür.",
+            "ko": "채팅마다 답장 제안이 뜨고, 나에게 보낸 메모는 스프레드시트가 돼요.",
+            "ja": "各チャットに返信案が出て、自分宛てのメモがスプレッドシートになります。"
+          }
+        },
+        {
+          "icon": "puzzle",
+          "title": {
+            "en": "Modes",
+            "zh-Hans": "模式",
+            "hi": "मोड",
+            "es": "Modos",
+            "ar": "الأوضاع",
+            "fr": "Modes",
+            "bn": "মোড",
+            "pt-BR": "Modos",
+            "ru": "Режимы",
+            "id": "Mode",
+            "de": "Modi",
+            "tr": "Modlar",
+            "ko": "모드",
+            "ja": "モード"
+          },
+          "detail": {
+            "en": "Work, Rest and Music: one click changes the pills on the island.",
+            "zh-Hans": "工作、休息和音乐：一键切换岛上的胶囊。",
+            "hi": "काम, आराम और संगीत: एक क्लिक में आइलैंड की पिल्स बदल जाती हैं।",
+            "es": "Trabajo, Descanso y Música: un clic cambia las píldoras de la isla.",
+            "ar": "عمل واستراحة وموسيقى: نقرة واحدة تغيّر كبسولات الجزيرة.",
+            "fr": "Travail, Repos et Musique : un clic change les pilules de l'île.",
+            "bn": "কাজ, বিশ্রাম ও সংগীত: এক ক্লিকেই আইল্যান্ডের পিল বদলে যায়।",
+            "pt-BR": "Trabalho, Descanso e Música: um clique troca as pílulas da ilha.",
+            "ru": "Работа, отдых и музыка: один клик меняет пилюли на острове.",
+            "id": "Kerja, Istirahat, dan Musik: satu klik mengganti pil di pulau.",
+            "de": "Arbeit, Ruhe und Musik: Ein Klick wechselt die Kapseln der Insel.",
+            "tr": "İş, Dinlenme ve Müzik: tek tıkla adadaki araçlar değişir.",
+            "ko": "작업, 휴식, 음악: 한 번 클릭으로 아일랜드의 모찌가 바뀌어요.",
+            "ja": "作業・休憩・ミュージック：ワンクリックでアイランドのピルが切り替わります。"
+          }
+        },
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "New pills",
+            "zh-Hans": "新胶囊",
+            "hi": "नई पिल्स",
+            "es": "Píldoras nuevas",
+            "ar": "كبسولات جديدة",
+            "fr": "Nouvelles pilules",
+            "bn": "নতুন পিল",
+            "pt-BR": "Pílulas novas",
+            "ru": "Новые пилюли",
+            "id": "Pil baru",
+            "de": "Neue Kapseln",
+            "tr": "Yeni araçlar",
+            "ko": "새 모찌",
+            "ja": "新しいピル"
+          },
+          "detail": {
+            "en": "YouTube Music, Printers, Tasks and Notepad.",
+            "zh-Hans": "YouTube Music、打印机、任务和记事本。",
+            "hi": "YouTube Music, प्रिंटर, कार्य और नोटपैड।",
+            "es": "YouTube Music, Impresoras, Tareas y Bloc de notas.",
+            "ar": "YouTube Music والطابعات والمهام ودفتر الملاحظات.",
+            "fr": "YouTube Music, Imprimantes, Tâches et Bloc-notes.",
+            "bn": "YouTube Music, প্রিন্টার, কাজ এবং নোটপ্যাড।",
+            "pt-BR": "YouTube Music, Impressoras, Tarefas e Bloco de notas.",
+            "ru": "YouTube Music, принтеры, задачи и блокнот.",
+            "id": "YouTube Music, Printer, Tugas, dan Buku catatan.",
+            "de": "YouTube Music, Drucker, Aufgaben und Notizblock.",
+            "tr": "YouTube Music, Yazıcılar, Görevler ve Not defteri.",
+            "ko": "YouTube Music, 프린터, 할 일, 메모장.",
+            "ja": "YouTube Music、プリンター、タスク、メモ帳。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.6.0",
       "items": [
         {
