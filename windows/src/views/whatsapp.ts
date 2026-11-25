@@ -298,6 +298,8 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     // Typing in it is not a shortcut of the island.
     reply.addEventListener("keydown", (e) => e.stopPropagation());
     reply.style.display = o.reply || replies.has(o.id) ? "" : "none";
+    // What Coucou already sent by itself is shown, not sent again.
+    reply.readOnly = o.sent;
     const copy = h("button", { class: "wa-entry-save", text: t("Copy") }) as HTMLButtonElement;
     const file = h("button", { class: "wa-entry-drop", text: t("Get file") }) as HTMLButtonElement;
     const drop = h("button", { class: "wa-entry-drop", text: o.state === "approved" ? t("Done") : t("Discard") }) as HTMLButtonElement;
@@ -307,7 +309,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     busy(false);
     reply.addEventListener("input", () => busy(false));
     const failed = (error: unknown) => { busy(false); problem.textContent = String(error); };
-    copy.style.display = reply.style.display;
+    copy.style.display = o.sent ? "none" : reply.style.display;
     copy.addEventListener("click", () => {
       problem.textContent = "";
       void copyText(reply.value).then(() => {
@@ -328,7 +330,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     });
     return h("div", { class: "wa-entry" },
       label,
-      h("div", { class: "wa-entry-detail", text: [o.name, o.line, o.reason, o.note].filter(Boolean).join(" · ") }),
+      h("div", { class: "wa-entry-detail", text: [o.name, o.line, o.reason, o.note, o.sent ? t("Sent by Coucou") : ""].filter(Boolean).join(" · ") }),
       h("div", { class: "wa-entry-detail", text: o.printer ? `${o.fileName} · ${t("Printer: {0}", { 0: o.printer })}` : o.fileName }),
       reply,
       h("div", { class: "wa-entry-actions" }, ...all),
@@ -341,7 +343,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     const key = [
       language(), v.link.state, "detail" in v.link ? v.link.detail : "", v.unread, ignoring,
       ...v.pending.map((e) => `${e.id}|${e.amount}|${e.kind}|${e.category}|${e.person}|${e.note}`),
-      ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}|${o.reply}|${o.kind}|${o.reason}`),
+      ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}|${o.reply}|${o.kind}|${o.reason}|${o.sent}`),
       // The ages move on a minute at a time.
       Math.floor(Date.now() / 60_000),
       ...v.conversations.map((c) => `${c.id}|${c.name}|${c.unread}|${c.lastActivity}|${c.messages[c.messages.length - 1]?.id ?? ""}`),

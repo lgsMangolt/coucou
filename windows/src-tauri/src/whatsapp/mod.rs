@@ -251,6 +251,8 @@ struct Ctl {
     order_queue: Vec<String>,
     /// Chats being read right now: one reading at a time for each.
     order_reading: HashSet<String>,
+    /// What Coucou sent by itself to each customer, and when (answer_alone).
+    order_auto: HashMap<String, Vec<(i64, String)>>,
     /// The pages of the customers' PDFs, by message id (counted once).
     order_pages: HashMap<String, u32>,
     /// The orders on the card, in memory only.
@@ -300,6 +302,7 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         ledger_sheet_code: false,
         order_queue: Vec::new(),
         order_reading: HashSet::new(),
+        order_auto: HashMap::new(),
         order_pages: HashMap::new(),
         orders: Vec::new(),
         order_next: 0,
@@ -1042,6 +1045,7 @@ async fn read_order(gen: u64, chat: String) {
             payment: config.pagamento.clone(),
             kind,
             ask,
+            sent: false,
         };
         match answer {
             Ok(orders::Reading::Order(asked)) => {
@@ -1057,17 +1061,66 @@ async fn read_order(gen: u64, chat: String) {
             }
             Ok(orders::Reading::Ask(question)) => place_order(&mut c, blank(orders::Kind::Question, question)),
             Ok(orders::Reading::Manager(why)) => place_order(&mut c, blank(orders::Kind::Manager, why)),
-            Ok(orders::Reading::Nothing) => false,
+            Ok(orders::Reading::Nothing) => None,
             Err(reason) => {
                 crate::log::line(format!("whatsapp: could not read a print order: {reason}"));
-                false
+                None
             }
         }
     };
-    if fresh {
+    if let Some(id) = fresh {
         pill(PillEvent::Message { name: crate::i18n::t("New print order") });
+        if config.responder_sozinho {
+            changed();
+            answer_alone(id, config.silencio_minutos).await;
+        }
     }
     changed();
+}
+
+/// At most this many messages sent by Coucou to one customer in an hour.
+const AUTO_PER_HOUR: usize = 4;
+/// How long Coucou remembers what it sent a customer (never the same words twice).
+const AUTO_MEMORY_MS: i64 = 12 * 3_600_000;
+
+/// Coucou answers the customer by itself (pedidos.json `responder_sozinho`): the quote, the question
+/// or the manager's message. Not when you wrote to this customer in the last minutes, when the same
+/// words already went to them, or after a few messages this hour. The card stays for you.
+async fn answer_alone(id: u64, quiet_minutes: u32) {
+    let now = gateway::now_ms();
+    let (chat, text) = {
+        let mut guard = ctl();
+        let c = &mut *guard;
+        let Some((_, order)) = c.orders.iter().find(|(n, o)| *n == id && o.state == orders::State::Draft && !o.sent) else { return };
+        if !orders::may_send_alone(order) {
+            return;
+        }
+        let (chat, text) = (order.chat.clone(), order.reply());
+        let past = c.order_auto.entry(chat.clone()).or_default();
+        past.retain(|(at, _)| now - *at < AUTO_MEMORY_MS);
+        let mine: Vec<String> = past.iter().map(|(_, t)| t.clone()).collect();
+        let this_hour = past.iter().filter(|(at, _)| now - *at < 3_600_000).count();
+        let you = c.inbox.conversations.get(&chat).map_or(true, |conv| orders::you_answered(conv, now, i64::from(quiet_minutes) * 60_000, &mine));
+        if you || this_hour >= AUTO_PER_HOUR || mine.iter().any(|t| *t == text) {
+            return;
+        }
+        past.push((now, text.clone()));
+        (chat, text)
+    };
+    if !send(&chat, &text).await {
+        crate::log::line("whatsapp: could not answer a print order by itself".to_string());
+        if let Some(past) = ctl().order_auto.get_mut(&chat) {
+            past.retain(|(_, t)| *t != text);
+        }
+        return;
+    }
+    if let Some((_, order)) = ctl().orders.iter_mut().find(|(n, _)| *n == id) {
+        order.sent = true;
+        // A priced quote waits for the customer's "yes"; a question waits for the answer, read again.
+        if order.quote(&order.payment).is_some() {
+            order.state = orders::State::Quoted;
+        }
+    }
 }
 
 /// Fetches one PDF of the customer to count its pages; the gateway's copy is removed at once.
@@ -1085,14 +1138,14 @@ async fn count_pages(provider: &Provider, message: &str, chat: &str) -> Option<u
 }
 
 /// Puts a freshly read order on the card, in place of the one the same customer had (a draft, or a
-/// quote the customer changed: it waits to be sent again). False when nothing changed: the same
+/// quote the customer changed: it waits to be sent again), with its id. None when nothing changed: the same
 /// request read again, or an order already approved.
-fn place_order(c: &mut Ctl, order: orders::Order) -> bool {
+fn place_order(c: &mut Ctl, order: orders::Order) -> Option<u64> {
     if c.orders.iter().any(|(_, o)| o.chat == order.chat && o.state == orders::State::Approved) {
-        return false;
+        return None;
     }
     if c.orders.iter().any(|(_, o)| o.same_as(&order)) {
-        return false;
+        return None;
     }
     c.orders.retain(|(_, o)| o.chat != order.chat);
     c.order_next += 1;
@@ -1101,7 +1154,7 @@ fn place_order(c: &mut Ctl, order: orders::Order) -> bool {
     if c.orders.len() > orders::MAX_ORDERS {
         c.orders.remove(0);
     }
-    true
+    Some(id)
 }
 
 fn after_ingest(gen: u64, fresh: Option<String>, groups: Vec<String>) {
@@ -1489,7 +1542,7 @@ pub async fn whatsapp_send(window: WebviewWindow, chat: String, text: String) ->
 fn order_reply(c: &Ctl, chat: &str) -> Option<String> {
     c.orders
         .iter()
-        .find(|(_, o)| o.chat == chat && o.state == orders::State::Draft)
+        .find(|(_, o)| o.chat == chat && o.state == orders::State::Draft && !o.sent)
         .map(|(_, o)| o.reply())
 }
 
@@ -1895,6 +1948,7 @@ mod tests {
             ledger_sheet_code: false,
             order_queue: Vec::new(),
             order_reading: HashSet::new(),
+            order_auto: HashMap::new(),
             order_pages: HashMap::new(),
             orders: Vec::new(),
             order_next: 0,
@@ -2077,6 +2131,7 @@ mod tests {
             payment: String::new(),
             kind: orders::Kind::Quote,
             ask: String::new(),
+            sent: false,
         }
     }
 
@@ -2093,8 +2148,8 @@ mod tests {
         assert_eq!(c.order_queue.len(), 1, "a duplicate queues nothing");
         c.order_queue.clear();
 
-        assert!(place_order(&mut c, draft(chat, "2")));
-        assert!(!place_order(&mut c, draft(chat, "2")), "the same draft again is not news");
+        assert!(place_order(&mut c, draft(chat, "2")).is_some());
+        assert!(place_order(&mut c, draft(chat, "2")).is_none(), "the same draft again is not news");
         assert_eq!(c.island_view().orders.len(), 1);
         // A "yes" before any quote was sent approves nothing.
         ingest(&mut c, vec![msg("4", chat, "sim")]);
@@ -2105,7 +2160,7 @@ mod tests {
             order.state = orders::State::Quoted;
         }
         assert_eq!(c.orders[0].1.state, orders::State::Quoted, "copying the reply waits for the customer");
-        assert!(!place_order(&mut c, draft(chat, "2")), "the same request read again changes nothing");
+        assert!(place_order(&mut c, draft(chat, "2")).is_none(), "the same request read again changes nothing");
         // Anything but a yes has the order read again: a change gets a new quote to send.
         ingest(&mut c, vec![msg("5", chat, "quanto tempo demora?")]);
         assert_eq!(c.orders[0].1.state, orders::State::Quoted);
@@ -2113,7 +2168,7 @@ mod tests {
         c.order_queue.clear();
         let mut changed = draft(chat, "2");
         changed.lines[0] = orders::Line { text: "10 × impressão colorida".into(), cents: Some(2000) };
-        assert!(place_order(&mut c, changed), "a changed order replaces the quote sent");
+        assert!(place_order(&mut c, changed).is_some(), "a changed order replaces the quote sent");
         assert_eq!((c.orders.len(), c.orders[0].1.state), (1, orders::State::Draft));
         let id = c.orders[0].0;
         if let Some((_, order)) = c.orders.iter_mut().find(|(n, _)| *n == id) {
@@ -2138,7 +2193,7 @@ mod tests {
         let chat = "5511999990000@s.whatsapp.net";
         let mut c = fresh_ctl();
         assert_eq!(order_reply(&c, chat), None);
-        assert!(place_order(&mut c, draft(chat, "2")));
+        assert!(place_order(&mut c, draft(chat, "2")).is_some());
         let quote = order_reply(&c, chat).unwrap();
         assert!(quote.starts_with("Opa! O orçamento fica assim"), "{quote}");
         assert!(quote.contains("Total: R$ 12,00"), "{quote}");
@@ -2149,6 +2204,14 @@ mod tests {
         assert!(quoted_by_hand(&mut c, chat, "Oi Ana! Fica R$ 12,00 no total, posso imprimir?"));
         assert_eq!(c.orders[0].1.state, orders::State::Quoted);
         assert_eq!(order_reply(&c, chat), None, "once sent, the suggestion is a plain one again");
+        // A question Coucou already sent by itself is not suggested again.
+        let mut asked = draft(chat, "3");
+        asked.kind = orders::Kind::Question;
+        asked.ask = "opa, preto e branco ou colorido?".into();
+        let id = place_order(&mut c, asked).unwrap();
+        assert_eq!(order_reply(&c, chat).as_deref(), Some("opa, preto e branco ou colorido?"));
+        c.orders.iter_mut().find(|(n, _)| *n == id).unwrap().1.sent = true;
+        assert_eq!(order_reply(&c, chat), None);
     }
 
     #[test]

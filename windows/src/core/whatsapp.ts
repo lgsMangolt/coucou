@@ -80,6 +80,8 @@ export interface WaOrder {
   kind: "quote" | "question" | "manager";
   /** Why it goes to the manager, or "". */
   reason: string;
+  /** Coucou sent the reply by itself. */
+  sent: boolean;
 }
 
 /** IslandView in src-tauri/src/whatsapp/mod.rs. */

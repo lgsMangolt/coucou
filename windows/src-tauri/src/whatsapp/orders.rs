@@ -108,6 +108,11 @@ pub struct Config {
     /// A2 and larger are printed on A3 sheets and joined: this much per piece joined. 0: such
     /// orders go to the manager.
     pub juncao: f64,
+    /// Coucou answers the customer by itself (the quote, the question, the manager's message);
+    /// false: the reply waits on the card for you to copy.
+    pub responder_sozinho: bool,
+    /// Coucou stays quiet with a customer you wrote to in the last this many minutes.
+    pub silencio_minutos: u32,
 }
 
 fn tiers(prices: [f64; 4]) -> Vec<Tier> {
@@ -149,6 +154,8 @@ impl Default for Config {
             impressoras: Printers::default(),
             pagamento: String::new(),
             juncao: 5.00,
+            responder_sozinho: true,
+            silencio_minutos: 30,
         }
     }
 }
@@ -697,6 +704,8 @@ pub struct Order {
     pub kind: Kind,
     /// The question (Question), or why it goes to the manager (Manager); "" for a quote.
     pub ask: String,
+    /// Coucou sent the reply by itself.
+    pub sent: bool,
 }
 
 /// What the island shows of an order.
@@ -720,6 +729,8 @@ pub struct OrderView {
     pub kind: Kind,
     /// Why it goes to the manager, or "".
     pub reason: String,
+    /// Coucou sent the reply by itself.
+    pub sent: bool,
 }
 
 /// Prices what was asked from the table.
@@ -792,6 +803,7 @@ impl Order {
                 Kind::Quote if self.total_cents().is_none() => "quantidade acima da tabela".into(),
                 _ => String::new(),
             },
+            sent: self.sent,
         }
     }
 
@@ -809,6 +821,25 @@ impl Order {
     pub fn same_as(&self, other: &Order) -> bool {
         self.chat == other.chat && self.file == other.file && self.kind == other.kind && self.lines == other.lines && self.ask == other.ask
     }
+}
+
+/// Coucou answers by itself only with words it can stand behind: the quote and the manager's
+/// message are written by the code; a question is the model's, so it goes alone only when it
+/// carries no price, link or contact (else it waits on the card).
+pub fn may_send_alone(order: &Order) -> bool {
+    match order.kind {
+        Kind::Question => {
+            let q = order.ask.to_lowercase();
+            !q.trim().is_empty() && q.chars().count() <= MAX_QUESTION_CHARS && !["r$", "reais", "http", "www", "@", "pix", ".com"].iter().any(|w| q.contains(w))
+        }
+        Kind::Quote | Kind::Manager => true,
+    }
+}
+
+/// You wrote to this customer in the last `quiet_ms`: Coucou stays quiet. What Coucou sent by
+/// itself (`coucou`) does not count.
+pub fn you_answered(conversation: &Conversation, now_ms: i64, quiet_ms: i64, coucou: &[String]) -> bool {
+    conversation.messages.iter().any(|m| m.from_me && now_ms - m.date < quiet_ms && !coucou.iter().any(|t| t.trim() == m.text.trim()))
 }
 
 // ── The file ──────────────────────────────────────────────────────────────────
@@ -888,7 +919,38 @@ mod tests {
             payment: String::new(),
             kind: Kind::Quote,
             ask: String::new(),
+            sent: false,
         }
+    }
+
+    #[test]
+    fn coucou_answers_alone_only_what_it_can_stand_behind() {
+        let config = Config::default();
+        let asked = Asked { item: "color".into(), quantity: 6, ..Default::default() };
+        let mut o = order(&asked, &config);
+        assert!(may_send_alone(&o), "a quote is the code's");
+        o.kind = Kind::Manager;
+        assert!(may_send_alone(&o), "so is the manager's message");
+        o.kind = Kind::Question;
+        o.ask = "opa, preto e branco ou colorido?".into();
+        assert!(may_send_alone(&o));
+        for bad in ["fica R$ 5, pode ser?", "manda no pix 5499999", "olha www.x.com", "fica 10 reais", ""] {
+            o.ask = bad.into();
+            assert!(!may_send_alone(&o), "{bad}");
+        }
+    }
+
+    #[test]
+    fn coucou_stays_quiet_with_a_customer_you_just_wrote_to() {
+        let now = 10_000_000;
+        let mut mine = said("1", "já te mando");
+        mine.from_me = true;
+        mine.date = now - 5 * 60_000;
+        let talk = conversation(vec![said("0", "oi"), mine.clone()]);
+        assert!(you_answered(&talk, now, 30 * 60_000, &[]));
+        assert!(!you_answered(&talk, now, 3 * 60_000, &[]), "longer ago than the quiet time");
+        assert!(!you_answered(&talk, now, 30 * 60_000, &["já te mando".into()]), "what Coucou sent itself does not count");
+        assert!(!you_answered(&conversation(vec![said("0", "oi")]), now, 30 * 60_000, &[]));
     }
 
     #[test]

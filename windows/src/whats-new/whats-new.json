@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.13.0",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Answers by itself",
+            "zh-Hans": "自动回复",
+            "hi": "खुद जवाब देता है",
+            "es": "Responde solo",
+            "ar": "يرد تلقائيًا",
+            "fr": "Répond tout seul",
+            "bn": "নিজেই উত্তর দেয়",
+            "pt-BR": "Responde sozinho",
+            "ru": "Отвечает сам",
+            "id": "Membalas sendiri",
+            "de": "Antwortet selbst",
+            "tr": "Kendisi yanıtlar",
+            "ko": "알아서 답장",
+            "ja": "自動で返信"
+          },
+          "detail": {
+            "en": "Coucou sends the quote or the question itself, unless you wrote to the customer in the last 30 minutes.",
+            "zh-Hans": "Coucou 自动发送报价或问题；30 分钟内你回复过该客户则不发送。",
+            "hi": "Coucou खुद कोटेशन या सवाल भेजता है, जब तक आपने 30 मिनट में ग्राहक को न लिखा हो।",
+            "es": "Coucou envía solo el presupuesto o la pregunta, salvo si escribiste al cliente hace menos de 30 min.",
+            "ar": "يرسل Coucou عرض السعر أو السؤال، إلا إذا راسلت العميل خلال آخر 30 دقيقة.",
+            "fr": "Coucou envoie seul le devis ou la question, sauf si vous avez écrit au client il y a moins de 30 min.",
+            "bn": "Coucou নিজেই দাম বা প্রশ্ন পাঠায়, যদি না আপনি ৩০ মিনিটে গ্রাহককে লিখে থাকেন।",
+            "pt-BR": "O Coucou manda sozinho o orçamento ou a pergunta, se você não escreveu ao cliente nos últimos 30 min.",
+            "ru": "Coucou сам шлёт расчёт или вопрос, если вы не писали клиенту последние 30 минут.",
+            "id": "Coucou mengirim penawaran atau pertanyaan sendiri, kecuali Anda menulis ke pelanggan 30 menit terakhir.",
+            "de": "Coucou sendet Angebot oder Frage selbst, außer du hast dem Kunden vor unter 30 Min. geschrieben.",
+            "tr": "Coucou teklifi veya soruyu kendisi gönderir; son 30 dakikada müşteriye yazdıysanız göndermez.",
+            "ko": "최근 30분 안에 고객에게 직접 쓰지 않았다면 Coucou가 견적이나 질문을 보냅니다.",
+            "ja": "30分以内にあなたが客に書いていなければ、Coucouが見積もりや質問を送ります。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.12.1",
       "items": [
         {
