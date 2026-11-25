@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.10.5",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "More context",
+            "zh-Hans": "更多上下文",
+            "hi": "ज़्यादा संदर्भ",
+            "es": "Más contexto",
+            "ar": "سياق أكبر",
+            "fr": "Plus de contexte",
+            "bn": "আরও প্রসঙ্গ",
+            "pt-BR": "Mais contexto",
+            "ru": "Больше контекста",
+            "id": "Konteks lebih banyak",
+            "de": "Mehr Kontext",
+            "tr": "Daha fazla bağlam",
+            "ko": "더 많은 맥락",
+            "ja": "より多くの文脈"
+          },
+          "detail": {
+            "en": "Orders and suggested replies now read the last 25 messages of the chat.",
+            "zh-Hans": "订单和建议回复现在会读取对话的最近 25 条消息。",
+            "hi": "ऑर्डर और सुझाए गए जवाब अब चैट के आख़िरी 25 संदेश पढ़ते हैं।",
+            "es": "Los pedidos y las respuestas sugeridas ahora leen los últimos 25 mensajes del chat.",
+            "ar": "الطلبات والردود المقترحة تقرأ الآن آخر 25 رسالة في المحادثة.",
+            "fr": "Les commandes et les réponses suggérées lisent maintenant les 25 derniers messages.",
+            "bn": "অর্ডার ও প্রস্তাবিত উত্তর এখন চ্যাটের শেষ ২৫টি বার্তা পড়ে।",
+            "pt-BR": "Pedidos e sugestões de resposta agora leem as últimas 25 mensagens da conversa.",
+            "ru": "Заказы и подсказки теперь читают последние 25 сообщений чата.",
+            "id": "Pesanan dan saran balasan kini membaca 25 pesan terakhir obrolan.",
+            "de": "Aufträge und Antwortvorschläge lesen jetzt die letzten 25 Nachrichten des Chats.",
+            "tr": "Siparişler ve önerilen yanıtlar artık sohbetin son 25 mesajını okuyor.",
+            "ko": "주문과 제안 답장이 이제 대화의 최근 메시지 25개를 읽습니다.",
+            "ja": "注文と返信の提案が、チャットの直近25件のメッセージを読むようになりました。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.10.4",
       "items": [
         {

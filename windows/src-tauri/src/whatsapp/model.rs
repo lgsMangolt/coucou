@@ -171,7 +171,7 @@ pub struct Inbox {
 }
 
 impl Inbox {
-    pub const KEEP: usize = 20;
+    pub const KEEP: usize = 25;
 
     /// Newest activity first.
     pub fn sorted(&self) -> Vec<&Conversation> {
@@ -502,14 +502,15 @@ mod tests {
     }
 
     #[test]
-    fn only_the_last_twenty_messages_are_kept() {
+    fn only_the_last_25_messages_are_kept() {
         let mut inbox = Inbox::default();
-        for i in 0..30 {
+        for i in 0..40 {
             inbox.add(msg(&format!("m{i}"), "1@s.whatsapp.net", i), &Filters::default(), None, false);
         }
         let c = &inbox.conversations["1@s.whatsapp.net"];
-        assert_eq!(c.messages.len(), 20);
-        assert_eq!(c.messages.last().unwrap().id, "m29");
+        assert_eq!(c.messages.len(), 25);
+        assert_eq!(c.messages[0].id, "m15");
+        assert_eq!(c.messages.last().unwrap().id, "m39");
     }
 
     #[test]

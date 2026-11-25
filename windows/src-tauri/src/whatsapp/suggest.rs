@@ -10,7 +10,7 @@ use std::time::Duration;
 use super::model::{Conversation, Media, Message};
 
 /// The messages the suggestion is written from, newest last.
-const CONTEXT: usize = 12;
+const CONTEXT: usize = 25;
 /// Longest single message handed over; a wall of text adds nothing to a short reply.
 const MAX_MESSAGE_CHARS: usize = 600;
 const TIMEOUT: Duration = Duration::from_secs(40);
@@ -121,14 +121,14 @@ mod tests {
 
     #[test]
     fn the_prompt_names_who_said_what_and_keeps_only_the_last_messages() {
-        let mut messages: Vec<Message> = (0..20).map(|i| message(&i.to_string(), &format!("antiga {i}"), false)).collect();
+        let mut messages: Vec<Message> = (0..30).map(|i| message(&i.to_string(), &format!("antiga {i}"), false)).collect();
         messages.push(message("a", "Já chego", true));
         messages.push(message("b", "Que horas\nvocê vem?", false));
         let p = prompt(&conversation(messages)).unwrap();
         assert!(p.contains("Me: Já chego"));
         assert!(p.contains("Ana: Que horas você vem?"));
         assert!(!p.contains("antiga 0"), "only the last {CONTEXT} messages are handed over");
-        assert!(p.contains("antiga 19"));
+        assert!(p.contains("antiga 29"));
     }
 
     #[test]

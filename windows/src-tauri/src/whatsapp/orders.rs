@@ -19,7 +19,7 @@ use super::model::{Conversation, Media, Message};
 
 pub const FILE_NAME: &str = "pedidos.json";
 /// The messages of the conversation the model is shown, and the ones an order is looked for in.
-const CONTEXT: usize = 8;
+const CONTEXT: usize = 25;
 const MAX_MESSAGE_CHARS: usize = 400;
 const MAX_NOTE_CHARS: usize = 120;
 const MAX_QUANTITY: u32 = 100_000;
