@@ -60,6 +60,22 @@ export interface WaEntry {
   date: string;
 }
 
+/** A print order read from a customer's messages (OrderView in src-tauri/src/whatsapp/orders.rs). */
+export interface WaOrder {
+  id: number;
+  name: string;
+  /** "6 × impressão colorida, sulfite 75g" */
+  line: string;
+  note: string;
+  /** "R$ 12,00", or "" when the table has no price for it. */
+  total: string;
+  printer: string;
+  state: "draft" | "quoted" | "approved";
+  fileName: string;
+  /** Where the customer's file was saved, once fetched. */
+  saved: string | null;
+}
+
 /** IslandView in src-tauri/src/whatsapp/mod.rs. */
 export interface WaIslandView {
   on: boolean;
@@ -72,10 +88,11 @@ export interface WaIslandView {
   /** The gateway failed twice in a row: the pill's red dot. */
   down: boolean;
   pending: WaEntry[];
+  orders: WaOrder[];
 }
 
 export const IDLE_WHATSAPP: WaIslandView = {
-  on: false, link: { state: "off" }, conversations: [], unread: 0, sending: false, sendError: null, down: false, pending: [],
+  on: false, link: { state: "off" }, conversations: [], unread: 0, sending: false, sendError: null, down: false, pending: [], orders: [],
 };
 
 /** The page's copy of what Rust keeps. */

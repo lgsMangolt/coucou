@@ -76,6 +76,11 @@ fn thousands(cents: i64) -> String {
     format!("R$ {},{:02}", out, cents % 100)
 }
 
+/// "R$ 1.234,56"
+pub fn reais(cents: i64) -> String {
+    thousands(cents)
+}
+
 impl Entry {
     pub fn view(&self, id: u64) -> EntryView {
         EntryView {

@@ -15,7 +15,7 @@ import { Bridge } from "../core/bridge";
 import { State } from "../core/state";
 import {
   WHATSAPP_GREEN, waPillId, waStore, canSend, initials, keyAction, lastMessages, linkColor, linkLabel,
-  preview, previewParts, sendErrorLabel, timeAgo, type WaConversation, type WaEntry, type WaMessage,
+  preview, previewParts, sendErrorLabel, timeAgo, type WaConversation, type WaEntry, type WaMessage, type WaOrder,
 } from "../core/whatsapp";
 import { language, t, tl } from "../i18n/i18n";
 
@@ -262,11 +262,51 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     );
   }
 
+  /** A print order: what is asked, its price from the shop's table, the printer, and the clicks. */
+  function orderCard(o: WaOrder): HTMLElement {
+    const stage = o.state === "approved" ? t("Order approved") : o.state === "quoted" ? t("Quote sent") : t("Print order");
+    const label = h("div", { class: "wa-entry-line" },
+      h("b", { class: "wa-entry-kind in", text: stage }),
+      h("span", { class: "wa-entry-amount", text: o.total || t("No price") }),
+    );
+    const quote = h("button", { class: "wa-entry-save", text: t("Send quote") }) as HTMLButtonElement;
+    const file = h("button", { class: "wa-entry-drop", text: t("Get file") }) as HTMLButtonElement;
+    const drop = h("button", { class: "wa-entry-drop", text: o.state === "approved" ? t("Done") : t("Discard") }) as HTMLButtonElement;
+    const problem = h("div", { class: "wa-note err" });
+    const all = [quote, file, drop];
+    const busy = (on: boolean) => { for (const b of all) b.disabled = on || (b === quote && !o.total); };
+    busy(false);
+    const failed = (error: unknown) => { busy(false); problem.textContent = String(error); };
+    quote.style.display = o.state === "draft" ? "" : "none";
+    quote.addEventListener("click", () => {
+      busy(true);
+      problem.textContent = "";
+      Bridge.whatsappOrderQuote(o.id, account).catch(failed);
+    });
+    file.addEventListener("click", () => {
+      busy(true);
+      problem.textContent = "";
+      Bridge.whatsappOrderFile(o.id, account).then(() => busy(false), failed);
+    });
+    drop.addEventListener("click", () => {
+      busy(true);
+      void Bridge.whatsappOrderDiscard(o.id, account);
+    });
+    return h("div", { class: "wa-entry" },
+      label,
+      h("div", { class: "wa-entry-detail", text: [o.name, o.line, o.note].filter(Boolean).join(" · ") }),
+      h("div", { class: "wa-entry-detail", text: `${o.fileName} · ${t("Printer: {0}", { 0: o.printer })}` }),
+      h("div", { class: "wa-entry-actions" }, ...all),
+      problem,
+    );
+  }
+
   function syncList() {
     const v = store.view;
     const key = [
       language(), v.link.state, "detail" in v.link ? v.link.detail : "", v.unread, ignoring,
       ...v.pending.map((e) => `${e.id}|${e.amount}|${e.kind}|${e.category}|${e.person}|${e.note}`),
+      ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}`),
       // The ages move on a minute at a time.
       Math.floor(Date.now() / 60_000),
       ...v.conversations.map((c) => `${c.id}|${c.name}|${c.unread}|${c.lastActivity}|${c.messages[c.messages.length - 1]?.id ?? ""}`),
@@ -276,7 +316,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     unreadTag.textContent = v.unread > 0 ? t("{0} unread", { 0: v.unread }) : "";
     unreadTag.style.display = v.unread > 0 ? "" : "none";
     clear(pendingBox);
-    pendingBox.append(...v.pending.map(entryCard));
+    pendingBox.append(...v.orders.map(orderCard), ...v.pending.map(entryCard));
     clear(listBody);
     if (v.link.state !== "connected") {
       listBody.append(

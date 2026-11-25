@@ -22,6 +22,7 @@ const SIGN_IN_URL: &str =
     "https://accounts.google.com/ServiceLogin?service=mail&continue=https%3A%2F%2Fmail.google.com%2Fmail%2Fu%2F0%2F";
 const INBOX_URL: &str = "https://mail.google.com/mail/u/0/#inbox";
 const LINK_PREFIX: &str = "https://mail.google.com/";
+const THREAD_PREFIX: &str = "https://mail.google.com/mail/u/0/#inbox/";
 const GMAIL_HOST: &str = "mail.google.com";
 const EVENT: &str = "gmail";
 const ALERT: &str = "gmail-alert";
@@ -31,7 +32,7 @@ const TITLE_MARK: &str = "[coucou-gmail]";
 const INJECT: &str = include_str!("gmail_inject.js");
 const MAX_TEXT: usize = 200;
 const MAX_MESSAGES: usize = 10;
-const MAX_SEEN: usize = 500;
+const MAX_KNOWN: usize = 100;
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -60,6 +61,10 @@ pub struct Inbox {
     pub failed: bool,
     pub unread: u32,
     pub messages: Vec<Message>,
+    /// Every unread conversation of the page (ids, top first): what tells new mail from old.
+    /// It stays here: the island gets only the new ones.
+    #[serde(skip_serializing)]
+    pub known: Vec<String>,
 }
 
 /// A message that arrived since the last look.
@@ -75,9 +80,11 @@ pub struct Alert {
 #[derive(Default)]
 struct Inner {
     inbox: Inbox,
-    /// The unread conversations already shown: only what is not here warns.
-    seen: HashSet<String>,
-    /// The first signed-in report only fills `seen`: what was unread before warns nobody.
+    /// What was already unread at the first look, and older mail that surfaced since: never shown.
+    old: HashSet<String>,
+    /// What arrived since the first look: the only mail the island shows and counts.
+    fresh: HashSet<String>,
+    /// The first signed-in report only fills `old`: what was unread before is news to nobody.
     primed: bool,
 }
 
@@ -103,39 +110,64 @@ fn from_page(json: &str) -> Option<Inbox> {
         m.address = cut(&m.address);
         m.subject = cut(&m.subject);
         m.snippet = cut(&m.snippet);
-        if !m.link.starts_with(LINK_PREFIX) || m.link.chars().any(char::is_control) {
-            m.link.clear();
-        }
+        // The page sends no link: a conversation's id (hex) makes Gmail's own address for it.
+        m.link = if m.id.len() >= 8 && m.id.len() <= 32 && m.id.bytes().all(|b| b.is_ascii_hexdigit()) { format!("{THREAD_PREFIX}{}", m.id) } else { String::new() };
     }
     page.messages.retain(|m| !m.id.is_empty());
+    page.known.truncate(MAX_KNOWN);
+    page.known = page.known.iter().map(|id| cut(id)).filter(|id| !id.is_empty()).collect();
     if !page.logged_in {
         page.unread = 0;
         page.messages.clear();
+        page.known.clear();
     }
     page.unread = page.unread.max(page.messages.len() as u32).min(99_999);
     Some(page)
 }
 
-/// Takes the report in and says what is new in it, if anything should warn.
-fn take(inner: &mut Inner, page: Inbox) -> Option<Alert> {
-    // New mail comes in at the top. An older conversation that moves up into the first page
-    // (because others were read or archived) shows below ones already seen, and is not news.
-    let fresh: Vec<&Message> = page.messages.iter().take_while(|m| !inner.seen.contains(&m.id)).collect();
-    let alert = match fresh.first() {
-        Some(first) if inner.primed => Some(Alert {
-            from: if first.from.is_empty() { first.address.clone() } else { first.from.clone() },
-            subject: first.subject.clone(),
-            count: fresh.len(),
-        }),
-        _ => None,
-    };
-    if page.logged_in && !page.failed {
-        if inner.seen.len() > MAX_SEEN {
-            inner.seen.clear();
+/// Takes the report in, keeps of it only the mail that arrived since the first look, and says
+/// what is new in it, if anything should warn.
+fn take(inner: &mut Inner, mut page: Inbox) -> Option<Alert> {
+    if !page.logged_in || page.failed {
+        page.unread = 0;
+        page.messages.clear();
+        inner.inbox = page;
+        return None;
+    }
+    let mut ids: Vec<String> = page.messages.iter().map(|m| m.id.clone()).collect();
+    for id in &page.known {
+        if !ids.contains(id) {
+            ids.push(id.clone());
         }
-        inner.seen.extend(page.messages.iter().map(|m| m.id.clone()));
+    }
+    let mut arrived: Vec<&String> = Vec::new();
+    if inner.primed {
+        // New mail comes in at the top. An older conversation that moves up into the page (because
+        // others were read or archived) shows below ones already known as old, and is old too.
+        let mut below_old = false;
+        for id in &ids {
+            if inner.old.contains(id) {
+                below_old = true;
+            } else if inner.fresh.contains(id) {
+            } else if below_old {
+                inner.old.insert(id.clone());
+            } else {
+                inner.fresh.insert(id.clone());
+                arrived.push(id);
+            }
+        }
+    } else {
+        inner.old.extend(ids.iter().cloned());
         inner.primed = true;
     }
+    let alert = page.messages.iter().find(|m| arrived.contains(&&m.id)).map(|first| Alert {
+        from: if first.from.is_empty() { first.address.clone() } else { first.from.clone() },
+        subject: first.subject.clone(),
+        count: arrived.len(),
+    });
+    page.messages.retain(|m| inner.fresh.contains(&m.id));
+    page.unread = ids.iter().filter(|id| inner.fresh.contains(*id)).count() as u32;
+    page.known.clear();
     inner.inbox = page;
     alert
 }
@@ -147,8 +179,12 @@ fn publish(app: &AppHandle, inbox: Inbox) {
 fn handle_title(app: &AppHandle, title: &str) {
     let Some(json) = title.strip_prefix(TITLE_MARK) else { return };
     let Some(page) = from_page(json) else { return };
-    let alert = take(&mut state(), page.clone());
-    publish(app, page);
+    let (alert, shown) = {
+        let mut inner = state();
+        let alert = take(&mut inner, page);
+        (alert, inner.inbox.clone())
+    };
+    publish(app, shown);
     if let Some(alert) = alert {
         let _ = app.emit_to(crate::island::WINDOW_LABEL, ALERT, alert);
     }
@@ -307,8 +343,10 @@ mod tests {
         assert!(p.window && p.checked && p.logged_in);
         assert_eq!(p.messages.len(), 2);
         assert_eq!(p.messages[0].subject.chars().count(), MAX_TEXT);
-        assert_eq!(p.messages[0].link, "", "a link that is not Gmail's is dropped");
-        assert_eq!(p.messages[1].link, "https://mail.google.com/mail?m=b");
+        assert_eq!(p.messages[0].link, "", "the page's own link is never taken");
+        assert_eq!(p.messages[1].link, "");
+        let hex = from_page(r#"{"loggedIn":true,"messages":[{"id":"19a1b2c3d4e5f607"}]}"#).unwrap();
+        assert_eq!(hex.messages[0].link, "https://mail.google.com/mail/u/0/#inbox/19a1b2c3d4e5f607");
         assert_eq!(p.unread, 2, "never fewer than the messages listed");
         assert!(from_page("not json").is_none());
 
@@ -317,16 +355,39 @@ mod tests {
     }
 
     #[test]
-    fn only_what_arrives_after_the_first_look_warns() {
+    fn only_what_arrives_after_the_first_look_is_shown_and_warns() {
         let mut inner = Inner::default();
+        let shown = |inner: &Inner| inner.inbox.messages.iter().map(|m| m.id.clone()).collect::<Vec<_>>().join(",");
         assert_eq!(take(&mut inner, report(&["a", "b"])), None, "what was already unread warns nobody");
+        assert_eq!((inner.inbox.unread, shown(&inner).as_str()), (0, ""), "and is not listed either");
         assert_eq!(take(&mut inner, report(&["a", "b"])), None);
         let alert = take(&mut inner, report(&["d", "c", "a", "b"])).unwrap();
         assert_eq!(alert, Alert { from: "Ana".into(), subject: "Oi d".into(), count: 2 });
-        assert_eq!(take(&mut inner, report(&["d", "c"])), None, "reading some is not news");
-        assert_eq!(take(&mut inner, report(&["d", "c", "old"])), None, "an older one moving up the page is not news");
-        assert_eq!(take(&mut inner, report(&["e", "d", "older"])).map(|a| a.count), Some(1));
-        assert_eq!(inner.inbox.unread, 3);
+        assert_eq!((inner.inbox.unread, shown(&inner).as_str()), (2, "d,c"));
+        assert_eq!(take(&mut inner, report(&["d", "c"])), None, "reading the old ones is not news");
+        assert_eq!(take(&mut inner, report(&["d", "c", "a", "old"])), None, "an older one moving up the page is not news");
+        assert_eq!(shown(&inner), "d,c");
+        assert_eq!(take(&mut inner, report(&["e", "d", "a"])).map(|a| a.count), Some(1));
+        assert_eq!((inner.inbox.unread, shown(&inner).as_str()), (2, "e,d"), "c was read");
+        assert_eq!(take(&mut inner, report(&[])), None);
+        assert_eq!(take(&mut inner, report(&["e", "d"])), None, "an empty look in between does not warn twice");
+    }
+
+    #[test]
+    fn the_whole_page_tells_old_mail_from_new() {
+        let mut inner = Inner::default();
+        let page = |shown: &[&str], known: &[&str]| {
+            let mut p = report(shown);
+            p.known = known.iter().map(|s| s.to_string()).collect();
+            p
+        };
+        take(&mut inner, page(&["a"], &["a", "b", "c"]));
+        // `a` was read: `b` comes up into the list, and it is still old.
+        assert_eq!(take(&mut inner, page(&["b"], &["b", "c"])), None);
+        assert_eq!(inner.inbox.unread, 0);
+        assert_eq!(take(&mut inner, page(&["n", "b"], &["n", "b", "c"])).map(|a| a.count), Some(1));
+        assert_eq!(inner.inbox.unread, 1);
+        assert!(!serde_json::to_string(&inner.inbox).unwrap().contains("known"));
     }
 
     #[test]
@@ -336,6 +397,7 @@ mod tests {
         let failed = from_page(r#"{"loggedIn":true,"failed":true}"#).unwrap();
         assert_eq!(take(&mut inner, failed), None);
         assert_eq!(take(&mut inner, report(&["a"])), None);
+        assert_eq!(inner.inbox.unread, 0);
     }
 
     #[test]

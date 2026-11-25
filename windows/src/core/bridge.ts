@@ -511,6 +511,10 @@ export const Bridge = {
   /** Saves a note on money to the spreadsheet; resolves with the file's path. Island only. */
   whatsappLedgerSave: (id: number) => callOrThrow<string>("whatsapp_ledger_save", { id }),
   whatsappLedgerDiscard: (id: number) => call<void>("whatsapp_ledger_discard", { id }),
+  /** A print order's card: send its quote to the customer, drop it, or fetch the customer's file. Island only. */
+  whatsappOrderQuote: (id: number, account = 0) => callOrThrow<void>(wa(account, "order_quote"), { id }),
+  whatsappOrderDiscard: (id: number, account = 0) => call<void>(wa(account, "order_discard"), { id }),
+  whatsappOrderFile: (id: number, account = 0) => callOrThrow<string>(wa(account, "order_file"), { id }),
   /** Settings: notes on money on or off, and the spreadsheet's folder ("" is Documents\Coucou). */
   whatsappSetLedger: (enabled: boolean, dir: string, chat: string) =>
     callOrThrow<void>("whatsapp_set_ledger", { enabled, dir, chat }),

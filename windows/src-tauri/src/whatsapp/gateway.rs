@@ -252,6 +252,11 @@ pub mod gowa {
         text(serde_json::from_slice::<Value>(data).ok()?.get("code"))
     }
 
+    /// `GET /message/{id}/download` → `results: {file_path: "statics/media/…", …}`.
+    pub fn downloaded_path(data: &[u8]) -> Option<String> {
+        text(results(data)?.get("file_path"))
+    }
+
     /// `GET /chats` → `results: {data: [{jid, name, last_message_time, …}], pagination}`.
     pub fn chats(data: &[u8]) -> Vec<(String, String, i64)> {
         let Some(r) = results(data) else { return vec![] };
@@ -702,6 +707,8 @@ mod tests {
 
     #[test]
     fn rest_answers() {
+        assert_eq!(gowa::downloaded_path(br#"{"code":"SUCCESS","results":{"file_path":"statics/media/5511/2026-11-25/a.pdf","file_size":9}}"#).as_deref(), Some("statics/media/5511/2026-11-25/a.pdf"));
+        assert_eq!(gowa::downloaded_path(br#"{"code":"SUCCESS","results":{}}"#), None);
         let devices = r#"{"code":"SUCCESS","results":[{"id":"coucou","state":"disconnected"},{"id":"my-device-id","state":"logged_in","jid":"628123456789@s.whatsapp.net"}]}"#;
         assert_eq!(gowa::device(devices.as_bytes()),
             Some(("my-device-id".into(), Status { link: Link::Connected, me: Some("628123456789@s.whatsapp.net".into()) })));

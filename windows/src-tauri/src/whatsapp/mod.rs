@@ -17,6 +17,7 @@ pub mod gateway;
 pub mod install;
 pub mod ledger;
 pub mod model;
+pub mod orders;
 pub mod prefs;
 pub mod process;
 pub mod provider;
@@ -142,6 +143,8 @@ pub struct IslandView {
     pub down: bool,
     /// Notes on money waiting for the click that saves them to the spreadsheet (ledger.rs).
     pub pending: Vec<ledger::EntryView>,
+    /// Print orders read from customers' messages, each waiting for a click (orders.rs).
+    pub orders: Vec<orders::OrderView>,
 }
 
 /// A conversation the notes can be read from.
@@ -244,6 +247,17 @@ struct Ctl {
     ledger_pending: Vec<(u64, ledger::Entry)>,
     ledger_next: u64,
     ledger_sheet_code: bool,
+    /// Chats whose last messages may hold a print order, waiting to be read (orders.rs).
+    order_queue: Vec<String>,
+    /// Chats being read right now: one reading at a time for each.
+    order_reading: HashSet<String>,
+    /// The orders on the card, in memory only.
+    orders: Vec<(u64, orders::Order)>,
+    order_next: u64,
+    /// Chat → the file of the order that was discarded or finished: it is not read again.
+    order_settled: HashMap<String, String>,
+    /// Customers whose "yes" just approved a quote: the pill says so.
+    order_news: Vec<String>,
 }
 
 static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
@@ -282,6 +296,12 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         ledger_pending: Vec::new(),
         ledger_next: 0,
         ledger_sheet_code: false,
+        order_queue: Vec::new(),
+        order_reading: HashSet::new(),
+        orders: Vec::new(),
+        order_next: 0,
+        order_settled: HashMap::new(),
+        order_news: Vec::new(),
     })
 });
 
@@ -344,6 +364,7 @@ impl Ctl {
             send_error: self.send_error.clone(),
             down: self.down,
             pending: self.ledger_pending.iter().map(|(id, entry)| entry.view(*id)).collect(),
+            orders: self.orders.iter().map(|(id, order)| order.view(*id)).collect(),
         }
     }
 
@@ -438,6 +459,9 @@ pub fn start(app: &AppHandle, active_integrations: &[String]) {
         c.has_credential = crate::secrets::get_internal(CREDENTIAL_KEY).is_some();
         c.ledger_sheet_code = crate::secrets::get_internal(ledger::SHEET_KEY).is_some();
         c.pill_active = active_integrations.iter().any(|x| x == PILL_ID);
+    }
+    if !SECOND {
+        orders::ensure_file();
     }
     update();
 }
@@ -904,9 +928,14 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
         .then(|| message.text.clone());
         // Big groups are ignored; one whose size is not known yet waits for the answer before it is announced.
         let waiting_for_size = c.prefs.ignore_groups_over > 0 && model::is_group(&key) && !c.group_sizes.contains_key(&key);
+        let said = if from_me || model::is_group(&key) { None } else { Some(message.text.clone()) };
         let outcome = c.inbox.add(message, &filters, None, false);
         if let (Some(text), true) = (note, outcome != Outcome::Duplicate) {
             c.ledger_queue.push(text);
+        }
+        // A customer's new message: the answer to a quote, or maybe a print order (orders.rs).
+        if let (Some(text), true) = (said, outcome != Outcome::Duplicate) {
+            order_step(c, &key, &text);
         }
         if let Some(g) = needs_name(c, &key) {
             groups.push(g);
@@ -925,13 +954,119 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
     (name, groups)
 }
 
+/// A customer wrote. With a quote waiting, a "yes" approves it; else, a file and words about
+/// printing in the last messages queue the conversation to be read as an order.
+fn order_step(c: &mut Ctl, key: &str, text: &str) {
+    if let Some((_, order)) = c.orders.iter_mut().find(|(_, o)| o.chat == key && o.state == orders::State::Quoted) {
+        if orders::approves(text) {
+            order.state = orders::State::Approved;
+            c.order_news.push(order.name.clone());
+        }
+        return;
+    }
+    if c.orders.iter().any(|(_, o)| o.chat == key && o.state == orders::State::Approved) {
+        return;
+    }
+    let Some(conversation) = c.inbox.conversations.get(key) else { return };
+    if !orders::worth_reading(conversation) {
+        return;
+    }
+    let Some((file, _)) = orders::file_of(conversation) else { return };
+    if c.order_settled.get(key) == Some(&file) || c.order_queue.iter().any(|k| k == key) {
+        return;
+    }
+    c.order_queue.push(key.to_string());
+}
+
+/// The last messages of one conversation, read by the model: a print order becomes a card that
+/// waits for your click, anything else is forgotten (orders.rs).
+async fn read_order(gen: u64, chat: String) {
+    let config = tauri::async_runtime::spawn_blocking(orders::load).await.unwrap_or_default();
+    if !config.ativo {
+        return;
+    }
+    let (prompt, file, name) = {
+        let mut c = ctl();
+        if c.generation != gen || c.order_reading.contains(&chat) {
+            return;
+        }
+        let found = c.inbox.conversations.get(&chat).and_then(|conv| Some((orders::prompt(conv)?, orders::file_of(conv)?, conv.name.clone())));
+        let Some(found) = found else { return };
+        c.order_reading.insert(chat.clone());
+        found
+    };
+    let answer = orders::read_order(&prompt, &config).await;
+    let (names, busy) = crate::printers::queue();
+    let fresh = {
+        let mut c = ctl();
+        c.order_reading.remove(&chat);
+        if c.generation != gen {
+            return;
+        }
+        match answer {
+            Ok(Some(asked)) => {
+                let kind = config.item(&asked.item).map(|i| i.impressora.clone()).unwrap_or_default();
+                let order = orders::Order {
+                    chat: chat.clone(),
+                    name,
+                    quantity: asked.quantity,
+                    lines: orders::price(&asked, &config),
+                    note: asked.note.clone(),
+                    file,
+                    printer: orders::printer(&kind, &config.impressoras, &names, &busy),
+                    state: orders::State::Draft,
+                    saved: None,
+                };
+                place_order(&mut c, order)
+            }
+            Ok(None) => false,
+            Err(reason) => {
+                crate::log::line(format!("whatsapp: could not read a print order: {reason}"));
+                false
+            }
+        }
+    };
+    if fresh {
+        pill(PillEvent::Message { name: crate::i18n::t("New print order") });
+    }
+    changed();
+}
+
+/// Puts a freshly read order on the card, in place of the draft the same customer had. False when
+/// nothing changed: the same draft again, or a quote already on its way.
+fn place_order(c: &mut Ctl, order: orders::Order) -> bool {
+    if c.orders.iter().any(|(_, o)| o.chat == order.chat && o.state != orders::State::Draft) {
+        return false;
+    }
+    if c.orders.iter().any(|(_, o)| *o == order) {
+        return false;
+    }
+    c.orders.retain(|(_, o)| o.chat != order.chat);
+    c.order_next += 1;
+    let id = c.order_next;
+    c.orders.push((id, order));
+    if c.orders.len() > orders::MAX_ORDERS {
+        c.orders.remove(0);
+    }
+    true
+}
+
 fn after_ingest(gen: u64, fresh: Option<String>, groups: Vec<String>) {
     if let Some(name) = fresh {
         pill(PillEvent::Message { name });
     }
-    let notes = std::mem::take(&mut ctl().ledger_queue);
+    let (notes, queued, approved) = {
+        let mut c = ctl();
+        (std::mem::take(&mut c.ledger_queue), std::mem::take(&mut c.order_queue), std::mem::take(&mut c.order_news))
+    };
     for text in notes {
         spawn(read_note(gen, text));
+    }
+    for chat in queued {
+        spawn(read_order(gen, chat));
+    }
+    for name in approved {
+        pill(PillEvent::Message { name: crate::i18n::tf("Order approved: {name}", &[("name", name.as_str())]) });
     }
     if let Some(provider) = ctl().provider.clone() {
         name_groups(provider, gen, groups, true);
@@ -1336,6 +1471,82 @@ pub async fn whatsapp_ledger_save(window: WebviewWindow, id: u64) -> Result<Stri
     Ok(path.to_string_lossy().into_owned())
 }
 
+/// "Send quote" on an order's card: the quote goes to the customer, and only then.
+pub async fn whatsapp_order_quote(window: WebviewWindow, id: u64) -> Result<(), String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    let payment = tauri::async_runtime::spawn_blocking(orders::load).await.map(|c| c.pagamento).unwrap_or_default();
+    let (chat, text) = {
+        let c = ctl();
+        let (_, order) = c
+            .orders
+            .iter()
+            .find(|(n, o)| *n == id && o.state == orders::State::Draft)
+            .ok_or_else(|| crate::i18n::t("That order is no longer waiting."))?;
+        let text = order.quote(&payment).ok_or_else(|| crate::i18n::t("The table has no price for this order."))?;
+        (order.chat.clone(), text)
+    };
+    if !send(&chat, &text).await {
+        return Err(crate::i18n::t("Could not send the quote."));
+    }
+    if let Some((_, order)) = ctl().orders.iter_mut().find(|(n, _)| *n == id) {
+        order.state = orders::State::Quoted;
+    }
+    changed();
+    Ok(())
+}
+
+/// "Discard" (or "Done") on an order's card: it goes, and its file is not read as an order again.
+pub fn whatsapp_order_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    {
+        let mut c = ctl();
+        if let Some(index) = c.orders.iter().position(|(n, _)| *n == id) {
+            let (_, order) = c.orders.remove(index);
+            if c.order_settled.len() > 500 {
+                c.order_settled.clear();
+            }
+            c.order_settled.insert(order.chat, order.file.0);
+        }
+    }
+    changed();
+    Ok(())
+}
+
+/// "Get file" on an order's card: the customer's file is fetched into Documents\Coucou\Pedidos
+/// and its folder opens. Resolves with the file's path.
+pub async fn whatsapp_order_file(window: WebviewWindow, id: u64) -> Result<String, String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    let (provider, chat, message, name, saved) = {
+        let c = ctl();
+        let (_, order) = c.orders.iter().find(|(n, _)| *n == id).ok_or_else(|| crate::i18n::t("That order is no longer waiting."))?;
+        let provider = c.provider.clone().ok_or_else(|| crate::i18n::t("Could not fetch the file."))?;
+        (provider, order.chat.clone(), order.file.0.clone(), order.name.clone(), order.saved.clone())
+    };
+    let dir = orders::folder(&name);
+    if let Some(path) = saved.filter(|path| std::path::Path::new(path).exists()) {
+        crate::platform::reveal_folder(&dir.to_string_lossy());
+        return Ok(path);
+    }
+    let relative = provider.download(&message, &chat).await.map_err(|_| crate::i18n::t("Could not fetch the file."))?;
+    let source = orders::downloaded(&process::working_dir(), &relative).ok_or_else(|| crate::i18n::t("Could not fetch the file."))?;
+    let target = dir.clone();
+    let kept = tauri::async_runtime::spawn_blocking(move || orders::keep(&source, &target))
+        .await
+        .map_err(|e| e.to_string())
+        .and_then(|r| r)
+        .map_err(|reason| {
+            crate::log::line(format!("whatsapp: could not keep an order's file: {reason}"));
+            crate::i18n::t("Could not fetch the file.")
+        })?;
+    let path = kept.to_string_lossy().into_owned();
+    if let Some((_, order)) = ctl().orders.iter_mut().find(|(n, _)| *n == id) {
+        order.saved = Some(path.clone());
+    }
+    changed();
+    crate::platform::reveal_folder(&dir.to_string_lossy());
+    Ok(path)
+}
+
 pub fn whatsapp_ledger_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
     only(&window, crate::island::WINDOW_LABEL)?;
     ctl().ledger_pending.retain(|(n, _)| *n != id);
@@ -1574,6 +1785,12 @@ mod tests {
             ledger_pending: Vec::new(),
             ledger_next: 0,
             ledger_sheet_code: false,
+            order_queue: Vec::new(),
+            order_reading: HashSet::new(),
+            orders: Vec::new(),
+            order_next: 0,
+            order_settled: HashMap::new(),
+            order_news: Vec::new(),
         }
     }
 
@@ -1729,5 +1946,76 @@ mod tests {
         assert_eq!(serde_json::to_value(WebhookState::PortBusy { port: 1 }).unwrap()["state"], "portBusy");
         assert_eq!(serde_json::to_value(LinkState::NeedsQr).unwrap()["state"], "needsQr");
         assert_eq!(serde_json::to_value(TestResult::Connected { who: "+1".into() }).unwrap()["result"], "connected");
+    }
+
+    fn file_from(id: &str, chat: &str) -> Message {
+        let mut m = msg(id, chat, "");
+        m.media = model::Media::Document { name: Some("a.pdf".into()) };
+        m
+    }
+
+    fn draft(chat: &str, file: &str) -> orders::Order {
+        orders::Order {
+            chat: chat.into(),
+            name: "Ana".into(),
+            quantity: 6,
+            lines: vec![orders::Line { text: "6 × impressão colorida".into(), cents: Some(1200) }],
+            note: String::new(),
+            file: (file.into(), "a.pdf".into()),
+            printer: "WF5390".into(),
+            state: orders::State::Draft,
+            saved: None,
+        }
+    }
+
+    #[test]
+    fn a_customers_file_and_words_queue_an_order_and_a_yes_approves_the_quote() {
+        let chat = "5511999990000@s.whatsapp.net";
+        let mut c = fresh_ctl();
+        ingest(&mut c, vec![msg("1", chat, "bom dia")]);
+        ingest(&mut c, vec![file_from("2", chat)]);
+        assert!(c.order_queue.is_empty(), "a file with no word about printing is not read");
+        ingest(&mut c, vec![msg("3", chat, "quero 6 folhas coloridas")]);
+        assert_eq!(c.order_queue, [chat]);
+        ingest(&mut c, vec![msg("3", chat, "quero 6 folhas coloridas")]);
+        assert_eq!(c.order_queue.len(), 1, "a duplicate queues nothing");
+        c.order_queue.clear();
+
+        assert!(place_order(&mut c, draft(chat, "2")));
+        assert!(!place_order(&mut c, draft(chat, "2")), "the same draft again is not news");
+        assert_eq!(c.island_view().orders.len(), 1);
+        // A "yes" before any quote was sent approves nothing.
+        ingest(&mut c, vec![msg("4", chat, "sim")]);
+        assert_eq!(c.orders[0].1.state, orders::State::Draft);
+        c.order_queue.clear();
+        c.orders[0].1.state = orders::State::Quoted;
+        assert!(!place_order(&mut c, draft(chat, "2")), "a quote on its way is not replaced");
+        ingest(&mut c, vec![msg("5", chat, "quanto tempo demora?")]);
+        assert_eq!(c.orders[0].1.state, orders::State::Quoted);
+        ingest(&mut c, vec![msg("6", chat, "Pode imprimir")]);
+        assert_eq!(c.orders[0].1.state, orders::State::Approved);
+        assert_eq!(c.order_news, ["Ana"]);
+        assert!(c.order_queue.is_empty());
+
+        // What I write myself, and what is said in a group, is never an order.
+        let mut mine = file_from("7", "5511888880000@s.whatsapp.net");
+        mine.from_me = true;
+        ingest(&mut c, vec![mine, msg("8", "5511888880000@s.whatsapp.net", "imprime isso")]);
+        assert_eq!(c.order_queue.len(), 0);
+        ingest(&mut c, vec![file_from("9", "120363000000000000@g.us"), msg("10", "120363000000000000@g.us", "imprime 3 folhas")]);
+        assert!(c.order_queue.is_empty());
+    }
+
+    #[test]
+    fn a_discarded_order_is_not_read_again_until_a_new_file_comes() {
+        let chat = "5511999990000@s.whatsapp.net";
+        let mut c = fresh_ctl();
+        ingest(&mut c, vec![file_from("1", chat), msg("2", chat, "imprime 3 folhas")]);
+        c.order_queue.clear();
+        c.order_settled.insert(chat.into(), "1".into());
+        ingest(&mut c, vec![msg("3", chat, "em preto e branco")]);
+        assert!(c.order_queue.is_empty());
+        ingest(&mut c, vec![file_from("4", chat)]);
+        assert_eq!(c.order_queue, [chat]);
     }
 }

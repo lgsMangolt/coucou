@@ -12,7 +12,6 @@
   if (window.__coucouGmail || location.hostname !== "mail.google.com" || window.top !== window) return;
 
   const MARK = "[coucou-gmail]";
-  const THREAD = "https://mail.google.com/mail/u/0/#inbox/";
   const clean = (s) => (s || "").replace(/\s+/g, " ").trim();
   const started = Date.now();
 
@@ -23,7 +22,19 @@
     if (!document.documentElement) return;
     if (!document.title.startsWith(MARK)) own = document.title;
     // `n` changes every time: a title that does not change is not announced.
-    document.title = MARK + JSON.stringify(Object.assign({}, report, { n: ++turn }));
+    // A page's title is cut at 4096 characters: a report that long would arrive broken, so it
+    // loses its first words, then its oldest ids, until it fits.
+    const out = Object.assign({}, report, { n: ++turn });
+    let text = JSON.stringify(out);
+    if (text.length > 3800 && out.messages) {
+      out.messages = out.messages.map((m) => Object.assign({}, m, { snippet: "" }));
+      text = JSON.stringify(out);
+    }
+    while (text.length > 3800 && out.known && out.known.length > 0) {
+      out.known = out.known.slice(0, Math.floor(out.known.length / 2));
+      text = JSON.stringify(out);
+    }
+    document.title = MARK + text;
     // Gmail's title goes back a moment later (both changes at once would be announced as one).
     setTimeout(() => {
       if (document.title.startsWith(MARK)) document.title = own || "Gmail";
@@ -46,12 +57,10 @@
     const id = (thread && thread.getAttribute("data-legacy-thread-id")) || "";
     return {
       id,
-      from: clean(who && (who.getAttribute("name") || who.textContent)),
-      address: clean(who && who.getAttribute("email")),
-      subject: clean((row.querySelector(".bog") || {}).textContent).slice(0, 200),
-      snippet: clean((row.querySelector(".y2") || {}).textContent).replace(/^[-–—\s]+/, "").slice(0, 160),
-      at: 0,
-      link: /^[0-9a-f]{8,32}$/.test(id) ? THREAD + id : "",
+      // Kept short: the whole report travels in the page's title, which has a limit.
+      from: clean(who && (who.getAttribute("name") || who.textContent || who.getAttribute("email"))).slice(0, 40),
+      subject: clean((row.querySelector(".bog") || {}).textContent).slice(0, 90),
+      snippet: clean((row.querySelector(".y2") || {}).textContent).replace(/^[-–—\s]+/, "").slice(0, 60),
     };
   }
 
@@ -64,9 +73,11 @@
       // Signed in, and still nothing a minute later: the page did not load, or it changed.
       return Date.now() - started > 60000 ? { loggedIn: true, failed: true, unread: 0, messages: [] } : null;
     }
-    const messages = rows.filter((row) => row.classList.contains("zE")).slice(0, 10).map(message).filter((m) => m.id);
+    const unread = rows.filter((row) => row.classList.contains("zE")).map(message).filter((m) => m.id);
+    const messages = unread.slice(0, 10);
     const counted = titleCount();
-    return { loggedIn: true, failed: false, unread: counted === null ? messages.length : counted, messages };
+    // `known`: every unread conversation of the page, so the app can tell new mail from old.
+    return { loggedIn: true, failed: false, unread: counted === null ? messages.length : counted, messages, known: unread.slice(0, 50).map((m) => m.id) };
   }
 
   let last = "";

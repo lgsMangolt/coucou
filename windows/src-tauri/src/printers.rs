@@ -160,6 +160,8 @@ struct Inner {
     streaks: HashMap<String, (Option<Problem>, u32)>,
     /// The problem each printer was already warned about.
     warned: HashMap<String, Problem>,
+    /// Printers with at least one job in their queue at the last look.
+    busy: HashSet<String>,
 }
 
 fn recount(report: &mut Report) {
@@ -174,6 +176,7 @@ fn analyze(raw: Raw, inner: &mut Inner) -> (Report, Vec<Alert>) {
             stuck.insert(printer);
         }
     }
+    inner.busy = raw.jobs.iter().filter_map(|job| job.name.as_deref()?.rsplit_once(", ").map(|(printer, _)| printer.trim().to_string())).collect();
     let mut views = Vec::new();
     let mut alerts = Vec::new();
     let mut seen = HashSet::new();
@@ -223,6 +226,13 @@ static NEXT: AtomicU64 = AtomicU64::new(1);
 
 fn inner() -> MutexGuard<'static, Inner> {
     INNER.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// The printers Windows knows (as of the last look; none while the pill is off), and the ones
+/// that are printing: what a print order picks its printer from (whatsapp/orders.rs).
+pub fn queue() -> (Vec<String>, HashSet<String>) {
+    let inner = inner();
+    (inner.report.printers.iter().map(|p| p.name.clone()).collect(), inner.busy.clone())
 }
 
 fn ignored_path() -> PathBuf {

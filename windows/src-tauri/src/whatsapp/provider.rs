@@ -372,6 +372,19 @@ impl Provider {
         }
     }
 
+    /// Has the gateway fetch a message's file: the path it saved it under, relative to its own
+    /// folder. Only asked for by a click on a print order (orders.rs).
+    pub async fn download(&self, message: &str, chat: &str) -> Result<String, WaError> {
+        match self {
+            Provider::Gowa { http, device } => {
+                let path = format!("/message/{}/download", path_component(message));
+                let data = Self::gowa_scoped(http, device, Method::GET, &path, &[("phone", chat.to_string())], None).await?;
+                gowa::downloaded_path(&data).ok_or_else(|| WaError::Refused("no file".into()))
+            }
+            Provider::Openwa { .. } => Err(WaError::Refused("not supported".into())),
+        }
+    }
+
     /// Marks the chat read up to `last_incoming` (the newest message received in it).
     pub async fn mark_read(&self, chat: &str, last_incoming: Option<&str>) -> Result<(), WaError> {
         match self {

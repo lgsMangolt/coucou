@@ -85,6 +85,21 @@ pub fn whatsapp_ledger_discard(window: WebviewWindow, id: u64) -> Result<(), Str
 }
 
 #[tauri::command]
+pub async fn whatsapp_order_quote(window: WebviewWindow, id: u64) -> Result<(), String> {
+    whatsapp::whatsapp_order_quote(window, id).await
+}
+
+#[tauri::command]
+pub fn whatsapp_order_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
+    whatsapp::whatsapp_order_discard(window, id)
+}
+
+#[tauri::command]
+pub async fn whatsapp_order_file(window: WebviewWindow, id: u64) -> Result<String, String> {
+    whatsapp::whatsapp_order_file(window, id).await
+}
+
+#[tauri::command]
 pub fn whatsapp_set_ledger(window: WebviewWindow, enabled: bool, dir: String, chat: String) -> Result<(), String> {
     whatsapp::whatsapp_set_ledger(window, enabled, dir, chat)
 }
@@ -173,4 +188,19 @@ pub fn whatsapp2_install(window: WebviewWindow) -> Result<(), String> {
 #[tauri::command]
 pub fn whatsapp2_set_group_limit(window: WebviewWindow, limit: u32) -> Result<(), String> {
     whatsapp2::whatsapp_set_group_limit(window, limit)
+}
+
+#[tauri::command]
+pub async fn whatsapp2_order_quote(window: WebviewWindow, id: u64) -> Result<(), String> {
+    whatsapp2::whatsapp_order_quote(window, id).await
+}
+
+#[tauri::command]
+pub fn whatsapp2_order_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
+    whatsapp2::whatsapp_order_discard(window, id)
+}
+
+#[tauri::command]
+pub async fn whatsapp2_order_file(window: WebviewWindow, id: u64) -> Result<String, String> {
+    whatsapp2::whatsapp_order_file(window, id).await
 }

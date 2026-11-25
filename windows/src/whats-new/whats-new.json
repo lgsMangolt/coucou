@@ -2,6 +2,81 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.10.0",
+      "items": [
+        {
+          "icon": "chat",
+          "title": {
+            "en": "Print orders",
+            "zh-Hans": "打印订单",
+            "hi": "प्रिंट ऑर्डर",
+            "es": "Pedidos de impresión",
+            "ar": "طلبات الطباعة",
+            "fr": "Commandes d’impression",
+            "bn": "প্রিন্ট অর্ডার",
+            "pt-BR": "Pedidos de impressão",
+            "ru": "Заказы на печать",
+            "id": "Pesanan cetak",
+            "de": "Druckaufträge",
+            "tr": "Baskı siparişleri",
+            "ko": "인쇄 주문",
+            "ja": "印刷の注文"
+          },
+          "detail": {
+            "en": "A customer's file on WhatsApp becomes a card: the quote from your price table, sent with a click.",
+            "zh-Hans": "客户在 WhatsApp 发来的文件会变成卡片：按你的价格表报价，点击即可发送。",
+            "hi": "WhatsApp पर ग्राहक की फ़ाइल एक कार्ड बनती है: आपकी मूल्य तालिका से कोटेशन, एक क्लिक में भेजें।",
+            "es": "El archivo de un cliente en WhatsApp se vuelve una tarjeta: el presupuesto de tu tabla, enviado con un clic.",
+            "ar": "ملف العميل على واتساب يصبح بطاقة: عرض سعر من جدول أسعارك يُرسل بنقرة.",
+            "fr": "Le fichier d’un client sur WhatsApp devient une carte : le devis de ta grille de prix, envoyé en un clic.",
+            "bn": "WhatsApp-এ গ্রাহকের ফাইল একটি কার্ড হয়: আপনার মূল্য তালিকা থেকে কোটেশন, এক ক্লিকে পাঠান।",
+            "pt-BR": "O arquivo do cliente no WhatsApp vira um cartão: orçamento pela sua tabela, enviado com um clique.",
+            "ru": "Файл клиента в WhatsApp становится карточкой: смета по вашему прайсу отправляется одним щелчком.",
+            "id": "Berkas pelanggan di WhatsApp menjadi kartu: penawaran dari tabel hargamu, dikirim dengan satu klik.",
+            "de": "Die Datei eines Kunden in WhatsApp wird zur Karte: Angebot aus deiner Preisliste, mit einem Klick gesendet.",
+            "tr": "Müşterinin WhatsApp’taki dosyası bir karta dönüşür: fiyat tablonuzdan teklif, tek tıkla gönderilir.",
+            "ko": "WhatsApp으로 받은 고객 파일이 카드가 됩니다: 가격표로 낸 견적을 클릭 한 번으로 보냅니다.",
+            "ja": "WhatsApp で届いた顧客のファイルがカードに。価格表からの見積もりをクリックで送信できます。"
+          }
+        },
+        {
+          "icon": "bell",
+          "title": {
+            "en": "Gmail: only new mail",
+            "zh-Hans": "Gmail：只显示新邮件",
+            "hi": "Gmail: केवल नए मेल",
+            "es": "Gmail: solo correo nuevo",
+            "ar": "Gmail: البريد الجديد فقط",
+            "fr": "Gmail : seulement les nouveaux",
+            "bn": "Gmail: শুধু নতুন মেল",
+            "pt-BR": "Gmail: só os novos",
+            "ru": "Gmail: только новые",
+            "id": "Gmail: hanya email baru",
+            "de": "Gmail: nur Neues",
+            "tr": "Gmail: yalnızca yeniler",
+            "ko": "Gmail: 새 메일만",
+            "ja": "Gmail：新着のみ"
+          },
+          "detail": {
+            "en": "The Gmail card lists and counts only the mail that arrives after Coucou opens.",
+            "zh-Hans": "Gmail 卡片只显示并统计 Coucou 打开后收到的邮件。",
+            "hi": "Gmail कार्ड केवल Coucou खुलने के बाद आए मेल दिखाता और गिनता है।",
+            "es": "La tarjeta de Gmail muestra y cuenta solo el correo que llega después de abrir Coucou.",
+            "ar": "بطاقة Gmail تعرض وتعدّ فقط البريد الذي يصل بعد فتح Coucou.",
+            "fr": "La carte Gmail n’affiche et ne compte que les mails arrivés après l’ouverture de Coucou.",
+            "bn": "Gmail কার্ড শুধু Coucou খোলার পরে আসা মেল দেখায় ও গোনে।",
+            "pt-BR": "O cartão do Gmail mostra e conta só os e-mails que chegam depois de o Coucou abrir.",
+            "ru": "Карточка Gmail показывает и считает только письма, пришедшие после запуска Coucou.",
+            "id": "Kartu Gmail hanya menampilkan dan menghitung email yang masuk setelah Coucou dibuka.",
+            "de": "Die Gmail-Karte zeigt und zählt nur E-Mails, die nach dem Start von Coucou ankommen.",
+            "tr": "Gmail kartı yalnızca Coucou açıldıktan sonra gelen e-postaları gösterir ve sayar.",
+            "ko": "Gmail 카드는 Coucou를 연 뒤 도착한 메일만 보여 주고 셉니다.",
+            "ja": "Gmail カードは Coucou を開いた後に届いたメールだけを表示して数えます。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.9.0",
       "items": [
         {

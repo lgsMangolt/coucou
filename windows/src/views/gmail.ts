@@ -1,4 +1,4 @@
-// The Gmail card: sign in once, then the latest unread conversations (who, subject, first words). A click on
+// The Gmail card: sign in once, then the mail that arrived since Coucou opened (who, subject, first words). A click on
 // one opens it in Gmail, in the browser. Nothing is sent, marked or deleted from here.
 
 import { h, clear, dot } from "./dom";
@@ -67,7 +67,7 @@ export function buildGmailCard(): GmailCard {
     if (next === key) return;
     key = next;
     clear(list);
-    if (s.messages.length === 0) list.append(h("div", { class: "wa-empty", text: t("No unread mail") }));
+    if (s.messages.length === 0) list.append(h("div", { class: "wa-empty", text: t("No new mail") }));
     else list.append(...s.messages.map(row));
   }
 
