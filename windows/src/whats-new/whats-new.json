@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.11.1",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Counter prices",
+            "zh-Hans": "门店价格",
+            "hi": "काउंटर की कीमतें",
+            "es": "Precios del mostrador",
+            "ar": "أسعار المحل",
+            "fr": "Prix du comptoir",
+            "bn": "দোকানের দাম",
+            "pt-BR": "Preços do balcão",
+            "ru": "Цены прилавка",
+            "id": "Harga konter",
+            "de": "Ladenpreise",
+            "tr": "Tezgâh fiyatları",
+            "ko": "매장 가격",
+            "ja": "店頭価格"
+          },
+          "detail": {
+            "en": "The orders' table now uses the prices you quote your customers.",
+            "zh-Hans": "订单价格表现在使用你给客户报的价格。",
+            "hi": "ऑर्डर की तालिका अब वही कीमतें लेती है जो आप ग्राहकों को बताते हैं।",
+            "es": "La tabla de pedidos ahora usa los precios que das a tus clientes.",
+            "ar": "جدول الطلبات يستخدم الآن الأسعار التي تعطيها لعملائك.",
+            "fr": "La grille des commandes reprend les prix que vous donnez à vos clients.",
+            "bn": "অর্ডারের তালিকা এখন আপনার গ্রাহকদের বলা দাম ব্যবহার করে।",
+            "pt-BR": "A tabela dos pedidos agora usa os preços que você passa aos clientes.",
+            "ru": "Прайс заказов теперь использует цены, которые вы называете клиентам.",
+            "id": "Tabel pesanan kini memakai harga yang Anda berikan ke pelanggan.",
+            "de": "Die Preisliste nutzt jetzt die Preise, die Sie Ihren Kunden nennen.",
+            "tr": "Sipariş tablosu artık müşterilerinize verdiğiniz fiyatları kullanıyor.",
+            "ko": "주문 표가 이제 고객에게 안내하는 가격을 사용합니다.",
+            "ja": "注文の表が、お客様に伝えている価格を使うようになりました。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.11.0",
       "items": [
         {

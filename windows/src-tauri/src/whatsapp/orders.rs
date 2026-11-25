@@ -120,8 +120,9 @@ fn finish(id: &str, nome: &str, preco: f64, por_folha: bool) -> Finish {
 }
 
 impl Default for Config {
-    /// The table the shop asked for, priced for Caxias do Sul (RS), a little above the highest
-    /// tables Brazilian copy shops published in 2026.
+    /// The table the shop asked for, with the prices the shop quotes its customers on WhatsApp
+    /// (Caxias do Sul, 2026); couchê A3 150g, which no conversation priced, sits between the A3 sulfite
+    /// and the A3 couchê 300g.
     fn default() -> Self {
         let one = |preco: f64| vec![Tier { ate: 300, preco }];
         Config {
@@ -129,13 +130,13 @@ impl Default for Config {
             itens: vec![
                 item("pb", "impressão P&B, sulfite 75g", "baratos", tiers([1.00, 0.70, 0.60, 0.50])),
                 item("pb_fv", "impressão P&B frente e verso, sulfite 75g", "baratos", tiers([1.60, 1.10, 0.95, 0.80])),
-                item("color", "impressão colorida, sulfite 75g", "baratos", tiers([2.50, 2.20, 2.00, 1.70])),
-                item("a3_pb", "impressão P&B A3, sulfite 75g", "baratos", tiers([2.00, 1.40, 1.20, 1.00])),
-                item("a3_color", "impressão colorida A3, sulfite 75g", "baratos", tiers([5.00, 4.40, 4.00, 3.40])),
-                item("couche_a4_150", "impressão colorida A4, couchê 150g", "couche", one(6.00)),
-                item("couche_a4_300", "impressão colorida A4, couchê 300g", "couche", one(7.50)),
-                item("couche_a3_150", "impressão colorida A3, couchê 150g", "couche", one(12.00)),
-                item("couche_a3_300", "impressão colorida A3, couchê 300g", "couche", one(15.00)),
+                item("color", "impressão colorida, sulfite 75g", "baratos", tiers([2.00, 1.80, 1.60, 1.40])),
+                item("a3_pb", "impressão P&B A3, sulfite 75g", "baratos", tiers([2.00, 1.60, 1.40, 1.20])),
+                item("a3_color", "impressão colorida A3, sulfite 75g", "baratos", tiers([5.50, 5.50, 5.50, 5.50])),
+                item("couche_a4_150", "impressão colorida A4, couchê 150g", "couche", one(3.50)),
+                item("couche_a4_300", "impressão colorida A4, couchê 300g", "couche", one(5.00)),
+                item("couche_a3_150", "impressão colorida A3, couchê 150g", "couche", one(6.00)),
+                item("couche_a3_300", "impressão colorida A3, couchê 300g", "couche", one(6.50)),
             ],
             acabamentos: vec![
                 finish("corte", "corte (até 10 folhas)", 10.00, false),
@@ -783,17 +784,17 @@ mod tests {
         let pb = config.item("pb").unwrap();
         assert_eq!([1, 10, 11, 50, 51, 100, 101, 300].map(|q| pb.unit_cents(q)), [Some(100), Some(100), Some(70), Some(70), Some(60), Some(60), Some(50), Some(50)]);
         assert_eq!(pb.unit_cents(301), None, "past the table: quoted by hand");
-        assert_eq!(config.item("couche_a3_300").unwrap().unit_cents(4), Some(1500));
+        assert_eq!(config.item("couche_a3_300").unwrap().unit_cents(4), Some(650));
 
         let asked = Asked { item: "color".into(), quantity: 6, finishes: vec![], note: String::new() };
         let plain_order = order(&asked, &config);
-        assert_eq!(plain_order.total_cents(), Some(1500));
+        assert_eq!(plain_order.total_cents(), Some(1200));
         assert_eq!(
             plain_order.quote(" Pix: 11 99999-0000 ").unwrap(),
-            "Opa! O orçamento fica assim:\n6 × impressão colorida, sulfite 75g (R$ 2,50 cada)\nTotal: R$ 15,00\nPix: 11 99999-0000\nPosso imprimir?"
+            "Opa! O orçamento fica assim:\n6 × impressão colorida, sulfite 75g (R$ 2,00 cada)\nTotal: R$ 12,00\nPix: 11 99999-0000\nPosso imprimir?"
         );
         let view = plain_order.view(1);
-        assert_eq!((view.line.as_str(), view.total.as_str()), ("6 × impressão colorida, sulfite 75g", "R$ 15,00"));
+        assert_eq!((view.line.as_str(), view.total.as_str()), ("6 × impressão colorida, sulfite 75g", "R$ 12,00"));
         assert_eq!(view.reply, plain_order.quote("").unwrap(), "the card shows the reply to copy");
         let mut paid = plain_order.clone();
         paid.payment = "Pix: 11 99999-0000".into();
@@ -814,7 +815,7 @@ mod tests {
         assert_eq!(big.view(1).reason, "quantidade acima da tabela");
 
         let a3 = order(&Asked { item: "a3_color".into(), quantity: 123, finishes: vec![], note: String::new() }, &config);
-        assert_eq!(a3.total_cents(), Some(123 * 340));
+        assert_eq!(a3.total_cents(), Some(123 * 550));
 
         let question = Order { kind: Kind::Question, ask: "opa, preto e branco ou colorido?".into(), lines: vec![], ..plain_order.clone() };
         assert_eq!((question.reply(), question.quote("")), ("opa, preto e branco ou colorido?".to_string(), None));
