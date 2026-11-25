@@ -15,6 +15,7 @@ Cada versão é um commit marcado com a tag `br-v<número>` neste repositório.
 | 0.9.0 | Gmail na ilha | Pílula nova do Gmail: os e-mails não lidos (quem mandou e o assunto), aviso quando chega um novo, e um clique abre a mensagem no Gmail. O login é o do Google, numa janela do próprio Coucou (o mesmo do YouTube Music), que fica aberta e escondida na caixa de entrada. O Coucou não envia, não marca e não apaga e-mails. |
 | 0.10.0 | Pedidos de impressão | Pedido de impressão pelo WhatsApp: quando um cliente manda um arquivo e pede a impressão, o Coucou lê o pedido, calcula o orçamento pela tabela de preços (`pedidos.json`), escolhe a impressora pelas regras da loja e mostra um cartão. O orçamento só é enviado com um clique; o "sim" do cliente marca o pedido como aprovado; "Pegar arquivo" baixa o arquivo para Documentos\\Coucou\\Pedidos. Só mensagens novas são lidas. O Gmail passa a mostrar só os e-mails que chegam depois de o Coucou abrir. |
 | 0.10.1 | Preços de Caxias | A tabela de preços dos pedidos de impressão passa a ter valores para Caxias do Sul: P&B a partir de R$ 1,00 a folha, colorido a partir de R$ 2,50, couchê A4 de R$ 6,00 a R$ 7,50 e A3 de R$ 12,00 a R$ 15,00, encadernação de R$ 9,00 e R$ 12,00, plastificação R$ 6,00 a folha. |
+| 0.10.2 | Acabamentos | Preços dos acabamentos definidos pelo Lucas: corte R$ 10,00, encadernação até 100 folhas R$ 15,00, até 200 folhas R$ 20,00, plastificação R$ 10,00 a folha. |
 
 ## Como gerar e instalar
 

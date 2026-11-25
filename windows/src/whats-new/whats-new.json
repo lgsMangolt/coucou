@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.10.2",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Finishing prices",
+            "zh-Hans": "后期加工价格",
+            "hi": "फ़िनिशिंग की कीमतें",
+            "es": "Precios de acabados",
+            "ar": "أسعار التشطيب",
+            "fr": "Prix des finitions",
+            "bn": "ফিনিশিংয়ের দাম",
+            "pt-BR": "Preços dos acabamentos",
+            "ru": "Цены на отделку",
+            "id": "Harga finishing",
+            "de": "Preise für Veredelung",
+            "tr": "Son işlem fiyatları",
+            "ko": "후가공 가격",
+            "ja": "仕上げの価格"
+          },
+          "detail": {
+            "en": "Cutting, binding and lamination have new prices in the print orders' table.",
+            "zh-Hans": "打印订单价格表中的裁切、装订和覆膜有了新价格。",
+            "hi": "प्रिंट ऑर्डर की तालिका में कटिंग, बाइंडिंग और लैमिनेशन की नई कीमतें हैं।",
+            "es": "El corte, la encuadernación y el plastificado tienen precios nuevos en la tabla de pedidos.",
+            "ar": "للقص والتجليد والتغليف أسعار جديدة في جدول طلبات الطباعة.",
+            "fr": "La découpe, la reliure et la plastification ont de nouveaux prix dans la grille.",
+            "bn": "প্রিন্ট অর্ডারের তালিকায় কাটিং, বাঁধাই ও ল্যামিনেশনের নতুন দাম।",
+            "pt-BR": "Corte, encadernação e plastificação têm preços novos na tabela dos pedidos.",
+            "ru": "У резки, переплёта и ламинирования новые цены в прайсе заказов.",
+            "id": "Potong, jilid, dan laminasi punya harga baru di tabel pesanan cetak.",
+            "de": "Schneiden, Binden und Laminieren haben neue Preise in der Preisliste.",
+            "tr": "Kesim, ciltleme ve laminasyonun sipariş tablosunda yeni fiyatları var.",
+            "ko": "인쇄 주문 표에서 재단, 제본, 코팅 가격이 바뀌었습니다.",
+            "ja": "印刷注文の表で、断裁・製本・ラミネートの価格が変わりました。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.10.1",
       "items": [
         {

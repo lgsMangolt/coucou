@@ -134,10 +134,10 @@ impl Default for Config {
                 item("couche_a3_300", "impressão colorida A3, couchê 300g", "couche", one(15.00)),
             ],
             acabamentos: vec![
-                finish("corte", "corte (até 10 folhas)", 4.00, false),
-                finish("encadernacao_100", "encadernação (até 100 folhas)", 9.00, false),
-                finish("encadernacao_200", "encadernação (até 200 folhas)", 12.00, false),
-                finish("plastificacao", "plastificação", 6.00, true),
+                finish("corte", "corte (até 10 folhas)", 10.00, false),
+                finish("encadernacao_100", "encadernação (até 100 folhas)", 15.00, false),
+                finish("encadernacao_200", "encadernação (até 200 folhas)", 20.00, false),
+                finish("plastificacao", "plastificação", 10.00, true),
             ],
             impressoras: Printers::default(),
             pagamento: String::new(),
@@ -637,11 +637,11 @@ mod tests {
 
         let bound = Asked { item: "pb".into(), quantity: 80, finishes: vec!["encadernacao_100".into(), "plastificacao".into()], note: String::new() };
         let bound = order(&bound, &config);
-        // 80 × 0,60 + 9,00 + 80 × 6,00
-        assert_eq!(bound.total_cents(), Some(4800 + 900 + 48000));
+        // 80 × 0,60 + 15,00 + 80 × 10,00
+        assert_eq!(bound.total_cents(), Some(4800 + 1500 + 80000));
         let quote = bound.quote("").unwrap();
-        assert!(quote.contains("• 80 × impressão P&B, sulfite 75g (R$ 0,60 cada): R$ 48,00") && quote.contains("• encadernação (até 100 folhas): R$ 9,00"), "{quote}");
-        assert!(quote.contains("Total: R$ 537,00"));
+        assert!(quote.contains("• 80 × impressão P&B, sulfite 75g (R$ 0,60 cada): R$ 48,00") && quote.contains("• encadernação (até 100 folhas): R$ 15,00"), "{quote}");
+        assert!(quote.contains("Total: R$ 863,00"));
 
         let big = order(&Asked { item: "pb".into(), quantity: 500, finishes: vec![], note: String::new() }, &config);
         assert_eq!((big.total_cents(), big.quote("")), (None, None));
