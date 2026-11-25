@@ -253,6 +253,10 @@ struct Ctl {
     order_reading: HashSet<String>,
     /// What Coucou sent by itself to each customer, and when (answer_alone).
     order_auto: HashMap<String, Vec<(i64, String)>>,
+    /// Images and PDFs customers sent while a quote waits for payment: (chat, message), read as receipts.
+    receipt_queue: Vec<(String, String)>,
+    /// Orders on their way to the printer.
+    order_printing: HashSet<u64>,
     /// The pages of the customers' PDFs, by message id (counted once).
     order_pages: HashMap<String, u32>,
     /// The orders on the card, in memory only.
@@ -303,6 +307,8 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         order_queue: Vec::new(),
         order_reading: HashSet::new(),
         order_auto: HashMap::new(),
+        receipt_queue: Vec::new(),
+        order_printing: HashSet::new(),
         order_pages: HashMap::new(),
         orders: Vec::new(),
         order_next: 0,
@@ -935,6 +941,8 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
         // Big groups are ignored; one whose size is not known yet waits for the answer before it is announced.
         let waiting_for_size = c.prefs.ignore_groups_over > 0 && model::is_group(&key) && !c.group_sizes.contains_key(&key);
         let said = if from_me || model::is_group(&key) { None } else { Some(message.text.clone()) };
+        let receipt = (!from_me && !model::is_group(&key) && matches!(message.media, model::Media::Image | model::Media::Document { .. }))
+            .then(|| message.id.clone());
         let outcome = c.inbox.add(message, &filters, None, false);
         if let (Some(text), true) = (note, outcome != Outcome::Duplicate) {
             c.ledger_queue.push(text);
@@ -942,6 +950,9 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
         // A customer's new message: the answer to a quote, or maybe a print order (orders.rs).
         if let (Some(text), true) = (said, outcome != Outcome::Duplicate) {
             order_step(c, &key, &text);
+        }
+        if let (Some(id), true) = (receipt, outcome != Outcome::Duplicate) {
+            receipt_step(c, &key, id);
         }
         if let Some(g) = needs_name(c, &key) {
             groups.push(g);
@@ -985,6 +996,163 @@ fn order_step(c: &mut Ctl, key: &str, text: &str) {
         return;
     }
     c.order_queue.push(key.to_string());
+}
+
+/// A customer's image or PDF while their quote waits for payment: maybe the receipt.
+fn receipt_step(c: &mut Ctl, key: &str, message: String) {
+    let waiting = c.orders.iter().any(|(_, o)| {
+        o.chat == key && !o.paid && matches!(o.state, orders::State::Quoted | orders::State::Approved) && o.total_cents().is_some() && o.file.0 != message
+    });
+    if waiting && !c.receipt_queue.iter().any(|(k, m)| k == key && *m == message) {
+        c.receipt_queue.push((key.to_string(), message));
+    }
+}
+
+/// The customer's file read as a receipt: when the amount paid is the quote's total, the order is
+/// paid (and approved), and a small one on plain paper is printed by itself (pedidos.json
+/// `imprimir_sozinho_ate`); anything else stays on the card.
+async fn read_receipt(gen: u64, chat: String, message: String) {
+    let Some(provider) = ctl().provider.clone() else { return };
+    let Ok(relative) = provider.download(&message, &chat).await else {
+        crate::log::line("whatsapp: could not fetch a file to check as a receipt");
+        return;
+    };
+    let Some(source) = orders::downloaded(&process::working_dir(), &relative) else { return };
+    // Alone in its own folder: the model may read that folder and nothing else.
+    let dir = crate::settings::local_dir().join("comprovantes").join(gateway::now_ms().to_string());
+    let target = dir.join(source.file_name().map(|n| n.to_os_string()).unwrap_or_else(|| "comprovante".into()));
+    let copied = std::fs::create_dir_all(&dir).and_then(|_| std::fs::copy(&source, &target)).is_ok();
+    let _ = std::fs::remove_file(&source);
+    if !copied {
+        let _ = std::fs::remove_dir_all(&dir);
+        return;
+    }
+    let read = orders::read_receipt(&target).await;
+    let _ = std::fs::remove_dir_all(&dir);
+    let config = tauri::async_runtime::spawn_blocking(orders::load).await.unwrap_or_default();
+    let outcome = {
+        let mut c = ctl();
+        if c.generation != gen {
+            return;
+        }
+        let Some((id, order)) = c
+            .orders
+            .iter_mut()
+            .find(|(_, o)| o.chat == chat && !o.paid && matches!(o.state, orders::State::Quoted | orders::State::Approved))
+        else {
+            return;
+        };
+        match read {
+            Ok(paid) if Some(paid) == order.total_cents() => {
+                order.paid = true;
+                order.state = orders::State::Approved;
+                crate::log::line("whatsapp: a receipt matches its quote");
+                Ok((*id, order.name.clone(), order.job.as_ref().is_some_and(|j| orders::prints_alone(j, &config))))
+            }
+            Ok(paid) => {
+                crate::log::line(format!("whatsapp: a receipt of {} does not match its quote", ledger::reais(paid)));
+                Err(Some(order.name.clone()))
+            }
+            Err(why) => {
+                crate::log::line(format!("whatsapp: a customer's file is not a receipt: {why}"));
+                Err(None)
+            }
+        }
+    };
+    changed();
+    match outcome {
+        Ok((id, name, alone)) => {
+            pill(PillEvent::Message { name: crate::i18n::tf("Receipt checked: {name}", &[("name", name.as_str())]) });
+            if alone {
+                let _ = print_and_tell(id).await;
+            }
+        }
+        Err(Some(name)) => pill(PillEvent::Message { name: crate::i18n::tf("The receipt does not match the quote: {name}", &[("name", name.as_str())]) }),
+        Err(None) => {}
+    }
+}
+
+/// Prints an order and says so on the pill.
+async fn print_and_tell(id: u64) -> Result<String, String> {
+    let name = ctl().orders.iter().find(|(n, _)| *n == id).map(|(_, o)| o.name.clone()).unwrap_or_default();
+    let result = print_order(id).await;
+    match &result {
+        Ok(_) => pill(PillEvent::Message { name: crate::i18n::tf("Printed: {name}", &[("name", name.as_str())]) }),
+        Err(why) => {
+            crate::log::line(format!("whatsapp: could not print an order: {why}"));
+            pill(PillEvent::Message { name: crate::i18n::tf("Could not print: {name}", &[("name", name.as_str())]) });
+        }
+    }
+    changed();
+    result
+}
+
+/// The script that prints a PDF through the printer's own Windows driver (print.ps1).
+const PRINT_SCRIPT: &str = include_str!("print.ps1");
+
+/// Sends an order's PDF to the shop's printer for it, with its copies, colour, sides and paper.
+/// Resolves with the printer's name.
+async fn print_order(id: u64) -> Result<String, String> {
+    if !ctl().order_printing.insert(id) {
+        return Err(crate::i18n::t("Already printing."));
+    }
+    let result = print_now(id).await;
+    ctl().order_printing.remove(&id);
+    if result.is_ok() {
+        if let Some((_, order)) = ctl().orders.iter_mut().find(|(n, _)| *n == id) {
+            order.printed = true;
+        }
+    }
+    result
+}
+
+async fn print_now(id: u64) -> Result<String, String> {
+    let config = tauri::async_runtime::spawn_blocking(orders::load).await.unwrap_or_default();
+    let job = ctl()
+        .orders
+        .iter()
+        .find(|(n, o)| *n == id && !o.printed)
+        .and_then(|(_, o)| o.job.clone())
+        .ok_or_else(|| crate::i18n::t("That order is no longer waiting."))?;
+    let (pdf, _) = fetch_order_file(id).await?;
+    let (names, busy) = crate::printers::queue();
+    let printer = orders::printer(&job.kind, &config.impressoras, &names, &busy);
+    if !names.contains(&printer) {
+        return Err(crate::i18n::tf("The printer {name} is not on this computer.", &[("name", printer.as_str())]));
+    }
+    let script = crate::settings::local_dir().join("imprimir.ps1");
+    // With its BOM, Windows PowerShell reads the script as UTF-8.
+    std::fs::write(&script, format!("\u{feff}{PRINT_SCRIPT}")).map_err(|e| e.to_string())?;
+    let mut cmd = tokio::process::Command::new("powershell.exe");
+    cmd.args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File"])
+        .arg(&script)
+        .arg("-Pdf")
+        .arg(&pdf)
+        .args(["-Printer", printer.as_str(), "-Copies", &job.copies.to_string(), "-Paper", job.paper])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .kill_on_drop(true);
+    if job.mono {
+        cmd.arg("-Mono");
+    }
+    if job.duplex {
+        cmd.arg("-Duplex");
+    }
+    crate::platform::no_console(cmd.as_std_mut());
+    crate::log::line(format!("whatsapp: printing an order on {printer}: {} × {} pages, {}{}{}", job.copies, job.pages, job.paper, if job.mono { ", P&B" } else { "" }, if job.duplex { ", frente e verso" } else { "" }));
+    let output = tokio::time::timeout(std::time::Duration::from_secs(900), cmd.output())
+        .await
+        .map_err(|_| crate::i18n::t("Could not print."))?
+        .map_err(|e| e.to_string())?;
+    let said = String::from_utf8_lossy(&output.stdout);
+    let last = said.lines().map(str::trim).filter(|l| !l.is_empty()).last().unwrap_or("").to_string();
+    if last.starts_with("ok") {
+        crate::log::line(format!("whatsapp: printed an order on {printer}"));
+        return Ok(printer);
+    }
+    let why = last.strip_prefix("erro:").map(str::trim).map(str::to_string).unwrap_or_else(|| String::from_utf8_lossy(&output.stderr).trim().to_string());
+    Err(if why.is_empty() { crate::i18n::t("Could not print.") } else { why })
 }
 
 /// The last messages of one conversation, read by the model: a print order becomes a card that
@@ -1046,15 +1214,23 @@ async fn read_order(gen: u64, chat: String) {
             kind,
             ask,
             sent: false,
+            job: None,
+            paid: false,
+            printed: false,
         };
         match answer {
             Ok(orders::Reading::Order(asked)) => {
                 let kind = config.item(&asked.item).map(|i| i.impressora.clone()).unwrap_or_default();
+                // One PDF in whole copies: Coucou can print it as it is (orders::job).
+                let pages: HashMap<String, u32> = c.order_pages.iter().filter(|(_, n)| **n > 0).map(|(k, n)| (k.clone(), *n)).collect();
+                let job = c.inbox.conversations.get(&chat).and_then(|conv| orders::job(&asked, conv, &pages, &config));
                 let order = orders::Order {
                     quantity: asked.quantity,
                     lines: orders::price(&asked, &config),
                     note: asked.note.clone(),
                     printer: orders::printer(&kind, &config.impressoras, &names, &busy),
+                    file: job.as_ref().map(|j| j.file.clone()).unwrap_or_else(|| file.clone()),
+                    job,
                     ..blank(orders::Kind::Quote, asked.intro.clone())
                 };
                 place_order(&mut c, order)
@@ -1173,15 +1349,18 @@ fn after_ingest(gen: u64, fresh: Option<String>, groups: Vec<String>) {
     if let Some(name) = fresh {
         pill(PillEvent::Message { name });
     }
-    let (notes, queued, approved) = {
+    let (notes, queued, approved, receipts) = {
         let mut c = ctl();
-        (std::mem::take(&mut c.ledger_queue), std::mem::take(&mut c.order_queue), std::mem::take(&mut c.order_news))
+        (std::mem::take(&mut c.ledger_queue), std::mem::take(&mut c.order_queue), std::mem::take(&mut c.order_news), std::mem::take(&mut c.receipt_queue))
     };
     for text in notes {
         spawn(read_note(gen, text));
     }
     for chat in queued {
         spawn(read_order(gen, chat));
+    }
+    for (chat, message) in receipts {
+        spawn(read_receipt(gen, chat, message));
     }
     for name in approved {
         pill(PillEvent::Message { name: crate::i18n::tf("Order approved: {name}", &[("name", name.as_str())]) });
@@ -1678,6 +1857,21 @@ pub fn whatsapp_order_discard(window: WebviewWindow, id: u64) -> Result<(), Stri
 /// and its folder opens. Resolves with the file's path.
 pub async fn whatsapp_order_file(window: WebviewWindow, id: u64) -> Result<String, String> {
     only(&window, crate::island::WINDOW_LABEL)?;
+    let (path, dir) = fetch_order_file(id).await?;
+    changed();
+    crate::platform::reveal_folder(&dir.to_string_lossy());
+    Ok(path)
+}
+
+/// "Print" on an approved order's card. Resolves with the printer's name.
+pub async fn whatsapp_order_print(window: WebviewWindow, id: u64) -> Result<String, String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    print_and_tell(id).await
+}
+
+/// The customer's file of an order, kept in Documents\Coucou\Pedidos\<customer>: its path, and that
+/// folder.
+async fn fetch_order_file(id: u64) -> Result<(String, std::path::PathBuf), String> {
     let (provider, chat, message, name, saved) = {
         let c = ctl();
         let (_, order) = c.orders.iter().find(|(n, _)| *n == id).ok_or_else(|| crate::i18n::t("That order is no longer waiting."))?;
@@ -1686,8 +1880,7 @@ pub async fn whatsapp_order_file(window: WebviewWindow, id: u64) -> Result<Strin
     };
     let dir = orders::folder(&name);
     if let Some(path) = saved.filter(|path| std::path::Path::new(path).exists()) {
-        crate::platform::reveal_folder(&dir.to_string_lossy());
-        return Ok(path);
+        return Ok((path, dir));
     }
     let relative = provider.download(&message, &chat).await.map_err(|_| crate::i18n::t("Could not fetch the file."))?;
     let source = orders::downloaded(&process::working_dir(), &relative).ok_or_else(|| crate::i18n::t("Could not fetch the file."))?;
@@ -1704,9 +1897,7 @@ pub async fn whatsapp_order_file(window: WebviewWindow, id: u64) -> Result<Strin
     if let Some((_, order)) = ctl().orders.iter_mut().find(|(n, _)| *n == id) {
         order.saved = Some(path.clone());
     }
-    changed();
-    crate::platform::reveal_folder(&dir.to_string_lossy());
-    Ok(path)
+    Ok((path, dir))
 }
 
 pub fn whatsapp_ledger_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
@@ -1967,6 +2158,8 @@ mod tests {
             order_queue: Vec::new(),
             order_reading: HashSet::new(),
             order_auto: HashMap::new(),
+            receipt_queue: Vec::new(),
+            order_printing: HashSet::new(),
             order_pages: HashMap::new(),
             orders: Vec::new(),
             order_next: 0,
@@ -2150,6 +2343,9 @@ mod tests {
             kind: orders::Kind::Quote,
             ask: String::new(),
             sent: false,
+            job: None,
+            paid: false,
+            printed: false,
         }
     }
 

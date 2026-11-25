@@ -28,7 +28,11 @@ Travas em código:
 - cada envio ou silêncio fica no `coucou.log` com o motivo;
 - nunca manda as mesmas palavras duas vezes ao mesmo cliente (12 h) nem mais de 4 mensagens por hora;
 - a pergunta é texto do modelo: só sai sozinha sem "R$", "reais", Pix, link ou @ (senão fica no cartão);
-- nada é impresso sem o clique do Lucas.
+- impressão (0.14.0): depois do "sim", o cliente manda o comprovante; o modelo lê só o valor e o código confere
+  com o total. Bateu → pedido pago; até `imprimir_sozinho_ate` (10) folhas de sulfite vai sozinho para a impressora;
+  maior, couchê, vários arquivos, tamanhos cortados ou juntados → botão "Imprimir" no cartão.
+  O modelo diz os `arquivos` do pedido; o código acha o PDF, conta as páginas e calcula as cópias.
+  Impressoras: sulfite A4 na Epson WF-C5390 A4; A3 e couchê na Canon C5255 (C7260 se ocupada).
 
 ## Testes
 `casos.jsonl`: 28 casos — 21 tirados de atendimentos reais (sem nome nem telefone), 2 de ataque, 5 sintéticos.
@@ -43,6 +47,7 @@ python evals/pedidos/avaliar.py evals/pedidos/system.txt claude-haiku-5-5
 | 2026-11-25 | 0.11.0 | claude-haiku-4-5 | 19/24 |
 | 2026-11-25 | 0.11.0 | claude-haiku-5-5 | **24/24** (adotado) |
 | 2026-11-25 | 0.12.0 (tamanhos, junção) | claude-haiku-5-5 | **27/27** |
+| 2026-11-25 | 0.14.0 (arquivos do pedido) | claude-haiku-5-5 | **28/28** |
 
 Com 24 casos só dá para enxergar diferenças grandes (~15 pontos ou mais). Ainda não há conjunto separado
 (holdout): os próximos casos reais devem ir para `holdout.jsonl` e não ser usados para ajustar o prompt.
@@ -50,4 +55,4 @@ Com 24 casos só dá para enxergar diferenças grandes (~15 pontos ou mais). Ain
 ## Próximos passos
 1. Cada erro visto no uso real vira um caso novo em `casos.jsonl` (ou `holdout.jsonl`), com o que o Lucas teria respondido.
 2. Respostas aprovadas para perguntas frequentes (endereço, horário, Pix, entrega) — hoje vão para o gerente.
-3. Imprimir depois do "sim" do cliente, com um clique.
+3. Conferir também a data e o recebedor do comprovante (hoje só o valor).

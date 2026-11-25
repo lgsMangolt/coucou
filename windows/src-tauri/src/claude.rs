@@ -206,6 +206,37 @@ pub async fn complete(model: &str, system: &str, user: &str, max_tokens: u32, ti
     Ok(text)
 }
 
+/// One question about one file (a PDF or an image), no history: the receipt of a print order.
+/// Without a key, Claude Code may read that file's folder and nothing else.
+pub async fn complete_with_file(model: &str, system: &str, user: &str, file: &std::path::Path, max_tokens: u32, timeout: Duration) -> Result<String, String> {
+    let Some(key) = secrets::get(KEY) else {
+        if !claude_code::available() {
+            return Err(t("API key missing. Open settings."));
+        }
+        let dir = file.parent().ok_or("no folder")?;
+        let prompt = format!("{user}\nThe file: {}", file.display());
+        let request = claude_code::Request { model, system, prompt: &prompt, tools: &["Read"], read_dir: Some(dir), timeout };
+        return claude_code::ask(&request).await;
+    };
+    let block = file_block(&file.to_string_lossy()).ok_or("unreadable file")?;
+    let endpoint = endpoint()?;
+    let body = json!({
+        "model": model,
+        "max_tokens": max_tokens,
+        "system": system,
+        "messages": [{ "role": "user", "content": [block, { "type": "text", "text": user }] }],
+    });
+    let response = call_with_timeout(&endpoint, &key, &body, timeout).await?;
+    let text: String = response["content"]
+        .as_array()
+        .map(|blocks| blocks.iter().filter_map(|b| b["text"].as_str()).collect())
+        .unwrap_or_default();
+    if text.trim().is_empty() {
+        return Err("empty answer".into());
+    }
+    Ok(text)
+}
+
 /// One turn of « OK Coucou »'s conversation with tools: the API's whole answer
 /// (content blocks and stop_reason).
 pub async fn voice_turn(model: &str, system: &str, messages: &[Value], tools: &[Value]) -> Result<Value, String> {

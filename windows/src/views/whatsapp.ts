@@ -283,7 +283,9 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
    * printer, and the clicks. Nothing is sent from here. */
   function orderCard(o: WaOrder): HTMLElement {
     const manager = o.kind === "manager" || (o.kind === "quote" && !o.total);
-    const stage = o.state === "approved" ? t("Order approved")
+    const stage = o.printed ? t("Printed")
+      : o.paid ? t("Paid")
+      : o.state === "approved" ? t("Order approved")
       : o.state === "quoted" ? t("Waiting for the customer")
       : manager ? t("For the manager")
       : o.kind === "question" ? t("Missing information")
@@ -303,8 +305,10 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     const copy = h("button", { class: "wa-entry-save", text: t("Copy") }) as HTMLButtonElement;
     const file = h("button", { class: "wa-entry-drop", text: t("Get file") }) as HTMLButtonElement;
     const drop = h("button", { class: "wa-entry-drop", text: o.state === "approved" ? t("Done") : t("Discard") }) as HTMLButtonElement;
+    const print = h("button", { class: "wa-entry-save", text: t("Print") }) as HTMLButtonElement;
+    print.style.display = o.canPrint ? "" : "none";
     const problem = h("div", { class: "wa-note err" });
-    const all = [copy, file, drop];
+    const all = [print, copy, file, drop];
     const busy = (on: boolean) => { for (const b of all) b.disabled = on || (b === copy && !reply.value.trim()); };
     busy(false);
     reply.addEventListener("input", () => busy(false));
@@ -322,6 +326,12 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
       busy(true);
       problem.textContent = "";
       Bridge.whatsappOrderFile(o.id, account).then(() => busy(false), failed);
+    });
+    print.addEventListener("click", () => {
+      busy(true);
+      problem.textContent = "";
+      print.textContent = t("Printing…");
+      Bridge.whatsappOrderPrint(o.id, account).then(() => busy(false), (error: unknown) => { print.textContent = t("Print"); failed(error); });
     });
     drop.addEventListener("click", () => {
       busy(true);
@@ -343,7 +353,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     const key = [
       language(), v.link.state, "detail" in v.link ? v.link.detail : "", v.unread, ignoring,
       ...v.pending.map((e) => `${e.id}|${e.amount}|${e.kind}|${e.category}|${e.person}|${e.note}`),
-      ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}|${o.reply}|${o.kind}|${o.reason}|${o.sent}`),
+      ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}|${o.reply}|${o.kind}|${o.reason}|${o.sent}|${o.canPrint}|${o.paid}|${o.printed}`),
       // The ages move on a minute at a time.
       Math.floor(Date.now() / 60_000),
       ...v.conversations.map((c) => `${c.id}|${c.name}|${c.unread}|${c.lastActivity}|${c.messages[c.messages.length - 1]?.id ?? ""}`),

@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.14.0",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Prints by itself",
+            "zh-Hans": "自动打印",
+            "hi": "खुद प्रिंट करता है",
+            "es": "Imprime solo",
+            "ar": "يطبع تلقائيًا",
+            "fr": "Imprime tout seul",
+            "bn": "নিজেই প্রিন্ট করে",
+            "pt-BR": "Imprime sozinho",
+            "ru": "Печатает сам",
+            "id": "Mencetak sendiri",
+            "de": "Druckt selbst",
+            "tr": "Kendisi yazdırır",
+            "ko": "알아서 인쇄",
+            "ja": "自動で印刷"
+          },
+          "detail": {
+            "en": "Once the Pix receipt matches the quote, small orders go to the printer; larger ones get a Print button.",
+            "zh-Hans": "Pix 收据与报价一致后，小订单自动打印；大订单显示“打印”按钮。",
+            "hi": "Pix रसीद कोटेशन से मिलने पर छोटे ऑर्डर खुद प्रिंट होते हैं; बड़े पर प्रिंट बटन आता है।",
+            "es": "Si el comprobante Pix coincide, los pedidos pequeños se imprimen; los grandes tienen botón Imprimir.",
+            "ar": "عند تطابق إيصال Pix مع العرض تُطبع الطلبات الصغيرة، وللكبيرة زر طباعة.",
+            "fr": "Si le reçu Pix correspond au devis, les petites commandes s’impriment ; les grandes ont un bouton.",
+            "bn": "Pix রসিদ মিললে ছোট অর্ডার নিজে প্রিন্ট হয়; বড় অর্ডারে প্রিন্ট বোতাম থাকে।",
+            "pt-BR": "Com o comprovante do Pix batendo, pedidos pequenos vão para a impressora; os maiores ganham o botão Imprimir.",
+            "ru": "Если чек Pix совпал с расчётом, мелкие заказы печатаются сами; у крупных — кнопка.",
+            "id": "Jika bukti Pix cocok, pesanan kecil dicetak sendiri; pesanan besar dapat tombol Cetak.",
+            "de": "Passt der Pix-Beleg, gehen kleine Aufträge an den Drucker; große bekommen einen Druck-Knopf.",
+            "tr": "Pix dekontu tutunca küçük siparişler yazdırılır; büyükler için Yazdır düğmesi çıkar.",
+            "ko": "Pix 영수증이 맞으면 작은 주문은 바로 인쇄, 큰 주문은 인쇄 버튼이 생깁니다.",
+            "ja": "Pixの領収書が合えば小さな注文は自動印刷、大きな注文には印刷ボタンが出ます。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.13.1",
       "items": [
         {

@@ -82,6 +82,11 @@ export interface WaOrder {
   reason: string;
   /** Coucou sent the reply by itself. */
   sent: boolean;
+  /** An approved order Coucou can print as the file is. */
+  canPrint: boolean;
+  /** The customer's receipt matched the quote. */
+  paid: boolean;
+  printed: boolean;
 }
 
 /** IslandView in src-tauri/src/whatsapp/mod.rs. */

@@ -517,6 +517,7 @@ export const Bridge = {
   whatsappOrderCopied: (id: number, account = 0) => call<void>(wa(account, "order_copied"), { id }),
   whatsappOrderDiscard: (id: number, account = 0) => call<void>(wa(account, "order_discard"), { id }),
   whatsappOrderFile: (id: number, account = 0) => callOrThrow<string>(wa(account, "order_file"), { id }),
+  whatsappOrderPrint: (id: number, account = 0) => callOrThrow<string>(wa(account, "order_print"), { id }),
   /** Settings: notes on money on or off, and the spreadsheet's folder ("" is Documents\Coucou). */
   whatsappSetLedger: (enabled: boolean, dir: string, chat: string) =>
     callOrThrow<void>("whatsapp_set_ledger", { enabled, dir, chat }),
