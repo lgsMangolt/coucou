@@ -49,6 +49,7 @@ mod webview_drop;
 mod webview_memory;
 mod personal;
 mod printers;
+mod gmail;
 mod usage;
 mod whatsapp;
 // The second WhatsApp account: the same module compiled a second time, with its own state.
@@ -156,6 +157,7 @@ fn save_settings(app: AppHandle, shared: State<Shared>, settings: Settings) {
     whatsapp2::sync(&settings.active_integrations);
     ytmusic::sync(&app, &settings.active_integrations);
     printers::sync(&app, &settings.active_integrations);
+    gmail::sync(&app, &settings.active_integrations);
     if shortcuts_changed {
         shortcuts::apply(&app, &settings.shortcuts);
     }
@@ -1072,6 +1074,10 @@ pub fn run() {
             personal::personal_delete_task,
             personal::personal_clear_done,
             personal::personal_set_pad,
+            gmail::gmail_state,
+            gmail::gmail_refresh,
+            gmail::gmail_sign_in,
+            gmail::gmail_open,
             printers::printers_get,
             printers::printers_refresh,
             printers::printers_ignore,
@@ -1195,6 +1201,7 @@ pub fn run() {
             whatsapp2::start(&handle, &loaded.active_integrations);
             ytmusic::sync(&handle, &loaded.active_integrations);
             printers::sync(&handle, &loaded.active_integrations);
+            gmail::sync(&handle, &loaded.active_integrations);
             shortcuts::apply(&handle, &loaded.shortcuts);
             // New versions: nothing goes to GitHub until the user agrees (update.rs).
             update::start(handle.clone());

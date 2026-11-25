@@ -31,6 +31,8 @@ import { buildYtMusicCard } from "./ytmusic";
 import { buildTodoCard } from "./todo";
 import { buildPadCard } from "./pad";
 import { buildPrintersCard } from "./printers";
+import { buildGmailCard } from "./gmail";
+import { GMAIL_ID } from "../core/gmail";
 import { buildFeatureChips, buildModeSwitch } from "./modes-strip";
 import { PAD_ID, TASKS_ID } from "../core/personal";
 import { PRINTERS_ID } from "../core/printers";
@@ -244,6 +246,7 @@ function buildOverview(actions: ViewActions): ViewHost {
   const todoCard = buildTodoCard({ keyboard: (on) => actions.keyboard(on), holdOpen: (on) => actions.holdOpen(on) });
   const padCard = buildPadCard({ keyboard: (on) => actions.keyboard(on), holdOpen: (on) => actions.holdOpen(on) });
   const printersCard = buildPrintersCard();
+  const gmailCard = buildGmailCard();
   const ytCard = buildYtMusicCard({ keyboard: (on) => actions.keyboard(on), holdOpen: (on) => actions.holdOpen(on) });
   const waHost = {
     openSettings: () => actions.openSettingsWindow(),
@@ -262,7 +265,7 @@ function buildOverview(actions: ViewActions): ViewHost {
   let pillIds = "";
   let detailOpen = false;
   let lastFocus: string | null = null;
-  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | "ytmusic" | "todo" | "pad" | "printers" | "whatsapp2" | null = null;
+  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | "ytmusic" | "todo" | "pad" | "printers" | "whatsapp2" | "gmail" | null = null;
   let cardKey = "";
   /** The list row highlighted at the last sync, to scroll only when it moves. */
   let shownSelection: number | null = null;
@@ -469,6 +472,15 @@ function buildOverview(actions: ViewActions): ViewHost {
           cardKey = "";
         }
         padCard.sync();
+      } else if (task && task.id === GMAIL_ID) {
+        // Its own card in every state: starting, waiting for the sign-in, the unread messages.
+        if (mode !== "gmail") {
+          clear(leftBody);
+          leftBody.append(gmailCard.el);
+          mode = "gmail";
+          cardKey = "";
+        }
+        gmailCard.sync();
       } else if (task && task.id === PRINTERS_ID) {
         if (mode !== "printers") {
           clear(leftBody);

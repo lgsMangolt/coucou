@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.9.0",
+      "items": [
+        {
+          "icon": "bell",
+          "title": {
+            "en": "Gmail in the island",
+            "zh-Hans": "灵动岛里的 Gmail",
+            "hi": "आइलैंड में Gmail",
+            "es": "Gmail en la isla",
+            "ar": "Gmail في الجزيرة",
+            "fr": "Gmail dans l’île",
+            "bn": "আইল্যান্ডে Gmail",
+            "pt-BR": "Gmail na ilha",
+            "ru": "Gmail на острове",
+            "id": "Gmail di pulau",
+            "de": "Gmail in der Insel",
+            "tr": "Adada Gmail",
+            "ko": "아일랜드 속 Gmail",
+            "ja": "アイランドに Gmail"
+          },
+          "detail": {
+            "en": "New Gmail pill: your unread mail, a warning when one arrives, and a click opens it in Gmail.",
+            "zh-Hans": "全新 Gmail 胶囊：显示未读邮件，新邮件到达时提醒，点击即可在 Gmail 中打开。",
+            "hi": "नई Gmail पिल: अपठित मेल, नया मेल आने पर सूचना, और एक क्लिक में Gmail में खोलें।",
+            "es": "Nueva pastilla de Gmail: tus correos sin leer, aviso cuando llega uno y un clic lo abre en Gmail.",
+            "ar": "حبة Gmail جديدة: بريدك غير المقروء، تنبيه عند وصول رسالة، ونقرة تفتحها في Gmail.",
+            "fr": "Nouvelle pill Gmail : tes mails non lus, une alerte à l’arrivée et un clic pour ouvrir dans Gmail.",
+            "bn": "নতুন Gmail পিল: অপঠিত মেল, নতুন মেল এলে সতর্কতা, আর এক ক্লিকে Gmail-এ খুলুন।",
+            "pt-BR": "Pílula nova do Gmail: seus e-mails não lidos, aviso quando chega um e um clique abre no Gmail.",
+            "ru": "Новая пилюля Gmail: непрочитанные письма, уведомление о новых и открытие в Gmail одним щелчком.",
+            "id": "Pil Gmail baru: email belum dibaca, peringatan saat ada yang masuk, dan satu klik membukanya di Gmail.",
+            "de": "Neue Gmail-Pille: ungelesene E-Mails, ein Hinweis bei neuer Post und ein Klick öffnet sie in Gmail.",
+            "tr": "Yeni Gmail hapı: okunmamış e-postaların, yenisi gelince uyarı ve tek tıkla Gmail’de aç.",
+            "ko": "새 Gmail 필: 읽지 않은 메일, 새 메일 알림, 클릭 한 번으로 Gmail에서 열기.",
+            "ja": "新しい Gmail ピル：未読メールの一覧、新着のお知らせ、クリックで Gmail を開けます。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.8.2",
       "items": [
         {

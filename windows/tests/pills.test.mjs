@@ -49,7 +49,7 @@ test("the catalog holds the Mac's pills with the Claude Code label for Windows a
     ["integration_whatsapp", "WhatsApp", "#25D366", "service", "Integration"],
   ];
   assert.deepEqual(
-    PILL_CATALOG.filter((p) => !["integration_gitlab", "integration_gitea", "integration_ytmusic", "integration_printers", "integration_tasks", "integration_pad", "integration_whatsapp2"].includes(p.id))
+    PILL_CATALOG.filter((p) => !["integration_gitlab", "integration_gitea", "integration_ytmusic", "integration_gmail", "integration_printers", "integration_tasks", "integration_pad", "integration_whatsapp2"].includes(p.id))
       .map((p) => [p.id, p.name, p.color, p.category, p.subtitle]),
     mac,
   );
@@ -119,11 +119,13 @@ test("this build leaves out what only macOS has", () => {
   // YouTube Music: a window of its own, tried on Windows only.
   assert.ok(windows.includes("integration_ytmusic"));
   assert.ok(!linux.includes("integration_ytmusic"));
+  // Gmail: the same kind of window, tried on Windows only.
+  assert.ok(windows.includes("integration_gmail") && !linux.includes("integration_gmail"));
   // Printers: Windows' own list. Tasks and Notepad are plain local pills, on both.
   assert.ok(windows.includes("integration_printers") && !linux.includes("integration_printers"));
   assert.ok(windows.includes("integration_tasks") && linux.includes("integration_tasks"));
   assert.ok(windows.includes("integration_pad") && linux.includes("integration_pad"));
-  assert.deepEqual(linux, windows.filter((id) => !["integration_mail", "integration_ytmusic", "integration_printers"].includes(id)));
+  assert.deepEqual(linux, windows.filter((id) => !["integration_mail", "integration_ytmusic", "integration_gmail", "integration_printers"].includes(id)));
 });
 
 test("Spotify: a service on both systems with nothing to set up", () => {

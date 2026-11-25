@@ -25,7 +25,7 @@ test("a tool unused for two weeks goes; one used lately, or one that warns by it
   });
   const set = ["integration_tasks", "integration_pad", "integration_ytmusic", "integration_printers", "integration_whatsapp"];
   assert.deepEqual(stalePills(set, u, NOW), ["integration_tasks", "integration_ytmusic"]);
-  assert.ok(WATCH_IDS.has("integration_printers") && WATCH_IDS.has("integration_whatsapp") && WATCH_IDS.has("integration_mail"));
+  assert.ok(WATCH_IDS.has("integration_printers") && WATCH_IDS.has("integration_whatsapp") && WATCH_IDS.has("integration_mail") && WATCH_IDS.has("integration_gmail"));
 });
 
 test("a pill the island has never seen gets its two weeks from now, not from the start of time", () => {

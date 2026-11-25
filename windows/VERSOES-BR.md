@@ -12,6 +12,7 @@ Cada versão é um commit marcado com a tag `br-v<número>` neste repositório.
 | 0.8.0 | Dois WhatsApps | Uma segunda conta de WhatsApp, com número, pílula, conversas e gateway próprios (o mesmo módulo compilado duas vezes, então a primeira conta não muda). O modo Descanso mantém só o WhatsApp 2, para você ser avisado e responder com um clique. Cada conta guarda a sessão em pasta separada (GOWA e GOWA2). |
 | 0.8.1 | Descanso tranquilo | Ignorar grupos do WhatsApp com mais pessoas que um limite (por conta). Correção: o cartão do YouTube Music não saía de "Entrar" depois do login. O Claude Desktop pode ser a ferramenta principal. A linha "Ligar" não passa mais da borda do cartão. |
 | 0.8.2 | Busca na ilha | A busca do YouTube Music cabe no cartão: a lupa abre uma tela só da busca, com o campo e até 8 resultados, e a seta volta para a música. |
+| 0.9.0 | Gmail na ilha | Pílula nova do Gmail: os e-mails não lidos (quem mandou e o assunto), aviso quando chega um novo, e um clique abre a mensagem no Gmail. O login é o do Google, numa janela do próprio Coucou (o mesmo do YouTube Music), que fica aberta e escondida na caixa de entrada. O Coucou não envia, não marca e não apaga e-mails. |
 
 ## Como gerar e instalar
 

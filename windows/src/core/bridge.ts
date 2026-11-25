@@ -11,6 +11,7 @@ import type { SpotifyState } from "./spotify";
 import type { YtAction, YtMusicState } from "./ytmusic";
 import type { PersonalData } from "./personal";
 import type { PrintersReport } from "./printers";
+import type { GmailInbox } from "./gmail";
 import type { UsageData } from "./adapt";
 import type { UpdateStatus } from "./update";
 import type { WaIslandView, WaSettingsView, WaTestResult } from "./whatsapp";
@@ -552,6 +553,14 @@ export const Bridge = {
   personalDeleteTask: (id: number) => call<PersonalData>("personal_delete_task", { id }),
   personalClearDone: () => call<PersonalData>("personal_clear_done"),
   personalSetPad: (text: string) => call<void>("personal_set_pad", { text }),
+
+  // ── Gmail (src-tauri/src/gmail.rs) ──
+  gmailState: () => call<GmailInbox>("gmail_state"),
+  gmailRefresh: () => call<boolean>("gmail_refresh"),
+  /** Shows Gmail's window so the user can sign in to Google in it. */
+  gmailSignIn: () => call<boolean>("gmail_sign_in"),
+  /** Opens a message (or the inbox, with no id) in the browser. */
+  gmailOpen: (id: string) => call<void>("gmail_open", { id }),
 
   // ── Printers (src-tauri/src/printers.rs) ──
   printersGet: () => call<PrintersReport>("printers_get"),

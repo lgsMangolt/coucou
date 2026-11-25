@@ -900,6 +900,8 @@ const INTEGRATIONS: IntegrationDef[] = [
   { id: "integration_spotify", name: "Spotify", color: "#1DB954", fields: [] },
   // Nothing to enter here: YouTube Music is signed in from its own card (src-tauri/src/ytmusic.rs).
   { id: "integration_ytmusic", name: "YouTube Music", color: "#FF0033", fields: [] },
+  // Nothing to enter here either: Gmail is signed in from its own card (src-tauri/src/gmail.rs).
+  { id: "integration_gmail", name: "Gmail", color: "#EA4335", fields: [] },
   // Nothing to enter: the printers installed in Windows, and your own tasks and notes (src-tauri/src/printers.rs, personal.rs).
   { id: "integration_printers", name: "Impressoras", color: "#A78BFA", fields: [] },
   { id: "integration_tasks", name: "Tarefas", color: "#F5B83D", fields: [] },

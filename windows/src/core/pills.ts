@@ -142,6 +142,10 @@ export const PILL_CATALOG: readonly PillDefinition[] = [
   // (src-tauri/src/ytmusic.rs). Windows only for now: it is the build that has been tried.
   { id: "integration_ytmusic", name: "YouTube Music", color: "#FF0033", category: "service",
     subtitle: N_("Integration"), source: "n8n", support: "windows", connect: none },
+  // Gmail's unread messages, read from Gmail's own page in a window signed in by the user
+  // (src-tauri/src/gmail.rs). Windows only for now, like YouTube Music.
+  { id: "integration_gmail", name: "Gmail", color: "#EA4335", category: "service",
+    subtitle: N_("Integration"), source: "n8n", support: "windows", connect: none },
   // The printers installed in Windows, looked at while the pill is on (src-tauri/src/printers.rs).
   { id: "integration_printers", name: "Impressoras", color: "#A78BFA", category: "service",
     subtitle: N_("Integration"), source: "n8n", support: "windows", connect: none },

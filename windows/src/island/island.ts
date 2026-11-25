@@ -17,6 +17,7 @@ import { Sound } from "../core/sound";
 import { State } from "../core/state";
 import { SPOTIFY_ID, Spotify, islandDances } from "../core/spotify";
 import { YTMUSIC_ID } from "../core/ytmusic";
+import { GMAIL_ID } from "../core/gmail";
 import { BotEngine, hexToRGB } from "../mochi/engine";
 import { Greeting } from "../mochi/greeting";
 import { createMiniBot, pruneMiniBots, syncMiniBotStates, tickMiniBots } from "../mochi/minibots";
@@ -243,6 +244,7 @@ export class Island {
         else if (task.id === "integration_gitea") void Bridge.openGitea();
         else if (task.id === SPOTIFY_ID) void Bridge.spotifyOpen();
         else if (task.id === YTMUSIC_ID) void Bridge.ytmusicSignIn();
+        else if (task.id === GMAIL_ID) void Bridge.gmailOpen("");
         else if (urls[task.id]) void Bridge.openUrl(urls[task.id]);
       },
       openUrl: (url) => {
