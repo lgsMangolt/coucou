@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.13.1",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Suggestions don't silence it",
+            "zh-Hans": "发送建议不会让它静音",
+            "hi": "सुझाव भेजने से यह चुप नहीं होता",
+            "es": "Enviar la sugerencia no lo silencia",
+            "ar": "إرسال الاقتراح لا يوقفه",
+            "fr": "Envoyer la suggestion ne le fait plus taire",
+            "bn": "পরামর্শ পাঠালে চুপ হয় না",
+            "pt-BR": "Sugestão não silencia",
+            "ru": "Отправка подсказки не глушит его",
+            "id": "Saran tidak membuatnya diam",
+            "de": "Vorschlag senden bremst es nicht",
+            "tr": "Öneri göndermek onu susturmaz",
+            "ko": "제안을 보내도 조용해지지 않음",
+            "ja": "提案を送っても黙らない"
+          },
+          "detail": {
+            "en": "Sending Coucou's own suggested reply no longer counts as you talking with the customer.",
+            "zh-Hans": "发送 Coucou 自己建议的回复，不再算作你在和客户交谈。",
+            "hi": "Coucou का सुझाया जवाब भेजना अब आपकी बातचीत नहीं गिना जाता।",
+            "es": "Enviar la respuesta que sugiere Coucou ya no cuenta como que hablas con el cliente.",
+            "ar": "إرسال رد اقترحه Coucou لم يعد يُحسب كأنك تحادث العميل.",
+            "fr": "Envoyer la réponse proposée par Coucou ne compte plus comme une discussion avec le client.",
+            "bn": "Coucou-র প্রস্তাবিত উত্তর পাঠালে তা আর আপনার কথা বলা ধরা হয় না।",
+            "pt-BR": "Mandar a resposta que o Coucou sugeriu não conta mais como você falando com o cliente.",
+            "ru": "Отправка ответа, предложенного Coucou, больше не считается вашим разговором с клиентом.",
+            "id": "Mengirim balasan saran Coucou tidak lagi dihitung sebagai Anda berbicara dengan pelanggan.",
+            "de": "Coucous eigene Antwort zu senden zählt nicht mehr als dein Gespräch mit dem Kunden.",
+            "tr": "Coucou'nun önerdiği yanıtı göndermek artık sizin konuşmanız sayılmaz.",
+            "ko": "Coucou가 제안한 답장을 보내도 직접 대화한 것으로 치지 않습니다.",
+            "ja": "Coucouの提案した返信を送っても、あなたの会話とは数えません。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.13.0",
       "items": [
         {

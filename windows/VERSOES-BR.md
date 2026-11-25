@@ -25,6 +25,7 @@ Cada versão é um commit marcado com a tag `br-v<número>` neste repositório.
 | 0.12.0 | Tamanhos e junção | Pedidos em outros tamanhos: menores que A4 (A5, A6, A7, 10×15, marca-página 5×15) são calculados pelas folhas A4 que usam mais o corte, e acima de 10 folhas para cortar vão para o gerente; A2, A1 e A0 são oferecidos em 2, 4 e 8 folhas A3 juntadas, com R$ 5,00 de junção por peça. As contas são do código; o modelo só diz o tamanho e quantas peças (27 de 27 casos em evals/pedidos). |
 | 0.12.1 | A3 P&B | A3 preto e branco no ofício fica R$ 2,00 a folha até 100 folhas e R$ 1,20 de 101 a 300, como o Lucas definiu. A tabela não tem mais valores estimados. |
 | 0.13.0 | Responde sozinho | O Coucou manda sozinho ao cliente o orçamento, a pergunta que falta ou o "vou passar para o gerente". Fica quieto se o Lucas escreveu para o cliente nos últimos 30 minutos, nunca repete a mesma mensagem e manda no máximo 4 por hora; a pergunta do modelo só sai sozinha sem preço, Pix ou link. `responder_sozinho: false` no pedidos.json volta ao rascunho. |
+| 0.13.1 | Sugestão não silencia | Mandar pela ilha a resposta que o próprio Coucou sugeriu (Enter) não conta mais como "você falou com o cliente": o Coucou continua respondendo sozinho. Cada envio automático, ou o motivo de ficar quieto, vai para o coucou.log. |
 
 ## Como gerar e instalar
 

@@ -1093,6 +1093,7 @@ async fn answer_alone(id: u64, quiet_minutes: u32) {
         let c = &mut *guard;
         let Some((_, order)) = c.orders.iter().find(|(n, o)| *n == id && o.state == orders::State::Draft && !o.sent) else { return };
         if !orders::may_send_alone(order) {
+            crate::log::line("whatsapp: print order left on the card: the question has a price, a link or a contact");
             return;
         }
         let (chat, text) = (order.chat.clone(), order.reply());
@@ -1101,12 +1102,23 @@ async fn answer_alone(id: u64, quiet_minutes: u32) {
         let mine: Vec<String> = past.iter().map(|(_, t)| t.clone()).collect();
         let this_hour = past.iter().filter(|(at, _)| now - *at < 3_600_000).count();
         let you = c.inbox.conversations.get(&chat).map_or(true, |conv| orders::you_answered(conv, now, i64::from(quiet_minutes) * 60_000, &mine));
-        if you || this_hour >= AUTO_PER_HOUR || mine.iter().any(|t| *t == text) {
+        let quiet = if you {
+            Some(format!("you wrote to the customer in the last {quiet_minutes} minutes"))
+        } else if this_hour >= AUTO_PER_HOUR {
+            Some(format!("{AUTO_PER_HOUR} messages sent to the customer this hour"))
+        } else if mine.iter().any(|t| *t == text) {
+            Some("the same words were sent already".to_string())
+        } else {
+            None
+        };
+        if let Some(why) = quiet {
+            crate::log::line(format!("whatsapp: print order left on the card: {why}"));
             return;
         }
         past.push((now, text.clone()));
         (chat, text)
     };
+    crate::log::line("whatsapp: answering a print order by itself");
     if !send(&chat, &text).await {
         crate::log::line("whatsapp: could not answer a print order by itself".to_string());
         if let Some(past) = ctl().order_auto.get_mut(&chat) {
@@ -1531,8 +1543,14 @@ pub fn whatsapp_open_app(window: WebviewWindow) -> Result<bool, String> {
 /// Enter or the send button in the island's card: the only way a message leaves Coucou.
 pub async fn whatsapp_send(window: WebviewWindow, chat: String, text: String) -> Result<bool, String> {
     only(&window, crate::island::WINDOW_LABEL)?;
+    let key = model::normalized(&chat);
+    let suggested = ctl().orders.iter().any(|(_, o)| o.chat == key && o.state == orders::State::Draft && o.reply().trim() == text.trim());
     let sent = send(&chat, &text).await;
-    if sent && quoted_by_hand(&mut ctl(), &model::normalized(&chat), &text) {
+    if sent && suggested {
+        // Coucou's own reply sent with Enter: Coucou's words, not you talking with the customer.
+        ctl().order_auto.entry(key.clone()).or_default().push((gateway::now_ms(), text.clone()));
+    }
+    if sent && quoted_by_hand(&mut ctl(), &key, &text) {
         changed();
     }
     Ok(sent)

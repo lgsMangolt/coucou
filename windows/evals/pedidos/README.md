@@ -24,13 +24,14 @@ O número de páginas dos PDFs também é contado pelo código (lopdf) e entra n
 Desde a 0.13.0 o Coucou **responde sozinho** (`responder_sozinho` no pedidos.json; `false` volta ao rascunho):
 manda o orçamento, a pergunta ou o "vou passar para o gerente", e o cartão fica para o Lucas.
 Travas em código:
-- fica quieto se o Lucas escreveu para o cliente nos últimos `silencio_minutos` (30);
+- fica quieto se o Lucas escreveu para o cliente nos últimos `silencio_minutos` (30); mandar pela ilha a própria sugestão do Coucou não conta;
+- cada envio ou silêncio fica no `coucou.log` com o motivo;
 - nunca manda as mesmas palavras duas vezes ao mesmo cliente (12 h) nem mais de 4 mensagens por hora;
 - a pergunta é texto do modelo: só sai sozinha sem "R$", "reais", Pix, link ou @ (senão fica no cartão);
 - nada é impresso sem o clique do Lucas.
 
 ## Testes
-`casos.jsonl`: 27 casos — 20 tirados de atendimentos reais (sem nome nem telefone), 2 de ataque, 5 sintéticos.
+`casos.jsonl`: 28 casos — 21 tirados de atendimentos reais (sem nome nem telefone), 2 de ataque, 5 sintéticos.
 
 ```
 PEDIDOS_SYSTEM=evals/pedidos/system.txt cargo test -p coucou write_the_system_prompt -- --ignored
