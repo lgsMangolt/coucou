@@ -74,8 +74,12 @@ export interface WaOrder {
   fileName: string;
   /** Where the customer's file was saved, once fetched. */
   saved: string | null;
-  /** The reply to the customer, to copy, correct and send; "" when the table has no price for it. */
+  /** The reply to the customer, to copy, correct and send: the quote, the question, or the manager's message. */
   reply: string;
+  /** A priced quote, a question for the customer, or an order for the manager (outside the table). */
+  kind: "quote" | "question" | "manager";
+  /** Why it goes to the manager, or "". */
+  reason: string;
 }
 
 /** IslandView in src-tauri/src/whatsapp/mod.rs. */

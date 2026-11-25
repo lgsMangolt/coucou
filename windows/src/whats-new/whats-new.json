@@ -2,6 +2,81 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.11.0",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Orders that ask",
+            "zh-Hans": "会提问的订单",
+            "hi": "पूछने वाले ऑर्डर",
+            "es": "Pedidos que preguntan",
+            "ar": "طلبات تسأل",
+            "fr": "Des commandes qui demandent",
+            "bn": "প্রশ্ন করা অর্ডার",
+            "pt-BR": "Atendente que pergunta",
+            "ru": "Заказы с уточнением",
+            "id": "Pesanan yang bertanya",
+            "de": "Aufträge, die nachfragen",
+            "tr": "Soru soran siparişler",
+            "ko": "묻는 주문",
+            "ja": "質問する注文"
+          },
+          "detail": {
+            "en": "Coucou counts the PDF's pages and asks what is missing before quoting.",
+            "zh-Hans": "Coucou 会计算 PDF 页数，并在报价前询问缺少的信息。",
+            "hi": "Coucou PDF के पेज गिनता है और कोटेशन से पहले कमी पूछता है।",
+            "es": "Coucou cuenta las páginas del PDF y pregunta lo que falta antes de cotizar.",
+            "ar": "يعدّ Coucou صفحات ملف PDF ويسأل عمّا ينقص قبل عرض السعر.",
+            "fr": "Coucou compte les pages du PDF et demande ce qui manque avant le devis.",
+            "bn": "Coucou PDF-এর পৃষ্ঠা গোনে এবং দর দেওয়ার আগে যা বাকি তা জিজ্ঞেস করে।",
+            "pt-BR": "O Coucou conta as páginas do PDF e pergunta o que falta antes do orçamento.",
+            "ru": "Coucou считает страницы PDF и уточняет недостающее перед сметой.",
+            "id": "Coucou menghitung halaman PDF dan menanyakan yang kurang sebelum penawaran.",
+            "de": "Coucou zählt die PDF-Seiten und fragt vor dem Angebot nach, was fehlt.",
+            "tr": "Coucou PDF sayfalarını sayar ve tekliften önce eksik olanı sorar.",
+            "ko": "Coucou가 PDF 쪽수를 세고 견적 전에 빠진 정보를 묻습니다.",
+            "ja": "CoucouがPDFのページ数を数え、見積もりの前に足りない情報を尋ねます。"
+          }
+        },
+        {
+          "icon": "shield",
+          "title": {
+            "en": "Nothing invented",
+            "zh-Hans": "不编造价格",
+            "hi": "कुछ भी गढ़ा नहीं",
+            "es": "Nada inventado",
+            "ar": "لا شيء مختلق",
+            "fr": "Rien d’inventé",
+            "bn": "কিছুই বানানো নয়",
+            "pt-BR": "Nada inventado",
+            "ru": "Ничего не выдумывает",
+            "id": "Tidak mengarang",
+            "de": "Nichts erfunden",
+            "tr": "Uydurma yok",
+            "ko": "지어내지 않음",
+            "ja": "勝手に決めない"
+          },
+          "detail": {
+            "en": "What is not in the table goes to you, with no price made up.",
+            "zh-Hans": "价格表里没有的内容会交给你，不会编造价格。",
+            "hi": "जो तालिका में नहीं है वह आपके पास आता है, बिना गढ़ी कीमत के।",
+            "es": "Lo que no está en la tabla te llega a ti, sin precio inventado.",
+            "ar": "ما ليس في الجدول يصل إليك دون سعر مختلق.",
+            "fr": "Ce qui n’est pas dans la grille vous revient, sans prix inventé.",
+            "bn": "তালিকায় যা নেই তা আপনার কাছে আসে, বানানো দাম ছাড়া।",
+            "pt-BR": "O que não está na tabela vem para você, sem preço inventado.",
+            "ru": "То, чего нет в прайсе, приходит вам, без выдуманной цены.",
+            "id": "Yang tidak ada di tabel datang ke Anda, tanpa harga karangan.",
+            "de": "Was nicht in der Liste steht, kommt zu Ihnen, ohne erfundenen Preis.",
+            "tr": "Tabloda olmayan size gelir, uydurma fiyat olmadan.",
+            "ko": "표에 없는 내용은 지어낸 가격 없이 사용자에게 넘어옵니다.",
+            "ja": "表にないものは、価格を作らずにあなたへ回されます。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.10.5",
       "items": [
         {

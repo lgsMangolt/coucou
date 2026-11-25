@@ -282,10 +282,15 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
   /** A print order: what is asked, the reply Coucou would give (to copy, correct and send), the
    * printer, and the clicks. Nothing is sent from here. */
   function orderCard(o: WaOrder): HTMLElement {
-    const stage = o.state === "approved" ? t("Order approved") : o.state === "quoted" ? t("Waiting for the customer") : t("Print order");
+    const manager = o.kind === "manager" || (o.kind === "quote" && !o.total);
+    const stage = o.state === "approved" ? t("Order approved")
+      : o.state === "quoted" ? t("Waiting for the customer")
+      : manager ? t("For the manager")
+      : o.kind === "question" ? t("Missing information")
+      : t("Print order");
     const label = h("div", { class: "wa-entry-line" },
-      h("b", { class: "wa-entry-kind in", text: stage }),
-      h("span", { class: "wa-entry-amount", text: o.total || t("No price") }),
+      h("b", { class: `wa-entry-kind ${manager ? "out" : "in"}`, text: stage }),
+      h("span", { class: "wa-entry-amount", text: o.total || (o.kind === "question" ? "" : t("No price")) }),
     );
     const reply = h("textarea", { class: "wa-order-reply", rows: "5", spellcheck: "true" }) as HTMLTextAreaElement;
     reply.value = replies.get(o.id) ?? o.reply;
@@ -323,8 +328,8 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     });
     return h("div", { class: "wa-entry" },
       label,
-      h("div", { class: "wa-entry-detail", text: [o.name, o.line, o.note].filter(Boolean).join(" · ") }),
-      h("div", { class: "wa-entry-detail", text: `${o.fileName} · ${t("Printer: {0}", { 0: o.printer })}` }),
+      h("div", { class: "wa-entry-detail", text: [o.name, o.line, o.reason, o.note].filter(Boolean).join(" · ") }),
+      h("div", { class: "wa-entry-detail", text: o.printer ? `${o.fileName} · ${t("Printer: {0}", { 0: o.printer })}` : o.fileName }),
       reply,
       h("div", { class: "wa-entry-actions" }, ...all),
       problem,
@@ -336,7 +341,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     const key = [
       language(), v.link.state, "detail" in v.link ? v.link.detail : "", v.unread, ignoring,
       ...v.pending.map((e) => `${e.id}|${e.amount}|${e.kind}|${e.category}|${e.person}|${e.note}`),
-      ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}|${o.reply}`),
+      ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}|${o.reply}|${o.kind}|${o.reason}`),
       // The ages move on a minute at a time.
       Math.floor(Date.now() / 60_000),
       ...v.conversations.map((c) => `${c.id}|${c.name}|${c.unread}|${c.lastActivity}|${c.messages[c.messages.length - 1]?.id ?? ""}`),

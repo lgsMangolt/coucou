@@ -251,6 +251,8 @@ struct Ctl {
     order_queue: Vec<String>,
     /// Chats being read right now: one reading at a time for each.
     order_reading: HashSet<String>,
+    /// The pages of the customers' PDFs, by message id (counted once).
+    order_pages: HashMap<String, u32>,
     /// The orders on the card, in memory only.
     orders: Vec<(u64, orders::Order)>,
     order_next: u64,
@@ -298,6 +300,7 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         ledger_sheet_code: false,
         order_queue: Vec::new(),
         order_reading: HashSet::new(),
+        order_pages: HashMap::new(),
         orders: Vec::new(),
         order_next: 0,
         order_settled: HashMap::new(),
@@ -954,13 +957,16 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
     (name, groups)
 }
 
-/// A customer wrote. With a quote waiting, a "yes" approves it; else, a file and words about
-/// printing in the last messages queue the conversation to be read as an order.
+/// A customer wrote. With a quote waiting, a "yes" approves it, and anything else said about the
+/// order (a change, a question) has it read again; else, a file and words about printing in the
+/// last messages queue the conversation to be read as an order.
 fn order_step(c: &mut Ctl, key: &str, text: &str) {
     if let Some((_, order)) = c.orders.iter_mut().find(|(_, o)| o.chat == key && o.state == orders::State::Quoted) {
         if orders::approves(text) {
             order.state = orders::State::Approved;
             c.order_news.push(order.name.clone());
+        } else if !c.order_queue.iter().any(|k| k == key) {
+            c.order_queue.push(key.to_string());
         }
         return;
     }
@@ -985,15 +991,35 @@ async fn read_order(gen: u64, chat: String) {
     if !config.ativo {
         return;
     }
-    let (prompt, file, name) = {
+    let (uncounted, provider) = {
         let mut c = ctl();
         if c.generation != gen || c.order_reading.contains(&chat) {
             return;
         }
-        let found = c.inbox.conversations.get(&chat).and_then(|conv| Some((orders::prompt(conv)?, orders::file_of(conv)?, conv.name.clone())));
-        let Some(found) = found else { return };
         c.order_reading.insert(chat.clone());
-        found
+        let uncounted = c.inbox.conversations.get(&chat).map(|conv| orders::uncounted(conv, &c.order_pages)).unwrap_or_default();
+        (uncounted, c.provider.clone())
+    };
+    // The pages of the customer's PDFs, so a file sent with no number is priced by its pages.
+    if let Some(provider) = provider {
+        for message in uncounted {
+            let pages = count_pages(&provider, &message, &chat).await;
+            let mut c = ctl();
+            if c.order_pages.len() > 2000 {
+                c.order_pages.clear();
+            }
+            // 0: could not be read; not tried again.
+            c.order_pages.insert(message, pages.unwrap_or(0));
+        }
+    }
+    let found = {
+        let c = ctl();
+        let pages: HashMap<String, u32> = c.order_pages.iter().filter(|(_, n)| **n > 0).map(|(k, n)| (k.clone(), *n)).collect();
+        c.inbox.conversations.get(&chat).and_then(|conv| Some((orders::prompt(conv, &pages)?, orders::file_of(conv)?, conv.name.clone())))
+    };
+    let Some((prompt, file, name)) = found else {
+        ctl().order_reading.remove(&chat);
+        return;
     };
     let answer = orders::read_order(&prompt, &config).await;
     let (names, busy) = crate::printers::queue();
@@ -1003,24 +1029,35 @@ async fn read_order(gen: u64, chat: String) {
         if c.generation != gen {
             return;
         }
+        let blank = |kind: orders::Kind, ask: String| orders::Order {
+            chat: chat.clone(),
+            name: name.clone(),
+            quantity: 0,
+            lines: Vec::new(),
+            note: String::new(),
+            file: file.clone(),
+            printer: String::new(),
+            state: orders::State::Draft,
+            saved: None,
+            payment: config.pagamento.clone(),
+            kind,
+            ask,
+        };
         match answer {
-            Ok(Some(asked)) => {
+            Ok(orders::Reading::Order(asked)) => {
                 let kind = config.item(&asked.item).map(|i| i.impressora.clone()).unwrap_or_default();
                 let order = orders::Order {
-                    chat: chat.clone(),
-                    name,
                     quantity: asked.quantity,
                     lines: orders::price(&asked, &config),
                     note: asked.note.clone(),
-                    file,
                     printer: orders::printer(&kind, &config.impressoras, &names, &busy),
-                    state: orders::State::Draft,
-                    saved: None,
-                    payment: config.pagamento.clone(),
+                    ..blank(orders::Kind::Quote, String::new())
                 };
                 place_order(&mut c, order)
             }
-            Ok(None) => false,
+            Ok(orders::Reading::Ask(question)) => place_order(&mut c, blank(orders::Kind::Question, question)),
+            Ok(orders::Reading::Manager(why)) => place_order(&mut c, blank(orders::Kind::Manager, why)),
+            Ok(orders::Reading::Nothing) => false,
             Err(reason) => {
                 crate::log::line(format!("whatsapp: could not read a print order: {reason}"));
                 false
@@ -1033,13 +1070,28 @@ async fn read_order(gen: u64, chat: String) {
     changed();
 }
 
-/// Puts a freshly read order on the card, in place of the draft the same customer had. False when
-/// nothing changed: the same draft again, or a quote already on its way.
+/// Fetches one PDF of the customer to count its pages; the gateway's copy is removed at once.
+async fn count_pages(provider: &Provider, message: &str, chat: &str) -> Option<u32> {
+    let relative = provider.download(message, chat).await.ok()?;
+    let path = orders::downloaded(&process::working_dir(), &relative)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let pages = orders::count_pages(&path);
+        let _ = std::fs::remove_file(&path);
+        pages
+    })
+    .await
+    .ok()
+    .flatten()
+}
+
+/// Puts a freshly read order on the card, in place of the one the same customer had (a draft, or a
+/// quote the customer changed: it waits to be sent again). False when nothing changed: the same
+/// request read again, or an order already approved.
 fn place_order(c: &mut Ctl, order: orders::Order) -> bool {
-    if c.orders.iter().any(|(_, o)| o.chat == order.chat && o.state != orders::State::Draft) {
+    if c.orders.iter().any(|(_, o)| o.chat == order.chat && o.state == orders::State::Approved) {
         return false;
     }
-    if c.orders.iter().any(|(_, o)| *o == order) {
+    if c.orders.iter().any(|(_, o)| o.same_as(&order)) {
         return false;
     }
     c.orders.retain(|(_, o)| o.chat != order.chat);
@@ -1438,13 +1490,13 @@ fn order_reply(c: &Ctl, chat: &str) -> Option<String> {
     c.orders
         .iter()
         .find(|(_, o)| o.chat == chat && o.state == orders::State::Draft)
-        .and_then(|(_, o)| o.quote(&o.payment))
+        .map(|(_, o)| o.reply())
 }
 
 /// The user sent the quote from the conversation (maybe corrected): when it carries the order's
 /// total, the customer's "yes" approves it from now on, as after "Copy".
 fn quoted_by_hand(c: &mut Ctl, chat: &str, text: &str) -> bool {
-    let Some((_, order)) = c.orders.iter_mut().find(|(_, o)| o.chat == chat && o.state == orders::State::Draft) else {
+    let Some((_, order)) = c.orders.iter_mut().find(|(_, o)| o.chat == chat && o.state == orders::State::Draft && o.kind == orders::Kind::Quote) else {
         return false;
     };
     let Some(total) = order.total_cents().map(ledger::reais) else { return false };
@@ -1526,7 +1578,8 @@ pub async fn whatsapp_order_quote(window: WebviewWindow, id: u64) -> Result<(), 
 /// "yes" approves it, as when Coucou sends it.
 pub fn whatsapp_order_copied(window: WebviewWindow, id: u64) -> Result<(), String> {
     only(&window, crate::island::WINDOW_LABEL)?;
-    if let Some((_, order)) = ctl().orders.iter_mut().find(|(n, o)| *n == id && o.state == orders::State::Draft) {
+    // Only a priced quote waits for a "yes": a question waits for the answer, which is read again.
+    if let Some((_, order)) = ctl().orders.iter_mut().find(|(n, o)| *n == id && o.state == orders::State::Draft && o.quote(&o.payment).is_some()) {
         order.state = orders::State::Quoted;
     }
     changed();
@@ -1842,6 +1895,7 @@ mod tests {
             ledger_sheet_code: false,
             order_queue: Vec::new(),
             order_reading: HashSet::new(),
+            order_pages: HashMap::new(),
             orders: Vec::new(),
             order_next: 0,
             order_settled: HashMap::new(),
@@ -2021,6 +2075,8 @@ mod tests {
             state: orders::State::Draft,
             saved: None,
             payment: String::new(),
+            kind: orders::Kind::Quote,
+            ask: String::new(),
         }
     }
 
@@ -2049,9 +2105,20 @@ mod tests {
             order.state = orders::State::Quoted;
         }
         assert_eq!(c.orders[0].1.state, orders::State::Quoted, "copying the reply waits for the customer");
-        assert!(!place_order(&mut c, draft(chat, "2")), "a quote on its way is not replaced");
+        assert!(!place_order(&mut c, draft(chat, "2")), "the same request read again changes nothing");
+        // Anything but a yes has the order read again: a change gets a new quote to send.
         ingest(&mut c, vec![msg("5", chat, "quanto tempo demora?")]);
         assert_eq!(c.orders[0].1.state, orders::State::Quoted);
+        assert_eq!(c.order_queue, [chat]);
+        c.order_queue.clear();
+        let mut changed = draft(chat, "2");
+        changed.lines[0] = orders::Line { text: "10 × impressão colorida".into(), cents: Some(2000) };
+        assert!(place_order(&mut c, changed), "a changed order replaces the quote sent");
+        assert_eq!((c.orders.len(), c.orders[0].1.state), (1, orders::State::Draft));
+        let id = c.orders[0].0;
+        if let Some((_, order)) = c.orders.iter_mut().find(|(n, _)| *n == id) {
+            order.state = orders::State::Quoted;
+        }
         ingest(&mut c, vec![msg("6", chat, "Pode imprimir")]);
         assert_eq!(c.orders[0].1.state, orders::State::Approved);
         assert_eq!(c.order_news, ["Ana"]);
@@ -2073,7 +2140,7 @@ mod tests {
         assert_eq!(order_reply(&c, chat), None);
         assert!(place_order(&mut c, draft(chat, "2")));
         let quote = order_reply(&c, chat).unwrap();
-        assert!(quote.starts_with("Olá! Segue o orçamento"), "{quote}");
+        assert!(quote.starts_with("Opa! O orçamento fica assim"), "{quote}");
         assert!(quote.contains("Total: R$ 12,00"), "{quote}");
         // Something else sent to the customer leaves the card as it is.
         assert!(!quoted_by_hand(&mut c, chat, "blz, recebido!"));

@@ -19,6 +19,7 @@ Cada versão é um commit marcado com a tag `br-v<número>` neste repositório.
 | 0.10.3 | Resposta para copiar | O cartão do pedido de impressão mostra a resposta que o Coucou daria ao cliente numa caixa de texto: dá para corrigir e copiar com "Copiar", e você mesmo envia no WhatsApp. O Coucou não envia nada; depois de copiar, o "sim" do cliente marca o pedido como aprovado. |
 | 0.10.4 | Sugestão com orçamento | Na conversa de um cliente com pedido de impressão, a sugestão de resposta passa a ser o orçamento (antes saía uma resposta genérica, como "blz, recebido!"). Enviar o orçamento pela conversa do Coucou, mesmo corrigido, deixa o pedido aguardando o "sim" do cliente, como o botão Copiar. |
 | 0.10.5 | Contexto de 25 | O Coucou lê as últimas 25 mensagens da conversa (do cliente e suas) para entender o pedido de impressão e para sugerir a resposta; antes eram 8 e 12. Cada conversa passa a guardar 25 mensagens (antes 20). |
+| 0.11.0 | Atendente que pergunta | O pedido de impressão passa a conversar: o Coucou conta as páginas do PDF do cliente, pergunta o que falta (P&B ou colorida, papel) no jeito do Lucas responder, e o que não está na tabela (A2, A5, marca-página, entrega, desconto, mais de 300 folhas) vira "vou passar para o gerente" e um cartão para o Lucas, sem preço inventado. A3 sulfite P&B e colorida entram na tabela. Um "ok, mas…" ou uma pergunta não aprovam mais o pedido, e uma mudança depois do orçamento refaz o orçamento. A leitura usa o Haiku 5.5 (24 de 24 casos em evals/pedidos, contra 19 do Haiku 4.5). |
 
 ## Como gerar e instalar
 

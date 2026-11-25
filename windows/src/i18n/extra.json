@@ -8958,6 +8958,36 @@
       "tr": "Müşteri bekleniyor",
       "ko": "고객 응답 대기 중",
       "ja": "お客様の返信待ち"
+    },
+    "For the manager": {
+      "zh-Hans": "交给经理",
+      "hi": "मैनेजर के लिए",
+      "es": "Para el gerente",
+      "ar": "للمدير",
+      "fr": "Pour le gérant",
+      "bn": "ম্যানেজারের জন্য",
+      "pt-BR": "Para o gerente",
+      "ru": "Для менеджера",
+      "id": "Untuk manajer",
+      "de": "Für den Chef",
+      "tr": "Yönetici için",
+      "ko": "관리자 확인 필요",
+      "ja": "店長へ"
+    },
+    "Missing information": {
+      "zh-Hans": "缺少信息",
+      "hi": "जानकारी अधूरी",
+      "es": "Falta información",
+      "ar": "معلومات ناقصة",
+      "fr": "Il manque une info",
+      "bn": "তথ্য বাকি",
+      "pt-BR": "Falta informação",
+      "ru": "Не хватает данных",
+      "id": "Info belum lengkap",
+      "de": "Angaben fehlen",
+      "tr": "Bilgi eksik",
+      "ko": "정보 부족",
+      "ja": "情報が不足"
     }
   }
 }
