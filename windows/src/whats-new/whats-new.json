@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.10.1",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Caxias do Sul prices",
+            "zh-Hans": "南卡希亚斯的价格",
+            "hi": "काशियास दो सुल की कीमतें",
+            "es": "Precios de Caxias do Sul",
+            "ar": "أسعار كاشياس دو سول",
+            "fr": "Prix de Caxias do Sul",
+            "bn": "কাশিয়াস দু সুলের দাম",
+            "pt-BR": "Preços de Caxias",
+            "ru": "Цены Кашиас-ду-Сул",
+            "id": "Harga Caxias do Sul",
+            "de": "Preise für Caxias do Sul",
+            "tr": "Caxias do Sul fiyatları",
+            "ko": "카시아스두술 가격",
+            "ja": "カシアス・ド・スルの価格"
+          },
+          "detail": {
+            "en": "The print orders' price table now has prices for Caxias do Sul.",
+            "zh-Hans": "打印订单的价格表现在使用南卡希亚斯的价格。",
+            "hi": "प्रिंट ऑर्डर की मूल्य तालिका में अब काशियास दो सुल की कीमतें हैं।",
+            "es": "La tabla de precios de los pedidos de impresión ahora tiene precios de Caxias do Sul.",
+            "ar": "جدول أسعار طلبات الطباعة يحتوي الآن على أسعار كاشياس دو سول.",
+            "fr": "La grille de prix des commandes d’impression a maintenant les prix de Caxias do Sul.",
+            "bn": "প্রিন্ট অর্ডারের মূল্য তালিকায় এখন কাশিয়াস দু সুলের দাম।",
+            "pt-BR": "A tabela de preços dos pedidos de impressão agora tem valores de Caxias do Sul.",
+            "ru": "В прайсе заказов на печать теперь цены Кашиас-ду-Сул.",
+            "id": "Tabel harga pesanan cetak kini memakai harga Caxias do Sul.",
+            "de": "Die Preisliste der Druckaufträge hat jetzt Preise für Caxias do Sul.",
+            "tr": "Baskı siparişlerinin fiyat tablosunda artık Caxias do Sul fiyatları var.",
+            "ko": "인쇄 주문 가격표가 이제 카시아스두술 가격을 사용합니다.",
+            "ja": "印刷注文の価格表がカシアス・ド・スルの価格になりました。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.10.0",
       "items": [
         {
