@@ -1,0 +1,230 @@
+<title>Tabela da copiadora</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: uma folha de prova de gráfica — marcas de corte nos cantos, faixas de preço como colunas
+   de uma tabela de bureau, cores de processo (ciano, magenta, amarelo) só como sinal. */
+:root {
+  --paper: #f6f7f5;
+  --sheet: #ffffff;
+  --ink: #16181b;
+  --ink-2: #4a4f57;
+  --rule: #d9dcd8;
+  --cyan: #007fae;
+  --magenta: #c21d63;
+  --yellow: #e8b400;
+  --cyan-soft: #e3f2f8;
+  --magenta-soft: #fbe8f0;
+  --display: "Archivo", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #101215; --sheet: #171a1e; --ink: #eef0ec; --ink-2: #a9afb7; --rule: #2c3138;
+    --cyan: #4cc3ee; --magenta: #f0629c; --yellow: #f5cc3a; --cyan-soft: #11303d; --magenta-soft: #3a1626;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #101215; --sheet: #171a1e; --ink: #eef0ec; --ink-2: #a9afb7; --rule: #2c3138;
+  --cyan: #4cc3ee; --magenta: #f0629c; --yellow: #f5cc3a; --cyan-soft: #11303d; --magenta-soft: #3a1626;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+::selection { background: var(--cyan); color: var(--sheet); }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 400 16px/1.5 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+}
+.wrap { max-width: 920px; margin: 0 auto; display: grid; gap: 40px; }
+
+header { display: grid; gap: 14px; }
+.process { display: flex; gap: 6px; }
+.process i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+.process i:nth-child(1) { background: var(--cyan); }
+.process i:nth-child(2) { background: var(--magenta); }
+.process i:nth-child(3) { background: var(--yellow); }
+.process i:nth-child(4) { background: var(--ink); }
+h1 {
+  font: 800 clamp(2.4rem, 7vw, 4.4rem)/0.95 var(--display);
+  font-stretch: 72%; letter-spacing: -0.02em; margin: 0; text-wrap: balance;
+}
+.lede { margin: 0; max-width: 62ch; color: var(--ink-2); font-size: 1.05rem; }
+.lede b { color: var(--ink); }
+
+/* A folha com marcas de corte */
+.sheet {
+  position: relative; background: var(--sheet);
+  padding: clamp(20px, 4vw, 36px);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.18);
+  display: grid; gap: 18px; min-width: 0;
+}
+.sheet::before, .sheet::after, .sheet > .crop::before, .sheet > .crop::after {
+  content: ""; position: absolute; width: 18px; height: 18px; border-color: var(--ink-2); border-style: solid; opacity: .55;
+}
+.sheet::before { top: -10px; left: -10px; border-width: 0 1px 1px 0; }
+.sheet::after { top: -10px; right: -10px; border-width: 0 0 1px 1px; }
+.sheet > .crop::before { bottom: -10px; left: -10px; border-width: 1px 1px 0 0; }
+.sheet > .crop::after { bottom: -10px; right: -10px; border-width: 1px 0 0 1px; }
+
+.head { display: flex; align-items: end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+h2 { font: 750 1.6rem/1.1 var(--display); font-stretch: 85%; margin: 0; text-wrap: balance; }
+.meta { color: var(--ink-2); font-size: .92rem; }
+.size { display: flex; align-items: end; gap: 6px; color: var(--ink-2); font: 600 .75rem/1 var(--display); letter-spacing: .06em; text-transform: uppercase; }
+.size svg { display: block; }
+.size rect { fill: none; stroke: currentColor; stroke-width: 1.2; }
+.size .on { fill: var(--cyan-soft); stroke: var(--cyan); }
+
+.scroll { overflow-x: auto; min-width: 0; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 520px; }
+th, td { padding: 12px 10px; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; white-space: normal; padding-left: 0; }
+thead th { font: 700 .78rem/1.2 var(--display); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-2); border-bottom: 2px solid var(--ink); }
+thead th small { display: block; font: 400 .72rem var(--body); letter-spacing: 0; text-transform: none; }
+tbody th { font-weight: 600; }
+tbody th span { display: block; font-weight: 400; font-size: .85rem; color: var(--ink-2); }
+td { font: 600 1.08rem/1 var(--body); }
+td .cur { font-size: .72em; font-weight: 400; color: var(--ink-2); margin-right: 2px; }
+td.est { color: var(--ink-2); font-weight: 400; }
+td.est::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--yellow); margin-left: 6px; vertical-align: .25em; }
+tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 40px; }
+.list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; font-variant-numeric: tabular-nums; }
+.list li { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.list li:last-child { border-bottom: 0; }
+.list span { color: var(--ink-2); font-size: .85rem; display: block; }
+.list b { font: 600 1.08rem/1 var(--body); white-space: nowrap; }
+
+.manager { background: var(--magenta-soft); padding: clamp(20px, 4vw, 32px); display: grid; gap: 12px; }
+.manager h2 { color: var(--magenta); }
+.manager p { margin: 0; max-width: 64ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+.chips li { border: 1px solid var(--magenta); color: var(--magenta); border-radius: 999px; padding: 3px 12px; font-size: .9rem; }
+
+.example { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; padding-top: 4px; color: var(--ink-2); font-size: .95rem; font-variant-numeric: tabular-nums; }
+.example b { color: var(--ink); }
+.example .eq { color: var(--cyan); font-weight: 700; }
+
+footer { display: grid; gap: 8px; color: var(--ink-2); font-size: .9rem; }
+footer p { margin: 0; max-width: 70ch; }
+.legend { display: inline-flex; align-items: center; gap: 6px; }
+.legend::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--yellow); }
+code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .88em; background: var(--sheet); padding: 1px 5px; }
+
+@media (max-width: 560px) {
+  body { padding-block: 24px 48px; }
+  .wrap { gap: 32px; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="process" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <h1>Tabela da copiadora</h1>
+    <p class="lede">Preço <b>por folha</b>, pela quantidade do pedido. É a tabela que o Coucou usa para orçar os pedidos do WhatsApp. Acima de 300 folhas, o orçamento é com o gerente.</p>
+  </header>
+
+  <section class="sheet" aria-labelledby="sulfite-a4">
+    <div class="crop" aria-hidden="true"></div>
+    <div class="head">
+      <div>
+        <h2 id="sulfite-a4">Ofício · sulfite 75g</h2>
+        <div class="meta">Impressora WF5390</div>
+      </div>
+      <div class="size" aria-label="Tamanho A4">
+        <svg width="24" height="34" viewBox="0 0 24 34" aria-hidden="true"><rect class="on" x="1" y="1" width="22" height="31"/></svg>A4
+      </div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Impressão</th><th scope="col">1–10<small>folhas</small></th><th scope="col">11–50<small>folhas</small></th><th scope="col">51–100<small>folhas</small></th><th scope="col">101–300<small>folhas</small></th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Preto e branco</th><td><span class="cur">R$</span>1,00</td><td><span class="cur">R$</span>0,70</td><td><span class="cur">R$</span>0,60</td><td><span class="cur">R$</span>0,50</td></tr>
+          <tr><th scope="row">Preto e branco<span>frente e verso, por folha</span></th><td><span class="cur">R$</span>1,60</td><td><span class="cur">R$</span>1,10</td><td><span class="cur">R$</span>0,95</td><td><span class="cur">R$</span>0,80</td></tr>
+          <tr><th scope="row">Colorida</th><td><span class="cur">R$</span>2,00</td><td><span class="cur">R$</span>1,80</td><td><span class="cur">R$</span>1,60</td><td><span class="cur">R$</span>1,40</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sheet" aria-labelledby="sulfite-a3">
+    <div class="crop" aria-hidden="true"></div>
+    <div class="head">
+      <div>
+        <h2 id="sulfite-a3">Ofício A3 · sulfite 75g</h2>
+        <div class="meta">O dobro de uma A4 · impressora WF5390</div>
+      </div>
+      <div class="size" aria-label="Tamanho A3">
+        <svg width="46" height="34" viewBox="0 0 46 34" aria-hidden="true"><rect class="on" x="1" y="1" width="44" height="31"/><rect x="23" y="1" width="0" height="31"/><line x1="23" y1="1" x2="23" y2="32" stroke="currentColor" stroke-dasharray="2 2"/></svg>A3
+      </div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Impressão</th><th scope="col">1–10<small>folhas</small></th><th scope="col">11–50<small>folhas</small></th><th scope="col">51–100<small>folhas</small></th><th scope="col">101–300<small>folhas</small></th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Preto e branco</th><td><span class="cur">R$</span>2,00</td><td class="est"><span class="cur">R$</span>1,60</td><td class="est"><span class="cur">R$</span>1,40</td><td><span class="cur">R$</span>1,20</td></tr>
+          <tr><th scope="row">Colorida</th><td><span class="cur">R$</span>5,50</td><td><span class="cur">R$</span>5,50</td><td><span class="cur">R$</span>5,50</td><td><span class="cur">R$</span>5,50</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="example">Exemplo: <b>123 folhas A3 coloridas</b> × R$ 5,50 <span class="eq">= R$ 676,50</span></div>
+  </section>
+
+  <div class="two">
+    <section class="sheet" aria-labelledby="couche">
+      <div class="crop" aria-hidden="true"></div>
+      <div class="head">
+        <div>
+          <h2 id="couche">Couchê colorido</h2>
+          <div class="meta">Mesmo preço de 1 a 300 folhas · C5255 (7250 se ocupada)</div>
+        </div>
+      </div>
+      <ul class="list">
+        <li><div>A4 · 150g<span>folders, cardápios</span></div><b>R$ 3,50</b></li>
+        <li><div>A4 · 300g<span>convites, certificados</span></div><b>R$ 5,00</b></li>
+        <li><div>A3 · 150g<span>pôsteres, plantas</span></div><b>R$ 6,50</b></li>
+        <li><div>A3 · 300g<span>certificados grandes</span></div><b>R$ 6,50</b></li>
+      </ul>
+    </section>
+
+    <section class="sheet" aria-labelledby="acabamentos">
+      <div class="crop" aria-hidden="true"></div>
+      <div class="head">
+        <div>
+          <h2 id="acabamentos">Acabamentos</h2>
+          <div class="meta">Somados ao valor da impressão</div>
+        </div>
+      </div>
+      <ul class="list">
+        <li><div>Corte<span>até 10 folhas, por pedido</span></div><b>R$ 10,00</b></li>
+        <li><div>Encadernação<span>até 100 folhas</span></div><b>R$ 15,00</b></li>
+        <li><div>Encadernação<span>até 200 folhas</span></div><b>R$ 20,00</b></li>
+        <li><div>Plastificação<span>por folha</span></div><b>R$ 10,00</b></li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="manager" aria-labelledby="gerente">
+    <h2 id="gerente">Com o gerente</h2>
+    <p>O Coucou não inventa preço. Para estes pedidos, a resposta sugerida é “vou passar para o gerente fazer o orçamento certinho” e o cartão do pedido chega para você.</p>
+    <ul class="chips">
+      <li>Mais de 300 folhas</li><li>A2 ou maior</li><li>A5, A6, 10×15</li><li>Marca-página</li><li>Cartão de visita</li><li>Adesivo</li><li>Papel foto</li><li>Entrega com motoboy</li><li>Desconto ou preço especial</li><li>Prazo garantido</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p><span class="legend">Estimativa: confirmar o valor</span></p>
+    <p>Valores de 25 de novembro de 2026, de Caxias do Sul. Para mudar um preço, edite <code>%APPDATA%\Coucou\pedidos.json</code>; vale no próximo pedido.</p>
+  </footer>
+</div>

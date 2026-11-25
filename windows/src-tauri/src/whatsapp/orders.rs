@@ -121,8 +121,7 @@ fn finish(id: &str, nome: &str, preco: f64, por_folha: bool) -> Finish {
 
 impl Default for Config {
     /// The table the shop asked for, with the prices the shop quotes its customers on WhatsApp
-    /// (Caxias do Sul, 2026); couchê A3 150g, which no conversation priced, sits between the A3 sulfite
-    /// and the A3 couchê 300g.
+    /// (Caxias do Sul, 2026).
     fn default() -> Self {
         let one = |preco: f64| vec![Tier { ate: 300, preco }];
         Config {
@@ -135,7 +134,7 @@ impl Default for Config {
                 item("a3_color", "impressão colorida A3, sulfite 75g", "baratos", tiers([5.50, 5.50, 5.50, 5.50])),
                 item("couche_a4_150", "impressão colorida A4, couchê 150g", "couche", one(3.50)),
                 item("couche_a4_300", "impressão colorida A4, couchê 300g", "couche", one(5.00)),
-                item("couche_a3_150", "impressão colorida A3, couchê 150g", "couche", one(6.00)),
+                item("couche_a3_150", "impressão colorida A3, couchê 150g", "couche", one(6.50)),
                 item("couche_a3_300", "impressão colorida A3, couchê 300g", "couche", one(6.50)),
             ],
             acabamentos: vec![

@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.11.2",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "A3 coated paper price",
+            "zh-Hans": "A3 铜版纸价格",
+            "hi": "A3 कोटेड पेपर की कीमत",
+            "es": "Precio del couché A3",
+            "ar": "سعر الورق المطلي A3",
+            "fr": "Prix du couché A3",
+            "bn": "A3 কোটেড কাগজের দাম",
+            "pt-BR": "Couchê A3 150g",
+            "ru": "Цена мелованной A3",
+            "id": "Harga kertas couché A3",
+            "de": "Preis für A3-Bilderdruck",
+            "tr": "A3 kuşe fiyatı",
+            "ko": "A3 코팅지 가격",
+            "ja": "A3コート紙の価格"
+          },
+          "detail": {
+            "en": "A3 150g coated paper is now R$ 6.50 a sheet, like the 300g.",
+            "zh-Hans": "A3 150g 铜版纸现在每张 6.50 雷亚尔，与 300g 相同。",
+            "hi": "A3 150g कोटेड पेपर अब 300g की तरह R$ 6,50 प्रति शीट है।",
+            "es": "El couché A3 150g ahora cuesta R$ 6,50 la hoja, igual que el 300g.",
+            "ar": "الورق المطلي A3 150g أصبح 6,50 ريال للورقة، مثل 300g.",
+            "fr": "Le couché A3 150g passe à 6,50 R$ la feuille, comme le 300g.",
+            "bn": "A3 150g কোটেড কাগজ এখন প্রতি পাতা R$ 6,50, 300g-এর মতো।",
+            "pt-BR": "O couchê A3 150g agora é R$ 6,50 a folha, igual ao 300g.",
+            "ru": "Мелованная A3 150g теперь стоит R$ 6,50 за лист, как 300g.",
+            "id": "Kertas couché A3 150g kini R$ 6,50 per lembar, sama dengan 300g.",
+            "de": "A3-Bilderdruck 150g kostet jetzt R$ 6,50 pro Blatt, wie 300g.",
+            "tr": "A3 150g kuşe artık 300g gibi yaprağı R$ 6,50.",
+            "ko": "A3 150g 코팅지가 이제 300g과 같은 장당 R$ 6,50입니다.",
+            "ja": "A3 150gのコート紙は300gと同じく1枚R$ 6,50になりました。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.11.1",
       "items": [
         {
