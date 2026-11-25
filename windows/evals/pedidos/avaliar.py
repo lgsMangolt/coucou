@@ -38,7 +38,8 @@ def read(reply):
     if "gerente" in j:
         return {"tipo": "gerente", "texto": j["gerente"]}
     if "item" in j:
-        return {"tipo": "pedido", "item": j.get("item"), "quantidade": j.get("quantidade"), "acabamentos": j.get("acabamentos") or []}
+        return {"tipo": "pedido", "item": j.get("item"), "quantidade": j.get("quantidade"), "acabamentos": j.get("acabamentos") or [],
+                "tamanho": j.get("tamanho") or "A4", "pecas": j.get("pecas")}
     return {"tipo": "invalido"}
 
 
@@ -48,7 +49,13 @@ def right(case, got):
         return False
     if got["tipo"] != "pedido":
         return True
-    if "item" in want and got["item"] != want["item"]:
+    if "item" in want and got["item"] not in (want["item"] if isinstance(want["item"], list) else [want["item"]]):
+        return False
+    squash = lambda t: str(t).lower().replace(" ", "").replace("×", "x").replace("cm", "")
+    sizes = want.get("tamanho", "A4")
+    if squash(got.get("tamanho", "A4")) not in [squash(t) for t in (sizes if isinstance(sizes, list) else [sizes])]:
+        return False
+    if "pecas" in want and got.get("pecas") != want["pecas"]:
         return False
     if "quantidade" in want:
         q = want["quantidade"]
@@ -85,7 +92,7 @@ def main():
                 continue
             good = right(c, got)
             ok += good
-            detail = got.get("texto") or (f'{got.get("item")} × {got.get("quantidade")} {got.get("acabamentos") or ""}' if got["tipo"] == "pedido" else "")
+            detail = got.get("texto") or (f'{got.get("item")} × {got.get("quantidade")} {got.get("tamanho")} {got.get("pecas") or ""} {got.get("acabamentos") or ""}' if got["tipo"] == "pedido" else "")
             print(f'{"ok " if good else "ERR"} {c["id"]:<28} {got["tipo"]:<10} {detail}')
         print(f"acerto: {ok}/{len(cases)}")
 

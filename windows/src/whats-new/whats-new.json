@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.12.0",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Sizes and joining",
+            "zh-Hans": "尺寸与拼接",
+            "hi": "साइज़ और जोड़",
+            "es": "Tamaños y unión",
+            "ar": "المقاسات والتجميع",
+            "fr": "Formats et assemblage",
+            "bn": "মাপ ও জোড়া",
+            "pt-BR": "Tamanhos e junção",
+            "ru": "Форматы и склейка",
+            "id": "Ukuran dan sambungan",
+            "de": "Formate und Zusammenfügen",
+            "tr": "Boyutlar ve birleştirme",
+            "ko": "크기와 이어 붙이기",
+            "ja": "サイズと貼り合わせ"
+          },
+          "detail": {
+            "en": "Small sizes are priced by the A4 sheets they use plus cutting; A2 and larger by A3 sheets joined.",
+            "zh-Hans": "小尺寸按所用 A4 纸张加裁切计价；A2 及更大尺寸按拼接的 A3 纸张计价。",
+            "hi": "छोटे साइज़ की कीमत लगी A4 शीट और कटिंग से; A2 और बड़े की जोड़ी गई A3 शीट से।",
+            "es": "Los tamaños pequeños se cotizan por las hojas A4 que usan más el corte; A2 y mayores, por hojas A3 unidas.",
+            "ar": "تُسعَّر المقاسات الصغيرة بأوراق A4 المستخدمة مع القص، وA2 وما فوقها بأوراق A3 مجمّعة.",
+            "fr": "Les petits formats sont comptés en feuilles A4 plus la découpe ; l’A2 et plus en feuilles A3 assemblées.",
+            "bn": "ছোট মাপের দাম লাগা A4 পাতা ও কাটিং মিলিয়ে; A2 ও বড় মাপ জোড়া A3 পাতায়।",
+            "pt-BR": "Tamanhos pequenos saem pelas folhas A4 usadas mais o corte; A2 e maiores, por folhas A3 juntadas.",
+            "ru": "Малые форматы считаются по листам A4 плюс резка; A2 и больше — по склеенным листам A3.",
+            "id": "Ukuran kecil dihitung dari lembar A4 yang dipakai plus potong; A2 ke atas dari lembar A3 yang disambung.",
+            "de": "Kleine Formate kosten die verwendeten A4-Blätter plus Schnitt; A2 und größer zusammengefügte A3-Blätter.",
+            "tr": "Küçük boyutlar kullanılan A4 yaprak ve kesimle; A2 ve üstü birleştirilen A3 yapraklarla fiyatlanır.",
+            "ko": "작은 크기는 사용한 A4 장수와 재단비로, A2 이상은 이어 붙인 A3 장수로 계산합니다.",
+            "ja": "小さいサイズは使うA4用紙と断裁で、A2以上は貼り合わせるA3用紙で計算します。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.11.2",
       "items": [
         {

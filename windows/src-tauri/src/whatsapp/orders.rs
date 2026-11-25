@@ -105,6 +105,9 @@ pub struct Config {
     pub impressoras: Printers,
     /// A line added to the quote (how to pay), or "".
     pub pagamento: String,
+    /// A2 and larger are printed on A3 sheets and joined: this much per piece joined. 0: such
+    /// orders go to the manager.
+    pub juncao: f64,
 }
 
 fn tiers(prices: [f64; 4]) -> Vec<Tier> {
@@ -145,6 +148,7 @@ impl Default for Config {
             ],
             impressoras: Printers::default(),
             pagamento: String::new(),
+            juncao: 5.00,
         }
     }
 }
@@ -352,7 +356,12 @@ pub fn system(config: &Config) -> String {
 and a customer (Cliente). Answer with ONE JSON object and nothing else, one of these four:\n\
 1. A complete print order: {{\"item\": the id of the ONE line of the table that fits, \
 \"quantidade\": the whole number of sheets, \"acabamentos\": [] or the ids of the finishings asked for, \
-\"observacao\": \"\" or a few words in Brazilian Portuguese (deadline, delivery, a detail)}}. \
+\"observacao\": \"\" or a few words in Brazilian Portuguese (deadline, delivery, a detail), \
+\"tamanho\": the finished size, \"A4\" when none is said, else \"A3\", \"A5\", \"A6\", \"A7\", \"A2\", \"A1\", \
+\"A0\" or \"W x H cm\" for any other (\"10 x 15 cm\", a bookmark \"5 x 15 cm\"), \
+\"pecas\": when the size is not A4 or A3, the number of finished pieces (copies × pages)}}. \
+For a size smaller than A4 the item is the A4 line of the paper and colour asked; for A2 or larger, the A3 line \
+(the shop prints it on A3 sheets and joins them). Coucou works out the sheets, the cutting and the joining. \
 When the customer gives no number of copies, it is one copy of each file: add up the pages of the files \
 (shown as [arquivo: name, N páginas]). Two copies of a 10-page file are 20 sheets. Printed on both sides \
 (frente e verso), the sheets are half the pages, rounded up.\n\
@@ -361,9 +370,8 @@ not in the messages: colour (P&B or colorida) and paper when they matter, or the
 of a file are not known. Ask only what is missing, in one short message. When the pages of the file are known, \
 say how many it has. {STYLE}\n\
 3. {{\"gerente\": \"a few words in Brazilian Portuguese saying what is outside the table\"}}: something asked is \
-not in the table: another size (A2, A5, 10x15, banner…), another paper or product (cartão, convite in a special \
-paper, adesivo, foto, envelope), a delivery, a discount, a special price, a deadline promise, or anything you \
-would have to guess. Never invent a price, a deadline or a line of the table.\n\
+not in the table: another paper or product (cartão de visita, adesivo, papel foto, envelope, banner, lona), a \
+delivery, a discount, a special price, a deadline promise, or anything you would have to guess. Never invent a price, a deadline or a line of the table.\n\
 4. {{\"ignorar\": true}}: not about printing (payment receipts, boletos, chit-chat), or only the shop talking.\n\
 Rules: lines without A3 in their name are A4. \"Ofício\", \"folha normal\", \"a comum\" mean sulfite. \
 Couchê is always colour. When the size is not said, it is A4.\n\
@@ -412,13 +420,154 @@ pub fn count_pages(path: &Path) -> Option<u32> {
     u32::try_from(doc.get_pages().len()).ok().filter(|n| *n > 0)
 }
 
-/// What the customer asks for, as the model read it: ids of the table.
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// What the customer asks for, as the model read it: ids of the table. After `fit`, `quantity` is
+/// the sheets printed.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Asked {
     pub item: String,
     pub quantity: u32,
     pub finishes: Vec<String>,
     pub note: String,
+    /// "16 peças A6, 4 por folha", shown in the quote's first line; "".
+    pub detail: String,
+    /// Pieces joined from A3 sheets (A2 and larger), each charged the junction price; 0.
+    pub joined: u32,
+    /// What the customer reads first ("A2 a gente não imprime, mas…"); "".
+    pub intro: String,
+}
+
+// ── Sizes ─────────────────────────────────────────────────────────────────────
+
+/// A finished size, in millimetres.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Size {
+    pub name: String,
+    pub w: f64,
+    pub h: f64,
+}
+
+const A4: (f64, f64) = (210.0, 297.0);
+const A3: (f64, f64) = (297.0, 420.0);
+/// More sheets than this, cut to size, is quoted by the manager (the cutting price covers 10).
+const MAX_CUT_SHEETS: u32 = 10;
+/// More A3 sheets than this for one piece is not offered as a junction.
+const MAX_TILES: u32 = 16;
+
+/// "A5", "10x15", "5 x 15 cm", "148×210 mm"; None when it cannot be read.
+pub fn size(text: &str) -> Option<Size> {
+    let t = plain(text).replace(' ', "");
+    let named = [("a0", 841.0, 1189.0), ("a1", 594.0, 841.0), ("a2", 420.0, 594.0), ("a3", 297.0, 420.0), ("a4", 210.0, 297.0), ("a5", 148.0, 210.0), ("a6", 105.0, 148.0), ("a7", 74.0, 105.0)];
+    if let Some((_, w, h)) = named.iter().find(|(n, _, _)| *n == t) {
+        return Some(Size { name: t.to_uppercase(), w: *w, h: *h });
+    }
+    let mm = t.ends_with("mm");
+    let core = t.trim_end_matches("mm").trim_end_matches("cm");
+    let (a, b) = core.split_once(['x', '×'])?;
+    let num = |s: &str| s.replace(',', ".").parse::<f64>().ok().filter(|v| v.is_finite() && *v > 0.0);
+    let scale = if mm { 1.0 } else { 10.0 };
+    let (w, h) = (num(a)? * scale, num(b)? * scale);
+    if !(10.0..=2000.0).contains(&w) || !(10.0..=2000.0).contains(&h) {
+        return None;
+    }
+    let shown = |v: f64| if v.fract() == 0.0 { format!("{}", v as i64) } else { format!("{v}").replace('.', ",") };
+    let name = if mm { format!("{}×{} mm", shown(w), shown(h)) } else { format!("{}×{} cm", shown(w / 10.0), shown(h / 10.0)) };
+    Some(Size { name, w, h })
+}
+
+fn same_size(s: &Size, sheet: (f64, f64)) -> bool {
+    let (a, b) = if s.w <= s.h { (s.w, s.h) } else { (s.h, s.w) };
+    (a - sheet.0).abs() <= 2.0 && (b - sheet.1).abs() <= 2.0
+}
+
+/// How many pieces fit on one sheet, either way round, with no bleed.
+pub fn per_sheet(s: &Size, sheet: (f64, f64)) -> u32 {
+    let n = |a: f64, b: f64| ((sheet.0 / a).floor() * (sheet.1 / b).floor()) as u32;
+    n(s.w, s.h).max(n(s.h, s.w))
+}
+
+/// How many A3 sheets make one piece larger than A3 (1 % of slack for the paper's own sizes).
+pub fn tiles(s: &Size) -> u32 {
+    let n = |a: f64, b: f64| ((a / (A3.0 * 1.01)).ceil() * (b / (A3.1 * 1.01)).ceil()) as u32;
+    n(s.w, s.h).min(n(s.h, s.w))
+}
+
+/// The A4 or A3 line of the same paper and colour.
+fn on_a3(item: &str) -> Option<&'static str> {
+    match item {
+        "pb" | "a3_pb" => Some("a3_pb"),
+        "color" | "a3_color" => Some("a3_color"),
+        "couche_a4_150" | "couche_a3_150" => Some("couche_a3_150"),
+        "couche_a4_300" | "couche_a3_300" => Some("couche_a3_300"),
+        _ => None,
+    }
+}
+
+fn on_a4(item: &str) -> Option<&'static str> {
+    match item {
+        "pb" | "a3_pb" => Some("pb"),
+        "pb_fv" => Some("pb_fv"),
+        "color" | "a3_color" => Some("color"),
+        "couche_a4_150" | "couche_a3_150" => Some("couche_a4_150"),
+        "couche_a4_300" | "couche_a3_300" => Some("couche_a4_300"),
+        _ => None,
+    }
+}
+
+/// Puts what was asked on the shop's sheets: a size smaller than A4 is printed several to an A4
+/// and cut (more than 10 sheets goes to the manager); a size larger than A3 is printed on A3 sheets
+/// and joined, at the junction price per piece. Err: why it goes to the manager.
+pub fn fit(mut asked: Asked, size_text: &str, pieces: u32, config: &Config) -> Result<Asked, String> {
+    let text = size_text.trim();
+    if text.is_empty() {
+        return Ok(asked);
+    }
+    let Some(size) = size(text) else { return Err(format!("tamanho {}", clean_text(text, 30))) };
+    if same_size(&size, A4) || same_size(&size, A3) {
+        if same_size(&size, A3) {
+            asked.item = on_a3(&asked.item).ok_or("este papel não tem A3")?.to_string();
+        }
+        return Ok(asked);
+    }
+    let pieces = pieces.max(1);
+    let cut = |asked: &mut Asked, sheets: u32| -> Result<(), String> {
+        if sheets > MAX_CUT_SHEETS {
+            return Err(format!("{sheets} folhas para cortar (o corte vai até {MAX_CUT_SHEETS})"));
+        }
+        if config.finish("corte").is_none() {
+            return Err("corte sem preço na tabela".into());
+        }
+        if !asked.finishes.iter().any(|f| f == "corte") {
+            asked.finishes.push("corte".into());
+        }
+        asked.quantity = sheets;
+        Ok(())
+    };
+    let small = per_sheet(&size, A4);
+    if small >= 1 {
+        asked.item = on_a4(&asked.item).ok_or("este papel não tem A4")?.to_string();
+        let sheets = pieces.div_ceil(small);
+        cut(&mut asked, sheets)?;
+        asked.detail = format!("{pieces} peças {}, {small} por folha", size.name);
+        return Ok(asked);
+    }
+    asked.item = on_a3(&asked.item).ok_or("este papel não tem A3")?.to_string();
+    if per_sheet(&size, A3) >= 1 {
+        cut(&mut asked, pieces)?;
+        asked.detail = format!("{pieces} peças {}, 1 por folha A3", size.name);
+        return Ok(asked);
+    }
+    let each = tiles(&size);
+    if each > MAX_TILES {
+        return Err(format!("{} é grande demais para juntar em A3", size.name));
+    }
+    if cents(config.juncao).is_none() {
+        return Err(format!("{} (junção sem preço na tabela)", size.name));
+    }
+    asked.quantity = pieces.checked_mul(each).filter(|q| *q <= MAX_QUANTITY).ok_or("quantidade grande demais")?;
+    asked.joined = pieces;
+    asked.detail = format!("{pieces} {} em {each} folhas A3 cada", size.name);
+    asked.intro = format!("{} a gente não imprime numa folha só, mas dá pra fazer em {each} folhas A3 e juntar.", size.name);
+    Ok(asked)
 }
 
 /// What the model made of the conversation.
@@ -476,7 +625,16 @@ pub fn parse_reply(reply: &str, config: &Config) -> Reading {
         }
     }
     let note = clean_text(json.get("observacao").and_then(Value::as_str).unwrap_or(""), MAX_NOTE_CHARS);
-    Reading::Order(Asked { item, quantity, finishes, note })
+    let size = json.get("tamanho").and_then(Value::as_str).unwrap_or("");
+    let pieces = match json.get("pecas") {
+        Some(Value::Number(n)) => n.as_u64().and_then(|p| u32::try_from(p).ok()).filter(|p| (1..=MAX_QUANTITY).contains(p)).unwrap_or(quantity),
+        Some(Value::String(t)) => t.trim().parse::<u32>().ok().filter(|p| (1..=MAX_QUANTITY).contains(p)).unwrap_or(quantity),
+        _ => quantity,
+    };
+    match fit(Asked { item, quantity, finishes, note, ..Asked::default() }, size, pieces, config) {
+        Ok(asked) => Reading::Order(asked),
+        Err(why) => Reading::Manager(clean_text(&why, MAX_NOTE_CHARS)),
+    }
 }
 
 /// Asks the model about one conversation.
@@ -571,7 +729,12 @@ pub fn price(asked: &Asked, config: &Config) -> Vec<Line> {
     if let Some(item) = config.item(&asked.item) {
         let unit = item.unit_cents(asked.quantity);
         let each = unit.filter(|_| asked.quantity > 1).map(|u| format!(" (R$ {} cada)", ledger::money(u))).unwrap_or_default();
-        lines.push(Line { text: format!("{} × {}{each}", asked.quantity, item.nome), cents: unit.and_then(|u| u.checked_mul(sheets)) });
+        let detail = if asked.detail.is_empty() { String::new() } else { format!(", {}", asked.detail) };
+        lines.push(Line { text: format!("{} × {}{detail}{each}", asked.quantity, item.nome), cents: unit.and_then(|u| u.checked_mul(sheets)) });
+    }
+    if asked.joined > 0 {
+        let each = cents(config.juncao);
+        lines.push(Line { text: format!("junção de {} peças", asked.joined), cents: each.and_then(|c| c.checked_mul(i64::from(asked.joined))) });
     }
     for f in asked.finishes.iter().filter_map(|id| config.finish(id)) {
         let once = cents(f.preco);
@@ -595,7 +758,11 @@ impl Order {
             return None;
         }
         let total = self.total_cents()?;
-        let mut out = vec!["Opa! O orçamento fica assim:".to_string()];
+        let mut out = if self.ask.is_empty() {
+            vec!["Opa! O orçamento fica assim:".to_string()]
+        } else {
+            vec![format!("Opa! {}", self.ask), "Fica assim:".to_string()]
+        };
         for l in &self.lines {
             out.push(if self.lines.len() > 1 { format!("• {}: {}", l.text, ledger::reais(l.cents?)) } else { l.text.clone() });
         }
@@ -761,7 +928,7 @@ mod tests {
             _ => None,
         };
         let a = parse_reply(r#"Sure: {"item":"color","quantidade":6,"acabamentos":["corte","bolo","corte"],"observacao":"  para   amanhã "}"#, &config);
-        assert_eq!(a, Reading::Order(Asked { item: "color".into(), quantity: 6, finishes: vec!["corte".into()], note: "para amanhã".into() }));
+        assert_eq!(a, Reading::Order(Asked { item: "color".into(), quantity: 6, finishes: vec!["corte".into()], note: "para amanhã".into(), ..Asked::default() }));
         assert_eq!(quantity(r#"{"item":"couche_a3_300","quantidade":"20"}"#), Some(20));
         assert_eq!(quantity(r#"{"item":"pb"}"#), Some(1));
         assert_eq!(quantity(r#"{"item":"a3_pb","quantidade":123}"#), Some(123));
@@ -785,7 +952,7 @@ mod tests {
         assert_eq!(pb.unit_cents(301), None, "past the table: quoted by hand");
         assert_eq!(config.item("couche_a3_300").unwrap().unit_cents(4), Some(650));
 
-        let asked = Asked { item: "color".into(), quantity: 6, finishes: vec![], note: String::new() };
+        let asked = Asked { item: "color".into(), quantity: 6, finishes: vec![], note: String::new(), ..Asked::default() };
         let plain_order = order(&asked, &config);
         assert_eq!(plain_order.total_cents(), Some(1200));
         assert_eq!(
@@ -799,7 +966,7 @@ mod tests {
         paid.payment = "Pix: 11 99999-0000".into();
         assert!(paid.view(1).reply.contains("\nPix: 11 99999-0000\n"));
 
-        let bound = Asked { item: "pb".into(), quantity: 80, finishes: vec!["encadernacao_100".into(), "plastificacao".into()], note: String::new() };
+        let bound = Asked { item: "pb".into(), quantity: 80, finishes: vec!["encadernacao_100".into(), "plastificacao".into()], note: String::new(), ..Asked::default() };
         let bound = order(&bound, &config);
         // 80 × 0,60 + 15,00 + 80 × 10,00
         assert_eq!(bound.total_cents(), Some(4800 + 1500 + 80000));
@@ -807,13 +974,13 @@ mod tests {
         assert!(quote.contains("• 80 × impressão P&B, sulfite 75g (R$ 0,60 cada): R$ 48,00") && quote.contains("• encadernação (até 100 folhas): R$ 15,00"), "{quote}");
         assert!(quote.contains("Total: R$ 863,00"));
 
-        let big = order(&Asked { item: "pb".into(), quantity: 500, finishes: vec![], note: String::new() }, &config);
+        let big = order(&Asked { item: "pb".into(), quantity: 500, finishes: vec![], note: String::new(), ..Asked::default() }, &config);
         assert_eq!((big.total_cents(), big.quote("")), (None, None));
         assert_eq!(big.view(1).total, "");
         assert_eq!(big.view(1).reply, MANAGER_REPLY, "past the table: the manager quotes it, nothing is invented");
         assert_eq!(big.view(1).reason, "quantidade acima da tabela");
 
-        let a3 = order(&Asked { item: "a3_color".into(), quantity: 123, finishes: vec![], note: String::new() }, &config);
+        let a3 = order(&Asked { item: "a3_color".into(), quantity: 123, finishes: vec![], note: String::new(), ..Asked::default() }, &config);
         assert_eq!(a3.total_cents(), Some(123 * 550));
 
         let question = Order { kind: Kind::Question, ask: "opa, preto e branco ou colorido?".into(), lines: vec![], ..plain_order.clone() };
@@ -875,6 +1042,50 @@ mod tests {
         }
         assert_eq!(safe_name("Ana: a/b\\c?.pdf"), "Ana_ a_b_c_.pdf");
         assert_eq!(safe_name(" .. "), "pedido");
+    }
+
+    #[test]
+    fn sizes_are_put_on_the_shops_sheets() {
+        let config = Config::default();
+        let s = |t: &str| size(t).unwrap();
+        assert_eq!([s("A5"), s("A6"), s("A7"), s("10x15"), s("5 x 15 cm")].map(|z| per_sheet(&z, A4)), [2, 4, 8, 2, 5]);
+        assert_eq!([s("A2"), s("A1"), s("A0")].map(|z| tiles(&z)), [2, 4, 8]);
+        assert_eq!(s("148×210 mm").name, "148×210 mm");
+        assert_eq!(s("10x15").name, "10×15 cm");
+        assert!(size("grande").is_none() && size("0x5").is_none());
+
+        let asked = |item: &str| Asked { item: item.into(), quantity: 1, ..Asked::default() };
+        // 16 A6 = 4 A4 sheets, cut.
+        let a6 = fit(asked("color"), "A6", 16, &config).unwrap();
+        assert_eq!((a6.item.as_str(), a6.quantity, a6.finishes.clone()), ("color", 4, vec!["corte".to_string()]));
+        assert_eq!(a6.detail, "16 peças A6, 4 por folha");
+        let quoted = Order { lines: price(&a6, &config), ..order(&a6, &config) };
+        assert_eq!(quoted.total_cents(), Some(4 * 200 + 1000));
+        // 44 A5 = 22 sheets: more than the cutting covers, for the manager.
+        assert!(fit(asked("color"), "A5", 44, &config).unwrap_err().contains("22 folhas"));
+        // Bookmarks: 5 to an A4.
+        assert_eq!(fit(asked("couche_a4_300"), "5x15", 25, &config).unwrap().quantity, 5);
+        // An A2 is two A3 sheets joined, on the A3 line of the same paper, plus the junction.
+        let a2 = fit(asked("pb"), "A2", 3, &config).unwrap();
+        assert_eq!((a2.item.as_str(), a2.quantity, a2.joined), ("a3_pb", 6, 3));
+        let joined = order(&a2, &config);
+        assert_eq!(joined.total_cents(), Some(6 * 200 + 3 * 500));
+        let mut with_intro = joined.clone();
+        with_intro.ask = a2.intro.clone();
+        let quote = with_intro.quote("").unwrap();
+        assert!(quote.starts_with("Opa! A2 a gente não imprime numa folha só, mas dá pra fazer em 2 folhas A3 e juntar.\nFica assim:"), "{quote}");
+        assert!(quote.contains("• junção de 3 peças: R$ 15,00"), "{quote}");
+        // A3 asked on an A4 line moves to the A3 line; no junction price: the manager.
+        assert_eq!(fit(asked("color"), "A3", 1, &config).unwrap().item, "a3_color");
+        let free = Config { juncao: 0.0, ..Config::default() };
+        assert!(fit(asked("pb"), "A1", 1, &free).is_err());
+        assert!(fit(asked("pb_fv"), "A2", 1, &config).is_err(), "both sides cannot be joined");
+        // From the model's answer.
+        assert_eq!(
+            parse_reply(r#"{"item":"color","quantidade":1,"tamanho":"A6","pecas":8}"#, &config),
+            Reading::Order(Asked { item: "color".into(), quantity: 2, finishes: vec!["corte".into()], detail: "8 peças A6, 4 por folha".into(), ..Asked::default() })
+        );
+        assert!(matches!(parse_reply(r#"{"item":"color","tamanho":"A5","pecas":44}"#, &config), Reading::Manager(_)));
     }
 
     /// For windows/evals/pedidos/avaliar.py: the instructions the model gets, with the default table.

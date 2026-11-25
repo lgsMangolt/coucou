@@ -1051,7 +1051,7 @@ async fn read_order(gen: u64, chat: String) {
                     lines: orders::price(&asked, &config),
                     note: asked.note.clone(),
                     printer: orders::printer(&kind, &config.impressoras, &names, &busy),
-                    ..blank(orders::Kind::Quote, String::new())
+                    ..blank(orders::Kind::Quote, asked.intro.clone())
                 };
                 place_order(&mut c, order)
             }
