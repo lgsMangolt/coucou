@@ -1,6 +1,8 @@
 // The YouTube Music card: sign in once, then the song playing, its controls (previous, play or
-// pause, next, like, dislike) and a search whose results play on a click. Built once and synced in
-// place, so the search field keeps its text and the keyboard while the song moves on.
+// pause, next, like, dislike) and a search whose results play on a click. The search has the card
+// to itself (the magnifier opens it, the arrow goes back): both do not fit the island's height at
+// once. Built once and synced in place, so the search field keeps its text and the keyboard while
+// the song moves on.
 
 import { h, svg, clear } from "./dom";
 import { ICONS } from "./icons";
@@ -47,12 +49,26 @@ export function buildYtMusicCard(host: YtMusicCardHost): YtMusicCard {
   const next = control(ICONS.forward, "next", tl("Next"));
   const dislike = control(ICONS.thumbDown, "dislike", tl("Dislike"), { stroke: 1.8 });
   const like = control(ICONS.thumbUp, "like", tl("Like"), { stroke: 1.8 });
-  const controls = h("div", { class: "yt-controls" }, dislike, prev, playPause, next, like);
+  const find = h("button", { class: "yt-btn yt-find", title: tl("Search songs") }, svg(ICONS.magnifier, 12));
+  const controls = h("div", { class: "yt-controls" }, dislike, prev, playPause, next, like, find);
 
   const input = h("input", { class: "yt-search", type: "text", spellcheck: "false", autocomplete: "off", maxlength: "100" }) as HTMLInputElement;
   const go = h("button", { class: "yt-go", title: tl("Search songs") }, svg(ICONS.arrowUp, 12, { fill: "#0B0C0E" }));
-  const searchRow = h("div", { class: "yt-searchrow" }, input, go);
+  const back = h("button", { class: "yt-back", title: tl("Back") }, svg(ICONS.chevronLeft, 10, { stroke: 2.4 }));
+  const searchRow = h("div", { class: "yt-searchrow" }, back, input, go);
   const resultsBox = h("div", { class: "yt-results" });
+  const hint = h("div", { class: "yt-hint" });
+
+  /** The search has the card to itself while it is open. */
+  let searching = false;
+  function setSearching(on: boolean) {
+    searching = on;
+    sync();
+    if (on) input.focus();
+    else input.blur();
+  }
+  find.addEventListener("click", () => setSearching(true));
+  back.addEventListener("click", () => setSearching(false));
 
   function search() {
     const query = input.value.trim();
@@ -73,14 +89,16 @@ export function buildYtMusicCard(host: YtMusicCardHost): YtMusicCard {
       e.preventDefault();
       search();
     } else if (e.key === "Escape") {
-      // Out of the field, not the island folding away.
+      // Back to the song, not the island folding away.
       e.preventDefault();
       e.stopPropagation();
-      input.blur();
+      setSearching(false);
     }
   });
 
-  const player = h("div", { class: "yt-player" }, info, controls, searchRow, resultsBox);
+  const now = h("div", { class: "yt-now" }, info, controls);
+  const finder = h("div", { class: "yt-finder" }, searchRow, hint, resultsBox);
+  const player = h("div", { class: "yt-player" }, now, finder);
   const el = h("div", { class: "int-card yt-card" }, head, gate, player);
 
   let resultsKey = "";
@@ -107,6 +125,10 @@ export function buildYtMusicCard(host: YtMusicCardHost): YtMusicCard {
         : t("Starting YouTube Music…");
       return;
     }
+    now.style.display = searching ? "none" : "";
+    finder.style.display = searching ? "" : "none";
+    hint.textContent = t("Type a song or an artist and press Enter.");
+    hint.style.display = s.results.length ? "none" : "";
     title.textContent = s.title || t("Nothing is playing");
     artist.textContent = [s.artist, s.album].filter(Boolean).join(" · ");
     time.textContent = s.title && s.duration > 0
@@ -123,7 +145,7 @@ export function buildYtMusicCard(host: YtMusicCardHost): YtMusicCard {
     if (key !== resultsKey) {
       resultsKey = key;
       clear(resultsBox);
-      resultsBox.append(...s.results.slice(0, 5).map(row));
+      resultsBox.append(...s.results.slice(0, 8).map(row));
     }
   }
 

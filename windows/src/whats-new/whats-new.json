@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.8.2",
+      "items": [
+        {
+          "icon": "eye",
+          "title": {
+            "en": "Search that fits",
+            "zh-Hans": "搜索不再被遮挡",
+            "hi": "खोज अब पूरी दिखती है",
+            "es": "La búsqueda ya cabe",
+            "ar": "البحث يظهر كاملًا",
+            "fr": "La recherche tient dans la carte",
+            "bn": "সার্চ এখন পুরো দেখা যায়",
+            "pt-BR": "A busca agora cabe",
+            "ru": "Поиск теперь помещается",
+            "id": "Pencarian kini muat",
+            "de": "Die Suche passt jetzt",
+            "tr": "Arama artık sığıyor",
+            "ko": "검색이 잘리지 않아요",
+            "ja": "検索が収まるように"
+          },
+          "detail": {
+            "en": "YouTube Music: the magnifier opens the search on its own screen, the arrow goes back to the song.",
+            "zh-Hans": "YouTube Music：放大镜打开独立的搜索页，箭头返回歌曲。",
+            "hi": "YouTube Music: लेंस खोज को अलग स्क्रीन पर खोलता है, तीर गाने पर लौटाता है।",
+            "es": "YouTube Music: la lupa abre la búsqueda en su propia pantalla; la flecha vuelve a la canción.",
+            "ar": "YouTube Music: العدسة تفتح البحث في شاشة خاصة، والسهم يعيدك إلى الأغنية.",
+            "fr": "YouTube Music : la loupe ouvre la recherche sur son propre écran, la flèche revient au titre.",
+            "bn": "YouTube Music: লেন্স সার্চকে আলাদা পর্দায় খোলে, তীর গানে ফেরায়।",
+            "pt-BR": "YouTube Music: a lupa abre a busca numa tela só dela, e a seta volta para a música.",
+            "ru": "YouTube Music: лупа открывает поиск на отдельном экране, стрелка возвращает к песне.",
+            "id": "YouTube Music: kaca pembesar membuka pencarian di layarnya sendiri, panah kembali ke lagu.",
+            "de": "YouTube Music: Die Lupe öffnet die Suche auf eigener Seite, der Pfeil führt zurück zum Titel.",
+            "tr": "YouTube Music: büyüteç aramayı kendi ekranında açar, ok şarkıya geri döner.",
+            "ko": "YouTube Music: 돋보기를 누르면 검색 화면이 따로 열리고, 화살표로 노래로 돌아갑니다.",
+            "ja": "YouTube Music：虫めがねで検索画面が開き、矢印で曲に戻ります。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.8.1",
       "items": [
         {

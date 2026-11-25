@@ -8658,6 +8658,21 @@
       "tr": "Boş: hiçbir grup boyutu yüzünden yok sayılmaz. Yok sayılan grup bildirim göndermez ve listelenmez.",
       "ko": "비워 두면 인원 때문에 무시되는 그룹이 없어요. 무시된 그룹은 알리지 않고 목록에도 없어요.",
       "ja": "空欄：人数を理由に無視されるグループはありません。無視されたグループは通知されず、一覧にも出ません。"
+    },
+    "Type a song or an artist and press Enter.": {
+      "zh-Hans": "输入歌曲或歌手，然后按回车。",
+      "hi": "गाना या कलाकार लिखें और Enter दबाएँ।",
+      "es": "Escribe una canción o un artista y pulsa Intro.",
+      "ar": "اكتب أغنية أو فنانًا ثم اضغط Enter.",
+      "fr": "Tape un titre ou un artiste, puis Entrée.",
+      "bn": "গান বা শিল্পীর নাম লিখে Enter চাপুন।",
+      "pt-BR": "Digite uma música ou um artista e aperte Enter.",
+      "ru": "Введите песню или исполнителя и нажмите Enter.",
+      "id": "Ketik lagu atau artis, lalu tekan Enter.",
+      "de": "Titel oder Künstler eingeben und Enter drücken.",
+      "tr": "Bir şarkı ya da sanatçı yaz ve Enter’a bas.",
+      "ko": "노래나 아티스트를 입력하고 Enter를 누르세요.",
+      "ja": "曲名かアーティスト名を入力して Enter を押してください。"
     }
   }
 }

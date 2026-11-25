@@ -3240,12 +3240,58 @@ input[type="range"]::-webkit-slider-thumb {
   color: #9398a1;
 }
 
+.yt-card {
+  height: 100%;
+  box-sizing: border-box;
+}
+
 .yt-player {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  flex: 1 1 auto;
   margin-right: 12px;
   min-height: 0;
+}
+
+.yt-now,
+.yt-finder {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.yt-finder {
+  flex: 1 1 auto;
+  padding-bottom: 8px;
+}
+
+.yt-find {
+  margin-left: 6px;
+}
+
+.yt-back {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #9398a1;
+  cursor: default;
+  flex: 0 0 auto;
+}
+
+.yt-back:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.yt-hint {
+  font: 400 10.5px/1.4 var(--font);
+  color: #9398a1;
 }
 
 .yt-info {
@@ -3347,7 +3393,8 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-height: 64px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 
