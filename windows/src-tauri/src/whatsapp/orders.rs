@@ -133,7 +133,7 @@ impl Default for Config {
                 item("pb", "impressão P&B, sulfite 75g", "baratos", tiers([1.00, 0.70, 0.60, 0.50])),
                 item("pb_fv", "impressão P&B frente e verso, sulfite 75g", "baratos", tiers([1.60, 1.10, 0.95, 0.80])),
                 item("color", "impressão colorida, sulfite 75g", "baratos", tiers([2.00, 1.80, 1.60, 1.40])),
-                item("a3_pb", "impressão P&B A3, sulfite 75g", "baratos", tiers([2.00, 1.60, 1.40, 1.20])),
+                item("a3_pb", "impressão P&B A3, sulfite 75g", "baratos", tiers([2.00, 2.00, 2.00, 1.20])),
                 item("a3_color", "impressão colorida A3, sulfite 75g", "baratos", tiers([5.50, 5.50, 5.50, 5.50])),
                 item("couche_a4_150", "impressão colorida A4, couchê 150g", "couche", one(3.50)),
                 item("couche_a4_300", "impressão colorida A4, couchê 300g", "couche", one(5.00)),

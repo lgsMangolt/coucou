@@ -42,6 +42,5 @@ Com 24 casos só dá para enxergar diferenças grandes (~15 pontos ou mais). Ain
 
 ## Próximos passos
 1. Cada erro visto no uso real vira um caso novo em `casos.jsonl` (ou `holdout.jsonl`), com o que o Lucas teria respondido.
-2. Confirmar as faixas 11–100 do A3 P&B (estimativa).
-3. Respostas aprovadas para perguntas frequentes (endereço, horário, Pix, entrega) — hoje vão para o gerente.
-4. Só então: responder sozinho.
+2. Respostas aprovadas para perguntas frequentes (endereço, horário, Pix, entrega) — hoje vão para o gerente.
+3. Só então: responder sozinho.

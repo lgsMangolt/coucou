@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.12.1",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "A3 black and white",
+            "zh-Hans": "A3 黑白",
+            "hi": "A3 ब्लैक एंड व्हाइट",
+            "es": "A3 en blanco y negro",
+            "ar": "A3 بالأبيض والأسود",
+            "fr": "A3 noir et blanc",
+            "bn": "A3 সাদা-কালো",
+            "pt-BR": "A3 P&B",
+            "ru": "A3 чёрно-белая",
+            "id": "A3 hitam putih",
+            "de": "A3 schwarz-weiß",
+            "tr": "A3 siyah beyaz",
+            "ko": "A3 흑백",
+            "ja": "A3 白黒"
+          },
+          "detail": {
+            "en": "A3 black and white is R$ 2.00 a sheet up to 100 sheets, R$ 1.20 from 101 to 300.",
+            "zh-Hans": "A3 黑白每张 2.00 雷亚尔（100 张以内），101 至 300 张每张 1.20 雷亚尔。",
+            "hi": "A3 ब्लैक एंड व्हाइट 100 शीट तक R$ 2,00 प्रति शीट, 101 से 300 तक R$ 1,20।",
+            "es": "A3 en blanco y negro: R$ 2,00 la hoja hasta 100 hojas, R$ 1,20 de 101 a 300.",
+            "ar": "A3 بالأبيض والأسود: 2,00 ريال للورقة حتى 100 ورقة، و1,20 من 101 إلى 300.",
+            "fr": "A3 noir et blanc : 2,00 R$ la feuille jusqu’à 100 feuilles, 1,20 R$ de 101 à 300.",
+            "bn": "A3 সাদা-কালো ১০০ পাতা পর্যন্ত প্রতি পাতা R$ 2,00, ১০১ থেকে ৩০০ পর্যন্ত R$ 1,20।",
+            "pt-BR": "A3 P&B fica R$ 2,00 a folha até 100 folhas e R$ 1,20 de 101 a 300.",
+            "ru": "A3 чёрно-белая: R$ 2,00 за лист до 100 листов, R$ 1,20 от 101 до 300.",
+            "id": "A3 hitam putih R$ 2,00 per lembar sampai 100 lembar, R$ 1,20 untuk 101–300.",
+            "de": "A3 schwarz-weiß: R$ 2,00 pro Blatt bis 100 Blatt, R$ 1,20 von 101 bis 300.",
+            "tr": "A3 siyah beyaz 100 yaprağa kadar yaprağı R$ 2,00, 101–300 arası R$ 1,20.",
+            "ko": "A3 흑백은 100장까지 장당 R$ 2,00, 101~300장은 R$ 1,20입니다.",
+            "ja": "A3白黒は100枚まで1枚R$ 2,00、101〜300枚はR$ 1,20です。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.12.0",
       "items": [
         {

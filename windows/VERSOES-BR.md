@@ -23,6 +23,7 @@ Cada versão é um commit marcado com a tag `br-v<número>` neste repositório.
 | 0.11.1 | Preços do balcão | A tabela dos pedidos passa a usar os preços que o Lucas passa aos clientes no WhatsApp: colorida no ofício a partir de R$ 2,00, couchê A4 150g R$ 3,50 e 300g R$ 5,00, couchê A3 300g R$ 6,50, A3 colorida no ofício R$ 5,50 e A3 P&B a partir de R$ 2,00. O couchê A3 150g (R$ 6,00) ainda é estimativa. |
 | 0.11.2 | Couchê A3 150g | O couchê A3 150g passa a R$ 6,50 a folha, o mesmo do 300g, como o Lucas definiu. |
 | 0.12.0 | Tamanhos e junção | Pedidos em outros tamanhos: menores que A4 (A5, A6, A7, 10×15, marca-página 5×15) são calculados pelas folhas A4 que usam mais o corte, e acima de 10 folhas para cortar vão para o gerente; A2, A1 e A0 são oferecidos em 2, 4 e 8 folhas A3 juntadas, com R$ 5,00 de junção por peça. As contas são do código; o modelo só diz o tamanho e quantas peças (27 de 27 casos em evals/pedidos). |
+| 0.12.1 | A3 P&B | A3 preto e branco no ofício fica R$ 2,00 a folha até 100 folhas e R$ 1,20 de 101 a 300, como o Lucas definiu. A tabela não tem mais valores estimados. |
 
 ## Como gerar e instalar
 
