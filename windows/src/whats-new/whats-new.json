@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.10.4",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Quote as the suggestion",
+            "zh-Hans": "建议回复即报价",
+            "hi": "सुझाव में कोटेशन",
+            "es": "El presupuesto como sugerencia",
+            "ar": "عرض السعر كاقتراح",
+            "fr": "Le devis en suggestion",
+            "bn": "প্রস্তাবে দরপত্র",
+            "pt-BR": "Sugestão com orçamento",
+            "ru": "Смета в подсказке",
+            "id": "Penawaran sebagai saran",
+            "de": "Angebot als Vorschlag",
+            "tr": "Öneri olarak teklif",
+            "ko": "제안에 견적",
+            "ja": "提案に見積もり"
+          },
+          "detail": {
+            "en": "In a chat with a print order, the suggested reply is now the quote.",
+            "zh-Hans": "在有打印订单的对话中，建议回复现在就是报价。",
+            "hi": "प्रिंट ऑर्डर वाली चैट में सुझाया गया जवाब अब कोटेशन है।",
+            "es": "En un chat con pedido de impresión, la respuesta sugerida ahora es el presupuesto.",
+            "ar": "في محادثة بها طلب طباعة، أصبح الرد المقترح هو عرض السعر.",
+            "fr": "Dans une conversation avec une commande d’impression, la réponse suggérée est le devis.",
+            "bn": "প্রিন্ট অর্ডারের চ্যাটে প্রস্তাবিত উত্তর এখন দরপত্র।",
+            "pt-BR": "Na conversa com pedido de impressão, a resposta sugerida agora é o orçamento.",
+            "ru": "В чате с заказом на печать предлагаемый ответ — это смета.",
+            "id": "Di obrolan dengan pesanan cetak, balasan yang disarankan kini adalah penawaran.",
+            "de": "In einem Chat mit Druckauftrag ist die vorgeschlagene Antwort jetzt das Angebot.",
+            "tr": "Baskı siparişi olan sohbette önerilen yanıt artık tekliftir.",
+            "ko": "인쇄 주문이 있는 대화에서는 제안 답장이 이제 견적입니다.",
+            "ja": "印刷注文のあるチャットでは、提案される返信が見積もりになりました。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.10.3",
       "items": [
         {

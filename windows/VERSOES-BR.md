@@ -17,6 +17,7 @@ Cada versão é um commit marcado com a tag `br-v<número>` neste repositório.
 | 0.10.1 | Preços de Caxias | A tabela de preços dos pedidos de impressão passa a ter valores para Caxias do Sul: P&B a partir de R$ 1,00 a folha, colorido a partir de R$ 2,50, couchê A4 de R$ 6,00 a R$ 7,50 e A3 de R$ 12,00 a R$ 15,00, encadernação de R$ 9,00 e R$ 12,00, plastificação R$ 6,00 a folha. |
 | 0.10.2 | Acabamentos | Preços dos acabamentos definidos pelo Lucas: corte R$ 10,00, encadernação até 100 folhas R$ 15,00, até 200 folhas R$ 20,00, plastificação R$ 10,00 a folha. |
 | 0.10.3 | Resposta para copiar | O cartão do pedido de impressão mostra a resposta que o Coucou daria ao cliente numa caixa de texto: dá para corrigir e copiar com "Copiar", e você mesmo envia no WhatsApp. O Coucou não envia nada; depois de copiar, o "sim" do cliente marca o pedido como aprovado. |
+| 0.10.4 | Sugestão com orçamento | Na conversa de um cliente com pedido de impressão, a sugestão de resposta passa a ser o orçamento (antes saía uma resposta genérica, como "blz, recebido!"). Enviar o orçamento pela conversa do Coucou, mesmo corrigido, deixa o pedido aguardando o "sim" do cliente, como o botão Copiar. |
 
 ## Como gerar e instalar
 

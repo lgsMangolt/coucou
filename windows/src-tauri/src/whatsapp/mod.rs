@@ -1426,7 +1426,33 @@ pub fn whatsapp_open_app(window: WebviewWindow) -> Result<bool, String> {
 /// Enter or the send button in the island's card: the only way a message leaves Coucou.
 pub async fn whatsapp_send(window: WebviewWindow, chat: String, text: String) -> Result<bool, String> {
     only(&window, crate::island::WINDOW_LABEL)?;
-    Ok(send(&chat, &text).await)
+    let sent = send(&chat, &text).await;
+    if sent && quoted_by_hand(&mut ctl(), &model::normalized(&chat), &text) {
+        changed();
+    }
+    Ok(sent)
+}
+
+/// The quote of this customer's order still on the card, for the suggestion.
+fn order_reply(c: &Ctl, chat: &str) -> Option<String> {
+    c.orders
+        .iter()
+        .find(|(_, o)| o.chat == chat && o.state == orders::State::Draft)
+        .and_then(|(_, o)| o.quote(&o.payment))
+}
+
+/// The user sent the quote from the conversation (maybe corrected): when it carries the order's
+/// total, the customer's "yes" approves it from now on, as after "Copy".
+fn quoted_by_hand(c: &mut Ctl, chat: &str, text: &str) -> bool {
+    let Some((_, order)) = c.orders.iter_mut().find(|(_, o)| o.chat == chat && o.state == orders::State::Draft) else {
+        return false;
+    };
+    let Some(total) = order.total_cents().map(ledger::reais) else { return false };
+    if !text.contains(&total) {
+        return false;
+    }
+    order.state = orders::State::Quoted;
+    true
 }
 
 /// Save on a card of the island: the entry goes to the Google Sheet (when one is set up) and to the
@@ -1653,6 +1679,23 @@ pub fn whatsapp_set_group_limit(window: WebviewWindow, limit: u32) -> Result<(),
 /// when there is nothing to answer. Shown in the card only: sending stays `whatsapp_send`.
 pub async fn whatsapp_suggest(window: WebviewWindow, chat: String) -> Result<String, String> {
     only(&window, crate::island::WINDOW_LABEL)?;
+    // A customer with a print order: the suggestion is its quote, not a reply written from the
+    // words alone ("ok, received!"). While the order is being read, it is waited for (20 s at most).
+    let key = model::normalized(&chat);
+    for round in 0..40 {
+        let (quote, reading) = {
+            let c = ctl();
+            (order_reply(&c, &key), c.order_reading.contains(&key) || c.order_queue.iter().any(|k| *k == key))
+        };
+        if let Some(quote) = quote {
+            return Ok(quote);
+        }
+        // The first round also covers the moment the order leaves the queue before it is read.
+        if !reading && round > 0 {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
     let prompt = ctl().inbox.conversations.get(&chat).and_then(suggest::prompt);
     match prompt {
         Some(prompt) => suggest::suggest(&prompt).await,
@@ -2021,6 +2064,24 @@ mod tests {
         assert_eq!(c.order_queue.len(), 0);
         ingest(&mut c, vec![file_from("9", "120363000000000000@g.us"), msg("10", "120363000000000000@g.us", "imprime 3 folhas")]);
         assert!(c.order_queue.is_empty());
+    }
+
+    #[test]
+    fn the_suggestion_of_a_customer_with_an_order_is_its_quote() {
+        let chat = "5511999990000@s.whatsapp.net";
+        let mut c = fresh_ctl();
+        assert_eq!(order_reply(&c, chat), None);
+        assert!(place_order(&mut c, draft(chat, "2")));
+        let quote = order_reply(&c, chat).unwrap();
+        assert!(quote.starts_with("Olá! Segue o orçamento"), "{quote}");
+        assert!(quote.contains("Total: R$ 12,00"), "{quote}");
+        // Something else sent to the customer leaves the card as it is.
+        assert!(!quoted_by_hand(&mut c, chat, "blz, recebido!"));
+        assert_eq!(c.orders[0].1.state, orders::State::Draft);
+        // The quote sent from the conversation, even corrected, waits for the customer's "yes".
+        assert!(quoted_by_hand(&mut c, chat, "Oi Ana! Fica R$ 12,00 no total, posso imprimir?"));
+        assert_eq!(c.orders[0].1.state, orders::State::Quoted);
+        assert_eq!(order_reply(&c, chat), None, "once sent, the suggestion is a plain one again");
     }
 
     #[test]
