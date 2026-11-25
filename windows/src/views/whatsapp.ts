@@ -262,26 +262,54 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     );
   }
 
-  /** A print order: what is asked, its price from the shop's table, the printer, and the clicks. */
+  /** What the user typed in an order's reply, kept while the card is redrawn. */
+  const replies = new Map<number, string>();
+
+  /** Puts the text on the clipboard (the old way when the page has no clipboard API). */
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const area = h("textarea", { style: "position:fixed;opacity:0" }) as HTMLTextAreaElement;
+      area.value = text;
+      document.body.append(area);
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+    }
+  }
+
+  /** A print order: what is asked, the reply Coucou would give (to copy, correct and send), the
+   * printer, and the clicks. Nothing is sent from here. */
   function orderCard(o: WaOrder): HTMLElement {
-    const stage = o.state === "approved" ? t("Order approved") : o.state === "quoted" ? t("Quote sent") : t("Print order");
+    const stage = o.state === "approved" ? t("Order approved") : o.state === "quoted" ? t("Waiting for the customer") : t("Print order");
     const label = h("div", { class: "wa-entry-line" },
       h("b", { class: "wa-entry-kind in", text: stage }),
       h("span", { class: "wa-entry-amount", text: o.total || t("No price") }),
     );
-    const quote = h("button", { class: "wa-entry-save", text: t("Send quote") }) as HTMLButtonElement;
+    const reply = h("textarea", { class: "wa-order-reply", rows: "5", spellcheck: "true" }) as HTMLTextAreaElement;
+    reply.value = replies.get(o.id) ?? o.reply;
+    reply.addEventListener("input", () => replies.set(o.id, reply.value));
+    // Typing in it is not a shortcut of the island.
+    reply.addEventListener("keydown", (e) => e.stopPropagation());
+    reply.style.display = o.reply || replies.has(o.id) ? "" : "none";
+    const copy = h("button", { class: "wa-entry-save", text: t("Copy") }) as HTMLButtonElement;
     const file = h("button", { class: "wa-entry-drop", text: t("Get file") }) as HTMLButtonElement;
     const drop = h("button", { class: "wa-entry-drop", text: o.state === "approved" ? t("Done") : t("Discard") }) as HTMLButtonElement;
     const problem = h("div", { class: "wa-note err" });
-    const all = [quote, file, drop];
-    const busy = (on: boolean) => { for (const b of all) b.disabled = on || (b === quote && !o.total); };
+    const all = [copy, file, drop];
+    const busy = (on: boolean) => { for (const b of all) b.disabled = on || (b === copy && !reply.value.trim()); };
     busy(false);
+    reply.addEventListener("input", () => busy(false));
     const failed = (error: unknown) => { busy(false); problem.textContent = String(error); };
-    quote.style.display = o.state === "draft" ? "" : "none";
-    quote.addEventListener("click", () => {
-      busy(true);
+    copy.style.display = reply.style.display;
+    copy.addEventListener("click", () => {
       problem.textContent = "";
-      Bridge.whatsappOrderQuote(o.id, account).catch(failed);
+      void copyText(reply.value).then(() => {
+        copy.textContent = t("Copied");
+        window.setTimeout(() => { copy.textContent = t("Copy"); }, 1500);
+        if (o.state === "draft") void Bridge.whatsappOrderCopied(o.id, account);
+      });
     });
     file.addEventListener("click", () => {
       busy(true);
@@ -290,12 +318,14 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     });
     drop.addEventListener("click", () => {
       busy(true);
+      replies.delete(o.id);
       void Bridge.whatsappOrderDiscard(o.id, account);
     });
     return h("div", { class: "wa-entry" },
       label,
       h("div", { class: "wa-entry-detail", text: [o.name, o.line, o.note].filter(Boolean).join(" · ") }),
       h("div", { class: "wa-entry-detail", text: `${o.fileName} · ${t("Printer: {0}", { 0: o.printer })}` }),
+      reply,
       h("div", { class: "wa-entry-actions" }, ...all),
       problem,
     );
@@ -306,7 +336,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     const key = [
       language(), v.link.state, "detail" in v.link ? v.link.detail : "", v.unread, ignoring,
       ...v.pending.map((e) => `${e.id}|${e.amount}|${e.kind}|${e.category}|${e.person}|${e.note}`),
-      ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}`),
+      ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}|${o.reply}`),
       // The ages move on a minute at a time.
       Math.floor(Date.now() / 60_000),
       ...v.conversations.map((c) => `${c.id}|${c.name}|${c.unread}|${c.lastActivity}|${c.messages[c.messages.length - 1]?.id ?? ""}`),

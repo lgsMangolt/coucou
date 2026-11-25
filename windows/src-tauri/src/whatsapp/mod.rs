@@ -1016,6 +1016,7 @@ async fn read_order(gen: u64, chat: String) {
                     printer: orders::printer(&kind, &config.impressoras, &names, &busy),
                     state: orders::State::Draft,
                     saved: None,
+                    payment: config.pagamento.clone(),
                 };
                 place_order(&mut c, order)
             }
@@ -1495,6 +1496,17 @@ pub async fn whatsapp_order_quote(window: WebviewWindow, id: u64) -> Result<(), 
     Ok(())
 }
 
+/// "Copy" on an order's card: the user sends the reply themself, so from now on the customer's
+/// "yes" approves it, as when Coucou sends it.
+pub fn whatsapp_order_copied(window: WebviewWindow, id: u64) -> Result<(), String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    if let Some((_, order)) = ctl().orders.iter_mut().find(|(n, o)| *n == id && o.state == orders::State::Draft) {
+        order.state = orders::State::Quoted;
+    }
+    changed();
+    Ok(())
+}
+
 /// "Discard" (or "Done") on an order's card: it goes, and its file is not read as an order again.
 pub fn whatsapp_order_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
     only(&window, crate::island::WINDOW_LABEL)?;
@@ -1965,6 +1977,7 @@ mod tests {
             printer: "WF5390".into(),
             state: orders::State::Draft,
             saved: None,
+            payment: String::new(),
         }
     }
 
@@ -1988,7 +2001,11 @@ mod tests {
         ingest(&mut c, vec![msg("4", chat, "sim")]);
         assert_eq!(c.orders[0].1.state, orders::State::Draft);
         c.order_queue.clear();
-        c.orders[0].1.state = orders::State::Quoted;
+        let id = c.orders[0].0;
+        if let Some((_, order)) = c.orders.iter_mut().find(|(n, o)| *n == id && o.state == orders::State::Draft) {
+            order.state = orders::State::Quoted;
+        }
+        assert_eq!(c.orders[0].1.state, orders::State::Quoted, "copying the reply waits for the customer");
         assert!(!place_order(&mut c, draft(chat, "2")), "a quote on its way is not replaced");
         ingest(&mut c, vec![msg("5", chat, "quanto tempo demora?")]);
         assert_eq!(c.orders[0].1.state, orders::State::Quoted);

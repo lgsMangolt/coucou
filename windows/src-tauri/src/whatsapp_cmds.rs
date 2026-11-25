@@ -90,6 +90,11 @@ pub async fn whatsapp_order_quote(window: WebviewWindow, id: u64) -> Result<(), 
 }
 
 #[tauri::command]
+pub fn whatsapp_order_copied(window: WebviewWindow, id: u64) -> Result<(), String> {
+    whatsapp::whatsapp_order_copied(window, id)
+}
+
+#[tauri::command]
 pub fn whatsapp_order_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
     whatsapp::whatsapp_order_discard(window, id)
 }
@@ -193,6 +198,11 @@ pub fn whatsapp2_set_group_limit(window: WebviewWindow, limit: u32) -> Result<()
 #[tauri::command]
 pub async fn whatsapp2_order_quote(window: WebviewWindow, id: u64) -> Result<(), String> {
     whatsapp2::whatsapp_order_quote(window, id).await
+}
+
+#[tauri::command]
+pub fn whatsapp2_order_copied(window: WebviewWindow, id: u64) -> Result<(), String> {
+    whatsapp2::whatsapp_order_copied(window, id)
 }
 
 #[tauri::command]

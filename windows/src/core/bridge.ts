@@ -513,6 +513,8 @@ export const Bridge = {
   whatsappLedgerDiscard: (id: number) => call<void>("whatsapp_ledger_discard", { id }),
   /** A print order's card: send its quote to the customer, drop it, or fetch the customer's file. Island only. */
   whatsappOrderQuote: (id: number, account = 0) => callOrThrow<void>(wa(account, "order_quote"), { id }),
+  /** The reply was copied: the customer's "yes" approves it from now on. */
+  whatsappOrderCopied: (id: number, account = 0) => call<void>(wa(account, "order_copied"), { id }),
   whatsappOrderDiscard: (id: number, account = 0) => call<void>(wa(account, "order_discard"), { id }),
   whatsappOrderFile: (id: number, account = 0) => callOrThrow<string>(wa(account, "order_file"), { id }),
   /** Settings: notes on money on or off, and the spreadsheet's folder ("" is Documents\Coucou). */

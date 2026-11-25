@@ -8839,21 +8839,6 @@
       "ko": "주문 승인됨: {name}",
       "ja": "注文が承認されました：{name}"
     },
-    "Quote sent": {
-      "zh-Hans": "报价已发送",
-      "hi": "कोटेशन भेजा गया",
-      "es": "Presupuesto enviado",
-      "ar": "تم إرسال عرض السعر",
-      "fr": "Devis envoyé",
-      "bn": "কোটেশন পাঠানো হয়েছে",
-      "pt-BR": "Orçamento enviado",
-      "ru": "Смета отправлена",
-      "id": "Penawaran terkirim",
-      "de": "Angebot gesendet",
-      "tr": "Teklif gönderildi",
-      "ko": "견적 전송됨",
-      "ja": "見積もりを送信しました"
-    },
     "No price": {
       "zh-Hans": "无价格",
       "hi": "कोई कीमत नहीं",
@@ -8868,21 +8853,6 @@
       "tr": "Fiyat yok",
       "ko": "가격 없음",
       "ja": "価格なし"
-    },
-    "Send quote": {
-      "zh-Hans": "发送报价",
-      "hi": "कोटेशन भेजें",
-      "es": "Enviar presupuesto",
-      "ar": "إرسال عرض السعر",
-      "fr": "Envoyer le devis",
-      "bn": "কোটেশন পাঠান",
-      "pt-BR": "Enviar orçamento",
-      "ru": "Отправить смету",
-      "id": "Kirim penawaran",
-      "de": "Angebot senden",
-      "tr": "Teklifi gönder",
-      "ko": "견적 보내기",
-      "ja": "見積もりを送る"
     },
     "Get file": {
       "zh-Hans": "获取文件",
@@ -8973,6 +8943,21 @@
       "tr": "Dosya alınamadı.",
       "ko": "파일을 받지 못했습니다.",
       "ja": "ファイルを取得できませんでした。"
+    },
+    "Waiting for the customer": {
+      "zh-Hans": "等待客户回复",
+      "hi": "ग्राहक की प्रतीक्षा",
+      "es": "Esperando al cliente",
+      "ar": "في انتظار العميل",
+      "fr": "En attente du client",
+      "bn": "গ্রাহকের অপেক্ষায়",
+      "pt-BR": "Aguardando o cliente",
+      "ru": "Ждём клиента",
+      "id": "Menunggu pelanggan",
+      "de": "Wartet auf den Kunden",
+      "tr": "Müşteri bekleniyor",
+      "ko": "고객 응답 대기 중",
+      "ja": "お客様の返信待ち"
     }
   }
 }

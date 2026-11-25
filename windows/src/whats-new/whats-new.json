@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.10.3",
+      "items": [
+        {
+          "icon": "chat",
+          "title": {
+            "en": "A reply to copy",
+            "zh-Hans": "可复制的回复",
+            "hi": "कॉपी करने के लिए जवाब",
+            "es": "Una respuesta para copiar",
+            "ar": "رد للنسخ",
+            "fr": "Une réponse à copier",
+            "bn": "কপি করার জন্য উত্তর",
+            "pt-BR": "Resposta para copiar",
+            "ru": "Ответ для копирования",
+            "id": "Balasan untuk disalin",
+            "de": "Eine Antwort zum Kopieren",
+            "tr": "Kopyalanacak yanıt",
+            "ko": "복사할 답장",
+            "ja": "コピーできる返信"
+          },
+          "detail": {
+            "en": "A print order shows the reply to the customer: correct it, copy it and send it yourself.",
+            "zh-Hans": "打印订单会显示给客户的回复：修改、复制后由你自己发送。",
+            "hi": "प्रिंट ऑर्डर ग्राहक को जवाब दिखाता है: सुधारें, कॉपी करें और खुद भेजें।",
+            "es": "El pedido muestra la respuesta al cliente: corrígela, cópiala y envíala tú.",
+            "ar": "يعرض طلب الطباعة الرد على العميل: صحّحه وانسخه وأرسله بنفسك.",
+            "fr": "La commande montre la réponse au client : corrige-la, copie-la et envoie-la toi-même.",
+            "bn": "প্রিন্ট অর্ডারে গ্রাহকের উত্তর দেখায়: ঠিক করুন, কপি করুন, নিজে পাঠান।",
+            "pt-BR": "O pedido mostra a resposta ao cliente: corrija, copie e envie você mesmo.",
+            "ru": "Заказ показывает ответ клиенту: исправьте, скопируйте и отправьте сами.",
+            "id": "Pesanan menampilkan balasan ke pelanggan: koreksi, salin, dan kirim sendiri.",
+            "de": "Der Auftrag zeigt die Antwort an den Kunden: korrigieren, kopieren, selbst senden.",
+            "tr": "Sipariş müşteriye yanıtı gösterir: düzelt, kopyala ve kendin gönder.",
+            "ko": "인쇄 주문에 고객 답장이 표시됩니다. 고치고 복사해 직접 보내세요.",
+            "ja": "注文にお客様への返信が表示されます。直してコピーし、自分で送信します。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.10.2",
       "items": [
         {

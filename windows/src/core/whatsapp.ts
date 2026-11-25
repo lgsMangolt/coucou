@@ -74,6 +74,8 @@ export interface WaOrder {
   fileName: string;
   /** Where the customer's file was saved, once fetched. */
   saved: string | null;
+  /** The reply to the customer, to copy, correct and send; "" when the table has no price for it. */
+  reply: string;
 }
 
 /** IslandView in src-tauri/src/whatsapp/mod.rs. */

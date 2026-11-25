@@ -3821,6 +3821,33 @@ input[type="range"]::-webkit-slider-thumb {
   display: none;
 }
 
+/* A print order's reply makes the cards taller than the island: they scroll. */
+.wa-pending:has(.wa-order-reply) {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.wa-order-reply {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 4px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  font: 400 10px/1.35 var(--font);
+  resize: none;
+  outline: none;
+}
+
+.wa-order-reply:focus {
+  border-color: rgba(37, 211, 102, 0.6);
+}
+
 .wa-entry {
   padding: 5px 8px;
   border: 1px solid rgba(37, 211, 102, 0.4);

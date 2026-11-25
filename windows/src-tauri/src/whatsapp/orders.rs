@@ -432,6 +432,8 @@ pub struct Order {
     pub state: State,
     /// Where the file was saved, once it was fetched.
     pub saved: Option<String>,
+    /// The table's payment line, as it was when the order was read.
+    pub payment: String,
 }
 
 /// What the island shows of an order.
@@ -449,6 +451,8 @@ pub struct OrderView {
     pub state: State,
     pub file_name: String,
     pub saved: Option<String>,
+    /// The reply to the customer, for the user to copy, correct and send; "" while something has no price.
+    pub reply: String,
 }
 
 /// Prices what was asked from the table.
@@ -501,6 +505,7 @@ impl Order {
             state: self.state,
             file_name: self.file.1.clone(),
             saved: self.saved.clone(),
+            reply: self.quote(&self.payment).unwrap_or_default(),
         }
     }
 }
@@ -579,6 +584,7 @@ mod tests {
             printer: "WF5390".into(),
             state: State::Draft,
             saved: None,
+            payment: String::new(),
         }
     }
 
@@ -634,6 +640,10 @@ mod tests {
         );
         let view = plain_order.view(1);
         assert_eq!((view.line.as_str(), view.total.as_str()), ("6 × impressão colorida, sulfite 75g", "R$ 15,00"));
+        assert_eq!(view.reply, plain_order.quote("").unwrap(), "the card shows the reply to copy");
+        let mut paid = plain_order.clone();
+        paid.payment = "Pix: 11 99999-0000".into();
+        assert!(paid.view(1).reply.contains("\nPix: 11 99999-0000\n"));
 
         let bound = Asked { item: "pb".into(), quantity: 80, finishes: vec!["encadernacao_100".into(), "plastificacao".into()], note: String::new() };
         let bound = order(&bound, &config);
@@ -646,6 +656,7 @@ mod tests {
         let big = order(&Asked { item: "pb".into(), quantity: 500, finishes: vec![], note: String::new() }, &config);
         assert_eq!((big.total_cents(), big.quote("")), (None, None));
         assert_eq!(big.view(1).total, "");
+        assert_eq!(big.view(1).reply, "", "no reply without a price");
     }
 
     #[test]
