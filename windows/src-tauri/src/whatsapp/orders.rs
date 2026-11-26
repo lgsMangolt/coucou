@@ -652,6 +652,11 @@ fn line(message: &Message, pages: &HashMap<String, u32>) -> Option<String> {
     (!said.is_empty()).then(|| format!("{}: {said}", if message.from_me { "Loja" } else { "Cliente" }))
 }
 
+/// The conversation as the evals read it ("Cliente: …", "Loja: …"), for the log.
+pub fn transcript(conversation: &Conversation) -> Vec<String> {
+    recent(conversation).iter().filter_map(|m| line(m, &HashMap::new())).collect()
+}
+
 /// What the model is shown, or None when there is nothing to read. `pages`: the pages of the
 /// customer's PDFs, by message id, as Coucou counted them.
 pub fn prompt(conversation: &Conversation, pages: &HashMap<String, u32>) -> Option<String> {

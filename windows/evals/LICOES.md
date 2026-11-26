@@ -16,3 +16,6 @@ Cada rodada: linha de base → erros classificados → uma mudança pequena por 
 **Limites:** o caso do "brilhoso" saiu do holdout e foi para o dev (foi usado para ajustar); o holdout foi olhado 3 vezes nesta rodada, então vale como sinal, não prova. Próxima rodada precisa de casos novos de conversas reais para o holdout.
 
 **Revisar quando:** o Lucas corrigir uma resposta do Coucou no WhatsApp (vira caso novo), ou a tabela ganhar papéis novos.
+
+## Como colher casos novos (0.20.0)
+O Coucou anota em `Documentos\Coucou\Memória\.coucou\registro.jsonl` o que respondeu/sugeriu e o que o Lucas mandou depois. `python evals/colher.py` grava em `.coucou/candidatos.jsonl` (no cofre) as vezes em que o Lucas respondeu diferente. Antes de copiar um candidato para `evals/pedidos`, troque nomes, telefones e endereços: esta pasta vai para o fork público.

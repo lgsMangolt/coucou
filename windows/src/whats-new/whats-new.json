@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.20.0",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Learning from your fixes",
+            "zh-Hans": "从你的修改中学习",
+            "hi": "आपके सुधारों से सीखना",
+            "es": "Aprender de tus correcciones",
+            "ar": "التعلّم من تصحيحاتك",
+            "fr": "Apprendre de vos corrections",
+            "bn": "আপনার সংশোধন থেকে শেখা",
+            "pt-BR": "Colhe correções",
+            "ru": "Учиться на ваших правках",
+            "id": "Belajar dari koreksi Anda",
+            "de": "Aus Ihren Korrekturen lernen",
+            "tr": "Düzeltmelerinizden öğrenme",
+            "ko": "수정에서 배우기",
+            "ja": "修正から学ぶ"
+          },
+          "detail": {
+            "en": "Coucou keeps, on this PC, what it said and what you sent instead, to become new test cases.",
+            "zh-Hans": "Coucou 在本机记录它说的话和你实际发送的内容，用作新的测试用例。",
+            "hi": "Coucou इस PC पर रखता है कि उसने क्या कहा और आपने क्या भेजा, नए टेस्ट के लिए।",
+            "es": "Coucou guarda en este PC lo que dijo y lo que enviaste en su lugar, para nuevos casos de prueba.",
+            "ar": "يحفظ Coucou على هذا الحاسوب ما قاله وما أرسلته بدلًا منه، ليصبح حالات اختبار جديدة.",
+            "fr": "Coucou garde sur ce PC ce qu’il a dit et ce que vous avez envoyé, pour de nouveaux cas de test.",
+            "bn": "Coucou এই পিসিতে রাখে সে কী বলেছে আর আপনি কী পাঠিয়েছেন, নতুন পরীক্ষার জন্য।",
+            "pt-BR": "O Coucou guarda neste PC o que disse e o que você mandou no lugar, para virar caso de teste.",
+            "ru": "Coucou хранит на этом ПК, что он сказал и что отправили вы, для новых тестов.",
+            "id": "Coucou menyimpan di PC ini apa yang ia katakan dan yang Anda kirim, untuk kasus uji baru.",
+            "de": "Coucou speichert auf diesem PC, was es sagte und was Sie stattdessen sendeten, für neue Tests.",
+            "tr": "Coucou bu bilgisayarda ne dediğini ve sizin ne gönderdiğinizi yeni testler için saklar.",
+            "ko": "Coucou가 이 PC에 자신이 한 말과 대신 보낸 내용을 저장해 새 테스트로 씁니다.",
+            "ja": "Coucouはこの PC に、自分の返答とあなたが代わりに送った内容を保存し、新しいテストにします。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.19.0",
       "items": [
         {

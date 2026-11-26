@@ -255,6 +255,8 @@ struct Ctl {
     order_queue: Vec<String>,
     /// Chats being read right now: one reading at a time for each.
     order_reading: HashSet<String>,
+    /// When Coucou last answered or suggested in each chat: what you send there next is logged.
+    coucou_spoke: HashMap<String, i64>,
     /// pedidos.json `silencio_minutos` is 0: Coucou answers even right after you wrote.
     reply_now: bool,
     /// The partner print shop's group (pedidos.json `grafica_grupo`), normalized; "".
@@ -326,6 +328,7 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         ledger_sheet_code: false,
         order_queue: Vec::new(),
         order_reading: HashSet::new(),
+        coucou_spoke: HashMap::new(),
         reply_now: false,
         grafica: String::new(),
         jobs: Vec::new(),
@@ -986,6 +989,7 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
         // Big groups are ignored; one whose size is not known yet waits for the answer before it is announced.
         let waiting_for_size = c.prefs.ignore_groups_over > 0 && model::is_group(&key) && !c.group_sizes.contains_key(&key);
         let said = if from_me || model::is_group(&key) { None } else { Some(message.text.clone()) };
+        let typed = from_me.then(|| message.text.clone());
         let receipt = (!from_me && !model::is_group(&key) && matches!(message.media, model::Media::Image | model::Media::Document { .. }))
             .then(|| message.id.clone());
         let outcome = c.inbox.add(message, &filters, None, false);
@@ -998,6 +1002,12 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
         }
         if let (Some(id), true) = (receipt, outcome != Outcome::Duplicate) {
             receipt_step(c, &key, id);
+        }
+        // What you wrote from the phone right after Coucou spoke in that chat: logged for the evals.
+        if from_me && outcome != Outcome::Duplicate {
+            if let Some(text) = typed.filter(|t| !t.trim().is_empty()) {
+                note_you_in(c, &key, &text);
+            }
         }
         // The partner print shop's group: its jobs are read once it has been quiet a moment.
         if !SECOND && !from_me && outcome != Outcome::Duplicate && !c.grafica.is_empty() && key == c.grafica {
@@ -1126,6 +1136,44 @@ async fn read_receipt(gen: u64, chat: String, message: String) {
         }
         Err(Some(name)) => pill(PillEvent::Message { name: crate::i18n::tf("The receipt does not match the quote: {name}", &[("name", name.as_str())]) }),
         Err(None) => {}
+    }
+}
+
+/// How long after Coucou spoke in a chat what you send there is logged as your answer.
+const LOG_WINDOW_MS: i64 = 30 * 60_000;
+
+/// Milliseconds since 1970 (for memoria.rs).
+pub fn now_ms() -> i64 {
+    gateway::now_ms()
+}
+
+fn account() -> u8 {
+    if SECOND { 2 } else { 1 }
+}
+
+/// Logs what Coucou said or suggested in a chat (memoria.rs, for evals/colher.py).
+fn note_coucou(chat: &str, kind: &'static str, text: &str) {
+    let conversation = {
+        let mut c = ctl();
+        c.coucou_spoke.insert(chat.to_string(), gateway::now_ms());
+        if c.coucou_spoke.len() > 500 {
+            let now = gateway::now_ms();
+            c.coucou_spoke.retain(|_, at| now - *at < LOG_WINDOW_MS);
+        }
+        c.inbox.conversations.get(chat).map(orders::transcript).unwrap_or_default()
+    };
+    crate::memoria::log_event(account(), chat.to_string(), kind, text.to_string(), conversation);
+}
+
+/// Logs what you sent in a chat where Coucou spoke in the last 30 minutes.
+fn note_you(chat: &str, text: &str) {
+    note_you_in(&mut ctl(), chat, text);
+}
+
+fn note_you_in(c: &mut Ctl, chat: &str, text: &str) {
+    let recent = c.coucou_spoke.get(chat).is_some_and(|at| gateway::now_ms() - *at < LOG_WINDOW_MS);
+    if recent {
+        crate::memoria::log_event(account(), chat.to_string(), "voce", text.to_string(), Vec::new());
     }
 }
 
@@ -1425,6 +1473,7 @@ async fn answer_alone(id: u64, quiet_minutes: u32) {
         (chat, text)
     };
     crate::log::line("whatsapp: answering a print order by itself");
+    note_coucou(&chat, "coucou", &text);
     if !send(&chat, &text).await {
         crate::log::line("whatsapp: could not answer a print order by itself".to_string());
         if let Some(past) = ctl().order_auto.get_mut(&chat) {
@@ -1769,6 +1818,7 @@ async fn answer_group(id: u64, quiet_minutes: u32) {
         c.job_sent.push((now, text.clone()));
         (group, text)
     };
+    note_coucou(&group, "coucou", &text);
     if send(&group, &text).await {
         if let Some((_, job)) = ctl().jobs.iter_mut().find(|(n, _)| *n == id) {
             job.sent = true;
@@ -2234,6 +2284,9 @@ pub async fn whatsapp_send(window: WebviewWindow, chat: String, text: String) ->
     let key = model::normalized(&chat);
     let suggested = ctl().orders.iter().any(|(_, o)| o.chat == key && o.state == orders::State::Draft && o.reply().trim() == text.trim());
     let sent = send(&chat, &text).await;
+    if sent {
+        note_you(&key, &text);
+    }
     if sent && suggested {
         // Coucou's own reply sent with Enter: Coucou's words, not you talking with the customer.
         ctl().order_auto.entry(key.clone()).or_default().push((gateway::now_ms(), text.clone()));
@@ -2524,7 +2577,15 @@ pub async fn whatsapp_suggest(window: WebviewWindow, chat: String) -> Result<Str
     // The shop's approved answers (vault note "Loja"), on the shop's account only.
     let facts = if SECOND { None } else { tauri::async_runtime::spawn_blocking(crate::memoria::shop_facts).await.ok().flatten() };
     match prompt {
-        Some(prompt) => suggest::suggest(&prompt, facts.as_deref()).await,
+        Some(prompt) => {
+            let suggestion = suggest::suggest(&prompt, facts.as_deref()).await;
+            if let Ok(text) = &suggestion {
+                if !text.is_empty() {
+                    note_coucou(&model::normalized(&chat), "sugestao", text);
+                }
+            }
+            suggestion
+        }
         None => Ok(String::new()),
     }
 }
@@ -2668,6 +2729,7 @@ mod tests {
             ledger_sheet_code: false,
             order_queue: Vec::new(),
             order_reading: HashSet::new(),
+            coucou_spoke: HashMap::new(),
             reply_now: false,
             grafica: String::new(),
             jobs: Vec::new(),

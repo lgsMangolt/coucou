@@ -125,6 +125,33 @@ fn facts_of(note: &str) -> Option<String> {
     (!text.is_empty()).then_some(text)
 }
 
+/// The log is set aside past this size (registro.jsonl → registro.antigo.jsonl).
+const MAX_LOG_BYTES: u64 = 5_000_000;
+
+/// One line of `.coucou/registro.jsonl`, for the improvement cycle (evals/colher.py): what Coucou
+/// said or suggested in a conversation, and what you sent there. Stays on this computer.
+pub fn log_event(account: u8, chat: String, kind: &'static str, text: String, conversation: Vec<String>) {
+    std::thread::spawn(move || {
+        let _one = WRITING.lock().unwrap_or_else(PoisonError::into_inner);
+        let dir = vault().join(".coucou");
+        let path = dir.join("registro.jsonl");
+        let line = serde_json::json!({
+            "quando": crate::whatsapp::now_ms(), "conta": account, "chat": chat, "tipo": kind, "texto": text, "conversa": conversation,
+        });
+        let written = std::fs::create_dir_all(&dir).and_then(|()| {
+            if std::fs::metadata(&path).map(|m| m.len() > MAX_LOG_BYTES).unwrap_or(false) {
+                std::fs::rename(&path, dir.join("registro.antigo.jsonl"))?;
+            }
+            use std::io::Write;
+            let mut file = std::fs::OpenOptions::new().create(true).append(true).open(&path)?;
+            writeln!(file, "{line}")
+        });
+        if let Err(err) = written {
+            crate::log::line(format!("memoria: could not write the log: {err}"));
+        }
+    });
+}
+
 /// What the model is told about this customer, or None for someone new.
 pub fn context(chat: &str) -> Option<String> {
     let _one = WRITING.lock().unwrap_or_else(PoisonError::into_inner);
