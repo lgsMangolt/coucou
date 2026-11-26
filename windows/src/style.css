@@ -4532,17 +4532,43 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 /* WhatsApp card: the "answer right away" switch (on: no 30-minute wait after you wrote). */
 .wa-reply-now {
   margin-left: auto;
-  padding: 2px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 0;
+  border: 0;
   background: transparent;
   color: #9aa0a6;
-  font: 500 10px/1.4 var(--font);
+  font: 500 10px/1 var(--font);
   cursor: default;
 }
-.wa-reply-now.on {
-  border-color: rgba(37, 211, 102, 0.6);
-  background: rgba(37, 211, 102, 0.16);
-  color: #c9f5d8;
+.wa-reply-now.on { color: #d8f5e2; }
+.wa-switch {
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 16px;
+  border-radius: 999px;
+  background: #232323;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  transition: background-color 180ms ease-out, box-shadow 180ms ease-out;
 }
-.wa-reply-now:focus-visible { outline: 1px solid rgba(37, 211, 102, 0.8); outline-offset: 1px; }
+.wa-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e3e4e6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.wa-reply-now.on .wa-switch { background: #03a04a; box-shadow: inset 0 0 0 1px rgba(3, 160, 74, 0.9); }
+.wa-reply-now.on .wa-switch::after { transform: translateX(12px); }
+.wa-reply-now:focus-visible { outline: none; }
+.wa-reply-now:focus-visible .wa-switch { box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.7); }
+@media (prefers-reduced-motion: reduce) {
+  .wa-switch, .wa-switch::after { transition: none; }
+}

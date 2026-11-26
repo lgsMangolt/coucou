@@ -511,16 +511,18 @@ pub fn start(app: &AppHandle, active_integrations: &[String]) {
     }
     if !SECOND {
         orders::ensure_file();
+        // Read before the island's first look: the switch and the print shop's group are right
+        // from the start (a later update could reach the island before it listens).
+        let config = orders::load();
+        {
+            let mut c = ctl();
+            c.grafica = model::normalized(&config.grafica_grupo);
+            c.reply_now = config.silencio_minutos == 0;
+        }
         // The Obsidian vault is there from the start: its first page and the price note.
         std::thread::spawn(|| {
             crate::memoria::ensure_vault();
-            let config = orders::load();
-            {
-                let mut c = ctl();
-                c.grafica = model::normalized(&config.grafica_grupo);
-                c.reply_now = config.silencio_minutos == 0;
-            }
-            changed();
+            let _ = orders::load();
         });
     }
     update();

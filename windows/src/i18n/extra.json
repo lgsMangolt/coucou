@@ -9273,6 +9273,36 @@
       "tr": "Hemen yanıtla",
       "ko": "바로 답장",
       "ja": "すぐに返信"
+    },
+    "Reply right away: on": {
+      "zh-Hans": "立即回复：开",
+      "hi": "तुरंत जवाब: चालू",
+      "es": "Responder al instante: sí",
+      "ar": "الرد فورًا: مفعّل",
+      "fr": "Répondre tout de suite : oui",
+      "bn": "সঙ্গে সঙ্গে উত্তর: চালু",
+      "pt-BR": "Responder na hora: ligado",
+      "ru": "Отвечать сразу: вкл.",
+      "id": "Balas langsung: nyala",
+      "de": "Sofort antworten: an",
+      "tr": "Hemen yanıtla: açık",
+      "ko": "바로 답장: 켬",
+      "ja": "すぐに返信：オン"
+    },
+    "Reply right away: off": {
+      "zh-Hans": "立即回复：关",
+      "hi": "तुरंत जवाब: बंद",
+      "es": "Responder al instante: no",
+      "ar": "الرد فورًا: معطّل",
+      "fr": "Répondre tout de suite : non",
+      "bn": "সঙ্গে সঙ্গে উত্তর: বন্ধ",
+      "pt-BR": "Responder na hora: desligado",
+      "ru": "Отвечать сразу: выкл.",
+      "id": "Balas langsung: mati",
+      "de": "Sofort antworten: aus",
+      "tr": "Hemen yanıtla: kapalı",
+      "ko": "바로 답장: 끔",
+      "ja": "すぐに返信：オフ"
     }
   }
 }

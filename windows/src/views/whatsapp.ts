@@ -57,11 +57,18 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
   // ── The list ──
   const unreadTag = h("span", { class: "wa-unread" });
   // On: Coucou answers customers even right after you wrote to them; off: it waits 30 minutes.
-  const replyNow = h("button", { class: "wa-reply-now", title: tl("Reply right away") }) as HTMLButtonElement;
+  const replyNowText = h("span", { class: "wa-reply-now-text" });
+  const replyNow = h("button", { class: "wa-reply-now", role: "switch" }, replyNowText, h("span", { class: "wa-switch", "aria-hidden": "true" })) as HTMLButtonElement;
   replyNow.style.display = "none";
+  const showReplyNow = (on: boolean) => {
+    replyNow.classList.toggle("on", on);
+    replyNow.setAttribute("aria-checked", String(on));
+    replyNow.title = on ? t("Reply right away: on") : t("Reply right away: off");
+    replyNowText.textContent = t("Reply right away");
+  };
   replyNow.addEventListener("click", () => {
     const on = !replyNow.classList.contains("on");
-    replyNow.classList.toggle("on", on);
+    showReplyNow(on);
     void Bridge.whatsappSetReplyNow(on, account);
   });
   const head = h("div", { class: "int-head" }, dot(WHATSAPP_GREEN, 7), h("b", { text: account ? "WhatsApp 2" : "WhatsApp" }), unreadTag, replyNow);
@@ -417,8 +424,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     if (key === listKey) return;
     listKey = key;
     replyNow.style.display = v.replyNow === null ? "none" : "";
-    replyNow.classList.toggle("on", v.replyNow === true);
-    replyNow.textContent = t("Reply right away");
+    showReplyNow(v.replyNow === true);
     unreadTag.textContent = v.unread > 0 ? t("{0} unread", { 0: v.unread }) : "";
     unreadTag.style.display = v.unread > 0 ? "" : "none";
     clear(pendingBox);

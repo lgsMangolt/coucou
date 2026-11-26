@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.20.1",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Clearer switch",
+            "zh-Hans": "更清楚的开关",
+            "hi": "साफ़ स्विच",
+            "es": "Interruptor más claro",
+            "ar": "مفتاح أوضح",
+            "fr": "Interrupteur plus clair",
+            "bn": "স্পষ্ট সুইচ",
+            "pt-BR": "Chave certa",
+            "ru": "Понятный переключатель",
+            "id": "Sakelar lebih jelas",
+            "de": "Klarerer Schalter",
+            "tr": "Daha net anahtar",
+            "ko": "더 분명한 스위치",
+            "ja": "わかりやすいスイッチ"
+          },
+          "detail": {
+            "en": "The reply-right-away switch says on or off, and shows the right state when Coucou opens.",
+            "zh-Hans": "“立即回复”开关会显示开或关，并在 Coucou 打开时显示正确状态。",
+            "hi": "तुरंत-जवाब स्विच चालू या बंद लिखता है और Coucou खुलते ही सही दिखता है।",
+            "es": "El interruptor dice sí o no y muestra el estado correcto al abrir Coucou.",
+            "ar": "يُظهر مفتاح الرد الفوري مفعّل أو معطّل، وبالحالة الصحيحة عند فتح Coucou.",
+            "fr": "L’interrupteur indique oui ou non, avec le bon état dès l’ouverture de Coucou.",
+            "bn": "সুইচে চালু বা বন্ধ লেখা থাকে, আর Coucou খুললেই ঠিক অবস্থা দেখায়।",
+            "pt-BR": "A chave diz ligado ou desligado e já abre no estado certo.",
+            "ru": "Переключатель пишет вкл. или выкл. и сразу показывает верное состояние.",
+            "id": "Sakelar menulis nyala atau mati, dan langsung benar saat Coucou dibuka.",
+            "de": "Der Schalter zeigt an oder aus und stimmt schon beim Öffnen von Coucou.",
+            "tr": "Anahtar açık ya da kapalı yazar ve Coucou açılınca doğru durumu gösterir.",
+            "ko": "스위치가 켬/끔을 표시하고, Coucou를 열 때부터 맞는 상태를 보여 줍니다.",
+            "ja": "スイッチにオン／オフが表示され、Coucouを開いた時から正しい状態になります。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.20.0",
       "items": [
         {
