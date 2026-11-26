@@ -2,6 +2,81 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.15.0",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Customer memory",
+            "zh-Hans": "客户记忆",
+            "hi": "ग्राहक की याद",
+            "es": "Memoria de clientes",
+            "ar": "ذاكرة العملاء",
+            "fr": "Mémoire des clients",
+            "bn": "গ্রাহকের স্মৃতি",
+            "pt-BR": "Memória no Obsidian",
+            "ru": "Память о клиентах",
+            "id": "Memori pelanggan",
+            "de": "Kundengedächtnis",
+            "tr": "Müşteri hafızası",
+            "ko": "고객 기억",
+            "ja": "お客様の記録"
+          },
+          "detail": {
+            "en": "Coucou notes each customer's orders in an Obsidian vault and reads them before answering.",
+            "zh-Hans": "Coucou 在 Obsidian 库中记录每位客户的订单，并在回复前读取。",
+            "hi": "Coucou हर ग्राहक के ऑर्डर Obsidian वॉल्ट में लिखता है और जवाब से पहले पढ़ता है।",
+            "es": "Coucou anota los pedidos de cada cliente en un vault de Obsidian y los lee antes de responder.",
+            "ar": "يدوّن Coucou طلبات كل عميل في خزنة Obsidian ويقرؤها قبل الرد.",
+            "fr": "Coucou note les commandes de chaque client dans un coffre Obsidian et les relit avant de répondre.",
+            "bn": "Coucou প্রত্যেক গ্রাহকের অর্ডার Obsidian ভল্টে লেখে এবং উত্তরের আগে পড়ে।",
+            "pt-BR": "O Coucou anota os pedidos de cada cliente num cofre do Obsidian e lê antes de responder.",
+            "ru": "Coucou записывает заказы каждого клиента в хранилище Obsidian и читает их перед ответом.",
+            "id": "Coucou mencatat pesanan tiap pelanggan di vault Obsidian dan membacanya sebelum menjawab.",
+            "de": "Coucou notiert die Aufträge jedes Kunden in einem Obsidian-Vault und liest sie vor der Antwort.",
+            "tr": "Coucou her müşterinin siparişlerini bir Obsidian kasasına yazar ve yanıtlamadan önce okur.",
+            "ko": "Coucou가 고객별 주문을 Obsidian 보관함에 기록하고 답하기 전에 읽습니다.",
+            "ja": "Coucouはお客様ごとの注文をObsidianの保管庫に記録し、返信の前に読みます。"
+          }
+        },
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Prices in Obsidian",
+            "zh-Hans": "在 Obsidian 中编辑价格",
+            "hi": "Obsidian में कीमतें",
+            "es": "Precios en Obsidian",
+            "ar": "الأسعار في Obsidian",
+            "fr": "Les prix dans Obsidian",
+            "bn": "Obsidian-এ দাম",
+            "pt-BR": "Preços no Obsidian",
+            "ru": "Цены в Obsidian",
+            "id": "Harga di Obsidian",
+            "de": "Preise in Obsidian",
+            "tr": "Obsidian'da fiyatlar",
+            "ko": "Obsidian에서 가격 수정",
+            "ja": "Obsidianで価格を編集"
+          },
+          "detail": {
+            "en": "The price table is a note you edit in Obsidian; a wrong line changes no price.",
+            "zh-Hans": "价格表是可在 Obsidian 中编辑的笔记；写错的行不会改变任何价格。",
+            "hi": "कीमत तालिका Obsidian में बदलने वाला नोट है; गलत पंक्ति कोई कीमत नहीं बदलती।",
+            "es": "La tabla de precios es una nota que editas en Obsidian; una línea mal escrita no cambia ningún precio.",
+            "ar": "جدول الأسعار ملاحظة تعدّلها في Obsidian؛ والسطر الخاطئ لا يغيّر أي سعر.",
+            "fr": "La grille de prix est une note à modifier dans Obsidian ; une ligne erronée ne change aucun prix.",
+            "bn": "দামের তালিকা Obsidian-এ বদলানো যায় এমন নোট; ভুল লাইন কোনো দাম বদলায় না।",
+            "pt-BR": "A tabela de preços é uma nota que você edita no Obsidian; uma linha errada não muda preço nenhum.",
+            "ru": "Прайс — это заметка в Obsidian; ошибочная строка не меняет ни одной цены.",
+            "id": "Tabel harga adalah catatan yang Anda ubah di Obsidian; baris yang salah tidak mengubah harga.",
+            "de": "Die Preisliste ist eine Notiz in Obsidian; eine falsche Zeile ändert keinen Preis.",
+            "tr": "Fiyat tablosu Obsidian'da düzenlediğiniz bir nottur; hatalı satır hiçbir fiyatı değiştirmez.",
+            "ko": "가격표는 Obsidian에서 고치는 노트이며, 잘못된 줄은 가격을 바꾸지 않습니다.",
+            "ja": "価格表はObsidianで編集するノートです。間違った行は価格を変えません。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.14.2",
       "items": [
         {

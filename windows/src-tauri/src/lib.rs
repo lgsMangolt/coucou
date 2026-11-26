@@ -24,6 +24,7 @@ mod island;
 mod launch;
 mod local_chat;
 mod log;
+mod memoria;
 mod mail;
 mod net;
 mod notes;

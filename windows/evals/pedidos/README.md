@@ -48,6 +48,7 @@ python evals/pedidos/avaliar.py evals/pedidos/system.txt claude-haiku-5-5
 | 2026-11-25 | 0.11.0 | claude-haiku-5-5 | **24/24** (adotado) |
 | 2026-11-25 | 0.12.0 (tamanhos, junção) | claude-haiku-5-5 | **27/27** |
 | 2026-11-25 | 0.14.0 (arquivos do pedido) | claude-haiku-5-5 | **28/28** |
+| 2026-11-26 | 0.15.0 (memória do cliente) | claude-haiku-5-5 | 30/30, 28/30, 30/30 (média 29,3; os 2 casos de memória certos nas 3) |
 
 Com 24 casos só dá para enxergar diferenças grandes (~15 pontos ou mais). Ainda não há conjunto separado
 (holdout): os próximos casos reais devem ir para `holdout.jsonl` e não ser usados para ajustar o prompt.
@@ -56,3 +57,6 @@ Com 24 casos só dá para enxergar diferenças grandes (~15 pontos ou mais). Ain
 1. Cada erro visto no uso real vira um caso novo em `casos.jsonl` (ou `holdout.jsonl`), com o que o Lucas teria respondido.
 2. Respostas aprovadas para perguntas frequentes (endereço, horário, Pix, entrega) — hoje vão para o gerente.
 3. Conferir o código lido contra o banco (hoje o modelo pode errar um dígito do código, e o mesmo comprovante passaria de novo).
+
+## Memória (0.15.0)
+Cofre do Obsidian em `Documentos\Coucou\Memória`: uma nota por cliente em `Clientes/` (ficha e pedidos, sem copiar a conversa; a parte **Notas** é do Lucas e o Coucou só lê) e `Tabela de preços.md`, de onde o Coucou tira os preços (o `pedidos.json` vira cópia; uma linha errada faz o Coucou ficar com os últimos preços certos). Antes de responder, o modelo recebe a ficha só daquele cliente: últimos pedidos, o que costuma pedir e as notas. Preço nunca vem da memória.

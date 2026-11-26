@@ -213,12 +213,232 @@ fn parse(bytes: &[u8]) -> Option<Config> {
 }
 
 /// Read each time it is needed, so an edit applies at once. A file that cannot be read turns the
-/// orders off rather than pricing from the defaults.
+/// orders off rather than pricing from the defaults. The prices come from the Obsidian note
+/// "Tabela de preços" when it reads cleanly (pedidos.json then keeps a copy of them); a note with a
+/// mistake in it is not used, and the last good prices stay.
 pub fn load() -> Config {
-    match std::fs::read(path()) {
-        Ok(bytes) => parse(&bytes).unwrap_or_else(|| Config { ativo: false, ..Config::default() }),
+    let config = match std::fs::read(path()) {
+        Ok(bytes) => match parse(&bytes) {
+            Some(config) => config,
+            None => return Config { ativo: false, ..Config::default() },
+        },
         Err(_) => Config::default(),
+    };
+    with_note_prices(config, &prices_note(), &path())
+}
+
+/// The vault's price note.
+pub fn prices_note() -> PathBuf {
+    crate::memoria::vault().join("Tabela de preços.md")
+}
+
+/// The last mistake logged for the note, so it is said once, not at every order.
+static NOTE_PROBLEM: std::sync::LazyLock<std::sync::Mutex<String>> = std::sync::LazyLock::new(|| std::sync::Mutex::new(String::new()));
+
+fn with_note_prices(mut config: Config, note: &Path, json_copy: &Path) -> Config {
+    let text = match std::fs::read_to_string(note) {
+        Ok(text) => text,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+            let written = note.parent().map_or(Ok(()), std::fs::create_dir_all).and_then(|()| std::fs::write(note, render_prices(&config)));
+            if let Err(err) = written {
+                crate::log::line(format!("whatsapp: could not write the price note: {err}"));
+            }
+            return config;
+        }
+        Err(_) => return config,
+    };
+    match parse_prices(&text) {
+        Ok(prices) => {
+            if let Ok(mut said) = NOTE_PROBLEM.lock() {
+                said.clear();
+            }
+            let changed = config.itens != prices.itens || config.acabamentos != prices.acabamentos || config.juncao != prices.juncao;
+            config.itens = prices.itens;
+            config.acabamentos = prices.acabamentos;
+            config.juncao = prices.juncao;
+            if changed {
+                if let Ok(json) = serde_json::to_vec_pretty(&config) {
+                    if let Err(err) = std::fs::write(json_copy, json) {
+                        crate::log::line(format!("whatsapp: could not copy the note's prices to pedidos.json: {err}"));
+                    }
+                }
+            }
+            config
+        }
+        Err(why) => {
+            if let Ok(mut said) = NOTE_PROBLEM.lock() {
+                if *said != why {
+                    crate::log::line(format!("whatsapp: the price note has a mistake, the last good prices stay: {why}"));
+                    *said = why;
+                }
+            }
+            config
+        }
     }
+}
+
+// ── The price note (Obsidian) ─────────────────────────────────────────────────
+
+/// What the price note holds.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Prices {
+    pub itens: Vec<Item>,
+    pub acabamentos: Vec<Finish>,
+    pub juncao: f64,
+}
+
+/// "1,00" (or "R$ 1,00", "1.00"); "" when there is no price.
+fn money(value: f64) -> String {
+    format!("{value:.2}").replace('.', ",")
+}
+
+fn parse_money(text: &str) -> Option<f64> {
+    let t = text.trim().trim_start_matches("R$").trim().replace(' ', "");
+    let t = if t.contains(',') { t.replace('.', "").replace(',', ".") } else { t };
+    t.parse::<f64>().ok().filter(|v| v.is_finite() && *v > 0.0 && *v < 100_000.0)
+}
+
+fn row_cells(line: &str) -> Vec<String> {
+    let inner = line.trim().trim_start_matches('|').trim_end_matches('|');
+    inner.split('|').map(|c| c.trim().replace("\\|", "|")).collect()
+}
+
+/// The note, written from the table: one row per kind of print, one column per tier.
+pub fn render_prices(config: &Config) -> String {
+    let mut limits: Vec<u32> = config.itens.iter().flat_map(|i| i.faixas.iter().map(|t| t.ate)).collect();
+    limits.sort_unstable();
+    limits.dedup();
+    let mut out = String::from(
+        "---\ntags: [precos]\n---\n# Tabela de preços\n\n\
+Preço **por folha**, em reais. Mude os valores e salve: o Coucou usa esta nota no próximo pedido. \
+Não mude a coluna **id**. Uma célula vazia quer dizer que aquela faixa usa o preço da coluna seguinte. \
+Acima da última faixa, o pedido vai para o gerente. Se alguma linha ficar errada, o Coucou continua com os últimos preços certos.\n\n## Impressão\n\n| id | nome | impressora |",
+    );
+    for limit in &limits {
+        out.push_str(&format!(" até {limit} |"));
+    }
+    out.push_str("\n|---|---|---|");
+    out.push_str(&"---|".repeat(limits.len()));
+    out.push('\n');
+    for item in &config.itens {
+        out.push_str(&format!("| {} | {} | {} |", item.id, item.nome, item.impressora));
+        for limit in &limits {
+            let price = item.faixas.iter().find(|t| t.ate == *limit).map(|t| money(t.preco)).unwrap_or_default();
+            out.push_str(&format!(" {price} |"));
+        }
+        out.push('\n');
+    }
+    out.push_str("\n## Acabamentos\n\n| id | nome | preço | por folha |\n|---|---|---|---|\n");
+    for f in &config.acabamentos {
+        out.push_str(&format!("| {} | {} | {} | {} |\n", f.id, f.nome, money(f.preco), if f.por_folha { "sim" } else { "não" }));
+    }
+    out.push_str(&format!("\n## Outros\n\n| o quê | valor |\n|---|---|\n| junção (por peça, A2 ou maior montado em A3) | {} |\n", money(config.juncao)));
+    out
+}
+
+/// Reads the note back. Any mistake makes the whole note unused, with the line that has it: a
+/// wrong price is never guessed.
+pub fn parse_prices(text: &str) -> Result<Prices, String> {
+    #[derive(PartialEq)]
+    enum Part {
+        None,
+        Print,
+        Finish,
+        Other,
+    }
+    let mut part = Part::None;
+    let mut header: Vec<String> = Vec::new();
+    let mut itens: Vec<Item> = Vec::new();
+    let mut acabamentos: Vec<Finish> = Vec::new();
+    let mut juncao: Option<f64> = None;
+    for (n, line) in text.lines().enumerate() {
+        let n = n + 1;
+        let trimmed = line.trim();
+        if let Some(title) = trimmed.strip_prefix("## ") {
+            let title = plain(title);
+            part = if title.contains("impress") {
+                Part::Print
+            } else if title.contains("acabamento") {
+                Part::Finish
+            } else if title.contains("outro") {
+                Part::Other
+            } else {
+                Part::None
+            };
+            header.clear();
+            continue;
+        }
+        if !trimmed.starts_with('|') || part == Part::None {
+            continue;
+        }
+        let cells = row_cells(trimmed);
+        if cells.iter().all(|c| c.chars().all(|ch| matches!(ch, '-' | ':' | ' '))) {
+            continue;
+        }
+        if header.is_empty() {
+            header = cells.iter().map(|c| plain(c)).collect();
+            continue;
+        }
+        let wrong = |what: &str| format!("linha {n}: {what}");
+        match part {
+            Part::Print => {
+                let id = clean_text(cells.first().map_or("", String::as_str), 40);
+                let nome = clean_text(cells.get(1).map_or("", String::as_str), 80);
+                if id.is_empty() || nome.is_empty() {
+                    return Err(wrong("falta o id ou o nome"));
+                }
+                if itens.iter().any(|i| i.id == id) {
+                    return Err(wrong(&format!("o id {id} aparece duas vezes")));
+                }
+                let mut faixas = Vec::new();
+                for (col, title) in header.iter().enumerate().skip(3) {
+                    let Some(limit) = title.trim_start_matches("ate").trim().parse::<u32>().ok().filter(|l| *l > 0) else {
+                        return Err(format!("a coluna \"{title}\" não é \"até N\""));
+                    };
+                    let value = cells.get(col).map_or("", String::as_str).trim();
+                    if value.is_empty() {
+                        continue;
+                    }
+                    let preco = parse_money(value).ok_or_else(|| wrong(&format!("\"{value}\" não é um preço")))?;
+                    faixas.push(Tier { ate: limit, preco });
+                }
+                if faixas.is_empty() {
+                    return Err(wrong(&format!("{id} não tem nenhum preço")));
+                }
+                let impressora = clean_text(cells.get(2).map_or("", String::as_str), 20);
+                itens.push(Item { id, nome, impressora, faixas });
+            }
+            Part::Finish => {
+                let id = clean_text(cells.first().map_or("", String::as_str), 40);
+                let nome = clean_text(cells.get(1).map_or("", String::as_str), 80);
+                if id.is_empty() || nome.is_empty() {
+                    return Err(wrong("falta o id ou o nome"));
+                }
+                let value = cells.get(2).map_or("", String::as_str);
+                let preco = parse_money(value).ok_or_else(|| wrong(&format!("\"{value}\" não é um preço")))?;
+                let por_folha = match plain(cells.get(3).map_or("", String::as_str)).as_str() {
+                    "sim" | "s" | "x" | "true" => true,
+                    "nao" | "n" | "" | "false" => false,
+                    other => return Err(wrong(&format!("\"{other}\" em \"por folha\" deve ser sim ou não"))),
+                };
+                acabamentos.push(Finish { id, nome, preco, por_folha });
+            }
+            Part::Other => {
+                if plain(cells.first().map_or("", String::as_str)).contains("juncao") {
+                    let value = cells.get(1).map_or("", String::as_str);
+                    juncao = Some(if value.trim().is_empty() || value.trim() == "0" { 0.0 } else { parse_money(value).ok_or_else(|| wrong(&format!("\"{value}\" não é um preço")))? });
+                }
+            }
+            Part::None => {}
+        }
+    }
+    if itens.is_empty() {
+        return Err("a tabela de impressão está vazia".into());
+    }
+    for item in &mut itens {
+        item.faixas.sort_by_key(|t| t.ate);
+    }
+    Ok(Prices { itens, acabamentos, juncao: juncao.unwrap_or(0.0) })
 }
 
 /// Writes the file with its defaults the first time, so there is something to edit.
@@ -390,6 +610,13 @@ say how many it has. {STYLE}\n\
 not in the table: another paper or product (cartão de visita, adesivo, papel foto, envelope, banner, lona), a \
 delivery, a discount, a special price, a deadline promise, or anything you would have to guess. Never invent a price, a deadline or a line of the table.\n\
 4. {{\"ignorar\": true}}: not about printing (payment receipts, boletos, chit-chat), or only the shop talking.\n\
+A \"Customer memory\" block may follow the conversation: Coucou's notes of this customer's past orders and the \
+shop's own notes on them. Use it to understand the customer. In it, \"N ×\" counts sheets of past files, never \
+copies. \"O mesmo\" or \"igual da última vez\" means the same table line (paper, colour, sides) as the last order, \
+for the NEW file: one copy of it unless a number is said, its sheets worked out from its own pages. A shop note like \
+\"sempre frente e verso\" counts as said. When something is missing and the memory shows what they \
+usually order, ask by confirming it (\"preto e branco, como da última vez?\") rather than guessing. Never take a \
+price from the memory.\n\
 Rules: lines without A3 in their name are A4. \"Ofício\", \"folha normal\", \"a comum\" mean sulfite. \
 Couchê is always colour. When the size is not said, it is A4.\n\
 Table:\n{}\nFinishings:\n{}\n\
@@ -789,6 +1016,8 @@ pub struct Order {
     /// The customer's receipt was checked: the amount is the quote's total.
     pub paid: bool,
     pub printed: bool,
+    /// The table's line ("impressão P&B, sulfite 75g"), for the customer's memory; "".
+    pub item: String,
 }
 
 /// What the island shows of an order.
@@ -1024,6 +1253,40 @@ pub async fn read_receipt(path: &Path) -> Result<Receipt, String> {
     parse_receipt(&reply)
 }
 
+/// How an order is noted in the customer's memory (memoria.rs).
+pub fn memory_entry(order: &Order) -> crate::memoria::Entry {
+    let today = crate::platform::local_time();
+    let situacao = if order.printed {
+        "Impresso"
+    } else if order.paid {
+        "Pago"
+    } else {
+        match (order.state, order.kind) {
+            (State::Approved, _) => "Aprovado",
+            (State::Quoted, _) => "Orçamento enviado",
+            (State::Draft, Kind::Question) if order.sent => "Pergunta enviada",
+            (State::Draft, Kind::Question) => "Falta informação",
+            (State::Draft, Kind::Manager) => "Com o gerente",
+            (State::Draft, Kind::Quote) if order.total_cents().is_none() => "Com o gerente",
+            (State::Draft, Kind::Quote) => "Orçamento no cartão",
+        }
+    };
+    let pedido = match order.kind {
+        Kind::Quote if !order.lines.is_empty() => order.view(0).line,
+        Kind::Manager => format!("para o gerente: {}", order.ask),
+        _ => order.ask.clone(),
+    };
+    crate::memoria::Entry {
+        key: order.file.0.clone(),
+        data: format!("{:04}-{:02}-{:02}", today.year, today.month, today.day),
+        item: if order.kind == Kind::Quote { order.item.clone() } else { String::new() },
+        pedido,
+        total: order.total_cents(),
+        situacao: situacao.into(),
+        arquivo: order.file.1.clone(),
+    }
+}
+
 // ── The file ──────────────────────────────────────────────────────────────────
 
 /// A name safe for a folder or a file: no separators, no reserved characters, not too long.
@@ -1105,6 +1368,7 @@ mod tests {
             job: None,
             paid: false,
             printed: false,
+            item: String::new(),
         }
     }
 
@@ -1406,6 +1670,47 @@ mod tests {
             Reading::Order(Asked { item: "color".into(), quantity: 2, finishes: vec!["corte".into()], detail: "8 peças A6, 4 por folha".into(), ..Asked::default() })
         );
         assert!(matches!(parse_reply(r#"{"item":"color","tamanho":"A5","pecas":44}"#, &config), Reading::Manager(_)));
+    }
+
+    #[test]
+    fn the_price_note_is_read_back_and_a_mistake_keeps_the_last_good_prices() {
+        let config = Config::default();
+        let note = render_prices(&config);
+        assert!(note.contains("| id | nome | impressora | até 10 | até 50 | até 100 | até 300 |"), "{note}");
+        assert!(note.contains("| pb | impressão P&B, sulfite 75g | baratos | 1,00 | 0,70 | 0,60 | 0,50 |"), "{note}");
+        assert!(note.contains("| couche_a4_300 | impressão colorida A4, couchê 300g | couche |  |  |  | 5,00 |"), "{note}");
+        assert!(note.contains("| plastificacao | plastificação | 10,00 | sim |"));
+        let back = parse_prices(&note).unwrap();
+        assert_eq!((back.itens, back.acabamentos, back.juncao), (config.itens.clone(), config.acabamentos.clone(), config.juncao));
+
+        // The shop changes a price in Obsidian, with or without "R$".
+        let edited = note.replace("| pb | impressão P&B, sulfite 75g | baratos | 1,00 |", "| pb | impressão P&B, sulfite 75g | baratos | R$ 1,20 |");
+        assert_eq!(parse_prices(&edited).unwrap().itens[0].faixas[0].preco, 1.20);
+        for (bad, why) in [
+            (note.replace("| 1,00 | 0,70 |", "| um real | 0,70 |"), "não é um preço"),
+            (note.replace("| plastificacao | plastificação | 10,00 | sim |", "| plastificacao | plastificação | 10,00 | talvez |"), "sim ou não"),
+            (note.replace("| pb_fv |", "| pb |"), "aparece duas vezes"),
+            (note.replace("| color | impressão colorida, sulfite 75g | baratos | 2,00 | 1,80 | 1,60 | 1,40 |", "| color | impressão colorida, sulfite 75g | baratos |  |  |  |  |"), "não tem nenhum preço"),
+        ] {
+            let err = parse_prices(&bad).unwrap_err();
+            assert!(err.contains(why) && err.starts_with("linha "), "{err}");
+        }
+
+        // On disk: the note wins and pedidos.json keeps a copy; a broken note changes nothing.
+        let dir = std::env::temp_dir().join(format!("coucou-precos-{}-{}", std::process::id(), module_path!().replace("::", "-")));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let (note_path, json) = (dir.join("Tabela de preços.md"), dir.join("pedidos.json"));
+        let first = with_note_prices(config.clone(), &note_path, &json);
+        assert_eq!(first, config);
+        assert!(note_path.exists() && !json.exists(), "a missing note is written from the table");
+        std::fs::write(&note_path, &edited).unwrap();
+        let used = with_note_prices(config.clone(), &note_path, &json);
+        assert_eq!(used.itens[0].faixas[0].preco, 1.20);
+        assert_eq!(parse(&std::fs::read(&json).unwrap()).unwrap().itens[0].faixas[0].preco, 1.20, "pedidos.json is the copy");
+        std::fs::write(&note_path, note.replace("| 1,00 | 0,70 |", "| ? | 0,70 |")).unwrap();
+        assert_eq!(with_note_prices(used.clone(), &note_path, &json), used);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     /// For windows/evals/pedidos/avaliar.py: the instructions the model gets, with the default table.
