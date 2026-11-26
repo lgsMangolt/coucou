@@ -1082,7 +1082,12 @@ async fn read_receipt(gen: u64, chat: String, message: String) {
     let Some(source) = orders::downloaded(&process::working_dir(), &relative) else { return };
     // Alone in its own folder: the model may read that folder and nothing else.
     let dir = crate::settings::local_dir().join("comprovantes").join(gateway::now_ms().to_string());
-    let target = dir.join(source.file_name().map(|n| n.to_os_string()).unwrap_or_else(|| "comprovante".into()));
+    // Named by what it is: WhatsApp hands a JPEG over as ".jfif", which the reader takes for bytes.
+    let head = std::fs::read(&source).map(|b| b.into_iter().take(16).collect::<Vec<u8>>()).unwrap_or_default();
+    let target = match orders::receipt_extension(&head) {
+        Some(ext) => dir.join(format!("comprovante.{ext}")),
+        None => dir.join(source.file_name().map(|n| n.to_os_string()).unwrap_or_else(|| "comprovante".into())),
+    };
     let copied = std::fs::create_dir_all(&dir).and_then(|_| std::fs::copy(&source, &target)).is_ok();
     let _ = std::fs::remove_file(&source);
     if !copied {

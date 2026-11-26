@@ -1272,6 +1272,18 @@ pub fn remember_code(path: &Path, code: &str) {
     }
 }
 
+/// The extension a receipt's file should have, by its first bytes: WhatsApp names a JPEG
+/// ".jfif", and the reader goes by the name. None: keep the name it came with.
+pub fn receipt_extension(head: &[u8]) -> Option<&'static str> {
+    match head {
+        [0xFF, 0xD8, 0xFF, ..] => Some("jpg"),
+        [0x89, b'P', b'N', b'G', ..] => Some("png"),
+        [b'%', b'P', b'D', b'F', ..] => Some("pdf"),
+        [b'R', b'I', b'F', b'F', _, _, _, _, b'W', b'E', b'B', b'P', ..] => Some("webp"),
+        _ => None,
+    }
+}
+
 /// The receipt in `path` read by the model.
 pub async fn read_receipt(path: &Path) -> Result<Receipt, String> {
     let reply = crate::claude::complete_with_file(MODEL, RECEIPT_SYSTEM, "Confira este arquivo.", path, 300, TIMEOUT).await?;
@@ -1487,6 +1499,16 @@ mod tests {
         remember_code(&file, "E2");
         assert_eq!(used_codes(&file), ["E1".to_string(), "E2".to_string()].into());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_receipt_is_named_by_what_it_is() {
+        assert_eq!(receipt_extension(&[0xFF, 0xD8, 0xFF, 0xE0, 0, 16, b'J', b'F', b'I', b'F']), Some("jpg"), "WhatsApp's .jfif");
+        assert_eq!(receipt_extension(b"\x89PNG\r\n\x1a\n"), Some("png"));
+        assert_eq!(receipt_extension(b"%PDF-1.7"), Some("pdf"));
+        assert_eq!(receipt_extension(b"RIFF\0\0\0\0WEBPVP8 "), Some("webp"));
+        assert_eq!(receipt_extension(b"hello"), None);
+        assert_eq!(receipt_extension(&[]), None);
     }
 
     #[test]

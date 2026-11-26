@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.20.3",
+      "items": [
+        {
+          "icon": "bug",
+          "title": {
+            "en": "Receipt photos are read",
+            "zh-Hans": "可读取收据照片",
+            "hi": "रसीद की फ़ोटो पढ़ी जाती है",
+            "es": "Lee fotos de comprobantes",
+            "ar": "قراءة صور الإيصالات",
+            "fr": "Lit les photos de reçus",
+            "bn": "রসিদের ছবি পড়া হয়",
+            "pt-BR": "Lê a foto do comprovante",
+            "ru": "Читает фото чека",
+            "id": "Foto bukti bayar terbaca",
+            "de": "Liest Belegfotos",
+            "tr": "Dekont fotoğrafı okunur",
+            "ko": "영수증 사진 인식",
+            "ja": "領収書の写真を読み取り"
+          },
+          "detail": {
+            "en": "A receipt sent as a WhatsApp photo was refused as not a receipt; it is read now.",
+            "zh-Hans": "以 WhatsApp 照片发送的收据曾被误判为非收据，现在可以读取。",
+            "hi": "WhatsApp फ़ोटो के रूप में भेजी गई रसीद अस्वीकार हो जाती थी; अब पढ़ी जाती है।",
+            "es": "Un comprobante enviado como foto de WhatsApp se rechazaba; ahora se lee.",
+            "ar": "كان الإيصال المرسل كصورة واتساب يُرفض؛ الآن يُقرأ.",
+            "fr": "Un reçu envoyé en photo WhatsApp était refusé ; il est maintenant lu.",
+            "bn": "WhatsApp ছবিতে পাঠানো রসিদ বাতিল হতো; এখন পড়া হয়।",
+            "pt-BR": "O comprovante mandado como foto no WhatsApp era recusado; agora é lido.",
+            "ru": "Чек, отправленный как фото WhatsApp, отклонялся; теперь он читается.",
+            "id": "Bukti bayar yang dikirim sebagai foto WhatsApp dulu ditolak; kini terbaca.",
+            "de": "Ein als WhatsApp-Foto gesendeter Beleg wurde abgelehnt; jetzt wird er gelesen.",
+            "tr": "WhatsApp fotoğrafı olarak gönderilen dekont reddediliyordu; artık okunuyor.",
+            "ko": "WhatsApp 사진으로 보낸 영수증이 거부되던 문제를 고쳤습니다.",
+            "ja": "WhatsAppの写真で送った領収書が拒否される問題を直しました。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.20.2",
       "items": [
         {
