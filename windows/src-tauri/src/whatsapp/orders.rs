@@ -1726,13 +1726,13 @@ mod tests {
 
     #[test]
     fn warnings_go_only_to_a_real_number() {
-        assert_eq!(owner_chat("55 54 8136-0479").as_deref(), Some("555481360479@s.whatsapp.net"));
-        assert_eq!(owner_chat("+55 (54) 98136-0479").as_deref(), Some("5554981360479@s.whatsapp.net"));
+        assert_eq!(owner_chat("55 11 9999-0000").as_deref(), Some("551199990000@s.whatsapp.net"));
+        assert_eq!(owner_chat("+55 (11) 99999-0000").as_deref(), Some("5511999990000@s.whatsapp.net"));
         for bad in ["", "0479", "123456789", "abc", "1234567890123456"] {
             assert_eq!(owner_chat(bad), None, "{bad}");
         }
-        let cleaned = Config { avisar_numero: "+55 54 8136-0479".into(), ..Config::default() }.cleaned();
-        assert_eq!(cleaned.avisar_numero, "555481360479");
+        let cleaned = Config { avisar_numero: "+55 11 9999-0000".into(), ..Config::default() }.cleaned();
+        assert_eq!(cleaned.avisar_numero, "551199990000");
     }
 
     /// For windows/evals/pedidos/avaliar.py: the instructions the model gets, with the default table.
