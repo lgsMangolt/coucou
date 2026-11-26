@@ -9243,6 +9243,36 @@
       "tr": "Montaj hazır: {name}",
       "ko": "조판 완료: {name}",
       "ja": "面付け完了：{name}"
+    },
+    "Print via {n}": {
+      "zh-Hans": "打印第 {n} 联",
+      "hi": "{n}वीं प्रति छापें",
+      "es": "Imprimir vía {n}",
+      "ar": "اطبع النسخة {n}",
+      "fr": "Imprimer l’exemplaire {n}",
+      "bn": "{n}ম কপি ছাপুন",
+      "pt-BR": "Imprimir {n}ª via",
+      "ru": "Печатать {n}-й экземпляр",
+      "id": "Cetak rangkap {n}",
+      "de": "Exemplar {n} drucken",
+      "tr": "{n}. nüshayı yazdır",
+      "ko": "{n}번째 사본 인쇄",
+      "ja": "{n}枚目を印刷"
+    },
+    "Reply right away": {
+      "zh-Hans": "立即回复",
+      "hi": "तुरंत जवाब",
+      "es": "Responder al instante",
+      "ar": "الرد فورًا",
+      "fr": "Répondre tout de suite",
+      "bn": "সঙ্গে সঙ্গে উত্তর",
+      "pt-BR": "Responder na hora",
+      "ru": "Отвечать сразу",
+      "id": "Balas langsung",
+      "de": "Sofort antworten",
+      "tr": "Hemen yanıtla",
+      "ko": "바로 답장",
+      "ja": "すぐに返信"
     }
   }
 }

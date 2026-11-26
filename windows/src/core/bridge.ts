@@ -517,8 +517,10 @@ export const Bridge = {
   whatsappOrderCopied: (id: number, account = 0) => call<void>(wa(account, "order_copied"), { id }),
   whatsappOrderDiscard: (id: number, account = 0) => call<void>(wa(account, "order_discard"), { id }),
   whatsappJobDiscard: (id: number, account = 0) => call<void>(wa(account, "job_discard"), { id }),
+  /** On: Coucou answers customers even right after you wrote; off: it waits 30 minutes. */
+  whatsappSetReplyNow: (on: boolean, account = 0) => call<void>(wa(account, "set_reply_now"), { on }),
   /** "pdf" opens the montage, "pasta" its folder, "montar" makes it again. */
-  whatsappJobAction: (id: number, action: "pdf" | "pasta" | "montar", account = 0) => call<void>(wa(account, "job_action"), { id, action }),
+  whatsappJobAction: (id: number, action: "pdf" | "pasta" | "montar" | "imprimir", account = 0) => call<void>(wa(account, "job_action"), { id, action }),
   whatsappOrderFile: (id: number, account = 0) => callOrThrow<string>(wa(account, "order_file"), { id }),
   whatsappOrderPrint: (id: number, account = 0) => callOrThrow<string>(wa(account, "order_print"), { id }),
   /** Settings: notes on money on or off, and the spreadsheet's folder ("" is Documents\Coucou). */

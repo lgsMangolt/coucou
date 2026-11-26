@@ -104,6 +104,8 @@ export interface WaIslandView {
   orders: WaOrder[];
   /** Jobs from the partner print shop's group. */
   jobs: WaJob[];
+  /** The "answer right away" switch (shop's account only), or null. */
+  replyNow: boolean | null;
 }
 
 /** A job from the partner print shop's group: its production sheet and Coucou's message there. */
@@ -122,10 +124,15 @@ export interface WaJob {
   /** "Montagem pronta: 2 por A4, 125 folhas numeradas por via", "Montando no Corel…", or "". */
   montage: string;
   canOpen: boolean;
+  /** The via the Print button sends (1…), or 0. */
+  nextVia: number;
+  printing: boolean;
+  /** "1 de 3 vias impressas · troque o papel para a 2ª", or "". */
+  vias: string;
 }
 
 export const IDLE_WHATSAPP: WaIslandView = {
-  on: false, link: { state: "off" }, conversations: [], unread: 0, sending: false, sendError: null, down: false, pending: [], orders: [], jobs: [],
+  on: false, link: { state: "off" }, conversations: [], unread: 0, sending: false, sendError: null, down: false, pending: [], orders: [], jobs: [], replyNow: null,
 };
 
 /** The page's copy of what Rust keeps. */

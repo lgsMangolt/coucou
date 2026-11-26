@@ -582,6 +582,11 @@ pub struct Job {
     pub building: bool,
     /// Why the montage could not be made, or "".
     pub montage_error: String,
+    /// Vias already sent to the printer (each via on its own paper colour).
+    pub vias_done: u32,
+    pub printing: bool,
+    /// Why the last via did not print, or "".
+    pub print_error: String,
 }
 
 impl Job {
@@ -589,7 +594,7 @@ impl Job {
         let plan = plan(&spec);
         let stage = if plan.missing.is_empty() { Stage::Confirmed } else { Stage::Missing };
         let message = group_message(&spec, &plan, picture);
-        Job { key, spec, plan, picture, stage, message, sent: false, montage: None, building: false, montage_error: String::new() }
+        Job { key, spec, plan, picture, stage, message, sent: false, montage: None, building: false, montage_error: String::new(), vias_done: 0, printing: false, print_error: String::new() }
     }
 
     pub fn view(&self, id: u64) -> JobView {
@@ -609,6 +614,45 @@ impl Job {
                 _ => String::new(),
             },
             can_open: self.montage.is_some(),
+            next_via: self.next_via(),
+            printing: self.printing,
+            vias: self.vias_line(),
+        }
+    }
+
+    pub fn vias(&self) -> u32 {
+        self.spec.vias.max(1)
+    }
+
+    /// The via the Print button sends (1…), or 0 when there is none to print.
+    pub fn next_via(&self) -> u32 {
+        if self.montage.is_some() && self.vias_done < self.vias() { self.vias_done + 1 } else { 0 }
+    }
+
+    /// "1 de 3 vias impressas · troque o papel para a 2ª", or "".
+    pub fn vias_line(&self) -> String {
+        if !self.print_error.is_empty() {
+            return format!("Não imprimiu: {}", self.print_error);
+        }
+        match (self.vias_done, self.next_via()) {
+            (0, _) => String::new(),
+            (done, 0) => format!("{done} de {} vias impressas", self.vias()),
+            (done, next) => format!("{done} de {} vias impressas · troque o papel para a {next}ª", self.vias()),
+        }
+    }
+
+    /// The shop's printer for it: coated paper on the couchê one, the rest (copiativo, sulfite) on
+    /// the cheap one.
+    pub fn printer_kind(&self) -> &'static str {
+        if self.spec.papel.to_lowercase().contains("couch") { "couche" } else { "baratos" }
+    }
+
+    /// Copies of the montage's PDF for one via: numbered sheets are each their own page.
+    pub fn copies(&self) -> u32 {
+        match &self.montage {
+            Some(m) if m.numbered => 1,
+            Some(m) => m.sheets.max(1),
+            None => 0,
         }
     }
 
@@ -641,6 +685,9 @@ impl Job {
         if let Some(m) = &self.montage {
             out.push_str(&format!("- {}\n- Pasta: `{}`\n", m.line(), m.dir.display()));
         }
+        if self.vias_done > 0 {
+            out.push_str(&format!("- {}\n", self.vias_line()));
+        }
         if self.picture {
             out.push_str("- Arte em imagem: pedido o vetor\n");
         }
@@ -665,6 +712,11 @@ pub struct JobView {
     /// "Montagem pronta: 2 por A4, 125 folhas numeradas por via", "Montando no Corel…", or "".
     pub montage: String,
     pub can_open: bool,
+    /// The via the Print button sends (1…), or 0.
+    pub next_via: u32,
+    pub printing: bool,
+    /// "1 de 3 vias impressas · troque o papel para a 2ª", or "".
+    pub vias: String,
 }
 
 #[cfg(test)]
@@ -731,6 +783,24 @@ mod tests {
     fn write_the_system_prompt() {
         let path = std::env::var("GRAFICA_SYSTEM").expect("GRAFICA_SYSTEM");
         std::fs::write(path, SYSTEM).unwrap();
+    }
+
+    #[test]
+    fn vias_go_one_at_a_time() {
+        let b = spec(r#"{"arquivo":"CLIENTE B.cdr","produto":"talão","largura_cm":14,"altura_cm":20,"quantidade":10,"vias":3,"numerado":true,"numeracao_inicio":13501,"papel":"copiativo"}"#);
+        let mut job = Job::new("m".into(), b, false);
+        assert_eq!(job.next_via(), 0, "nothing to print before the montage");
+        job.montage = Some(Montage { dir: PathBuf::from("x"), pdf: PathBuf::from("x/montagem.pdf"), sheets: 125, per_sheet: 2, numbered: true });
+        assert_eq!((job.next_via(), job.copies(), job.printer_kind()), (1, 1, "baratos"));
+        job.vias_done = 1;
+        assert_eq!(job.vias_line(), "1 de 3 vias impressas · troque o papel para a 2ª");
+        job.vias_done = 3;
+        assert_eq!((job.next_via(), job.vias_line().as_str()), (0, "3 de 3 vias impressas"));
+        let mut plain = Job::new("p".into(), spec(r#"{"arquivo":"A.cdr","produto":"folder","quantidade":70,"papel":"couche 150g"}"#), false);
+        plain.montage = Some(Montage { dir: PathBuf::from("x"), pdf: PathBuf::from("x/m.pdf"), sheets: 35, per_sheet: 2, numbered: false });
+        assert_eq!((plain.next_via(), plain.copies(), plain.printer_kind()), (1, 35, "couche"));
+        plain.print_error = "a impressora C5255 não está neste computador".into();
+        assert_eq!(plain.vias_line(), "Não imprimiu: a impressora C5255 não está neste computador");
     }
 
     #[test]

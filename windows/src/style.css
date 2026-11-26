@@ -4528,3 +4528,21 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }
+
+/* WhatsApp card: the "answer right away" switch (on: no 30-minute wait after you wrote). */
+.wa-reply-now {
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: transparent;
+  color: #9aa0a6;
+  font: 500 10px/1.4 var(--font);
+  cursor: default;
+}
+.wa-reply-now.on {
+  border-color: rgba(37, 211, 102, 0.6);
+  background: rgba(37, 211, 102, 0.16);
+  color: #c9f5d8;
+}
+.wa-reply-now:focus-visible { outline: 1px solid rgba(37, 211, 102, 0.8); outline-offset: 1px; }

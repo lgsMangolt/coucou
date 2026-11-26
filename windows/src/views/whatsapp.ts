@@ -56,7 +56,15 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
   const pillId = waPillId(account);
   // ── The list ──
   const unreadTag = h("span", { class: "wa-unread" });
-  const head = h("div", { class: "int-head" }, dot(WHATSAPP_GREEN, 7), h("b", { text: account ? "WhatsApp 2" : "WhatsApp" }), unreadTag);
+  // On: Coucou answers customers even right after you wrote to them; off: it waits 30 minutes.
+  const replyNow = h("button", { class: "wa-reply-now", title: tl("Reply right away") }) as HTMLButtonElement;
+  replyNow.style.display = "none";
+  replyNow.addEventListener("click", () => {
+    const on = !replyNow.classList.contains("on");
+    replyNow.classList.toggle("on", on);
+    void Bridge.whatsappSetReplyNow(on, account);
+  });
+  const head = h("div", { class: "int-head" }, dot(WHATSAPP_GREEN, 7), h("b", { text: account ? "WhatsApp 2" : "WhatsApp" }), unreadTag, replyNow);
   const listBody = h("div", {});
   // Notes on money read from your own chat, each waiting for your click (ledger.rs).
   const pendingBox = h("div", { class: "wa-pending" });
@@ -317,9 +325,15 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     const again = h("button", { class: "wa-entry-drop", text: t("Retry") }) as HTMLButtonElement;
     again.addEventListener("click", () => { again.disabled = true; void Bridge.whatsappJobAction(j.id, "montar", account); });
     for (const b of [open, folder]) b.style.display = j.canOpen ? "" : "none";
+    const print = h("button", { class: "wa-entry-save", text: j.printing ? t("Printing…") : t("Print via {n}", { n: j.nextVia }) }) as HTMLButtonElement;
+    print.disabled = j.printing;
+    print.style.display = j.nextVia > 0 ? "" : "none";
+    print.addEventListener("click", () => { print.disabled = true; print.textContent = t("Printing…"); void Bridge.whatsappJobAction(j.id, "imprimir", account); });
+    const vias = h("div", { class: "wa-entry-detail", text: j.vias });
+    vias.style.display = j.vias ? "" : "none";
     again.style.display = j.montage && !j.montage.startsWith("Montando") ? "" : "none";
-    return h("div", { class: "wa-entry" }, label, ...lines, montage, message, note,
-      h("div", { class: "wa-entry-actions" }, copy, open, folder, again, done));
+    return h("div", { class: "wa-entry" }, label, ...lines, montage, vias, message, note,
+      h("div", { class: "wa-entry-actions" }, print, copy, open, folder, again, done));
   }
 
   function orderCard(o: WaOrder): HTMLElement {
@@ -392,9 +406,9 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
   function syncList() {
     const v = store.view;
     const key = [
-      language(), v.link.state, "detail" in v.link ? v.link.detail : "", v.unread, ignoring,
+      language(), v.replyNow, v.link.state, "detail" in v.link ? v.link.detail : "", v.unread, ignoring,
       ...v.pending.map((e) => `${e.id}|${e.amount}|${e.kind}|${e.category}|${e.person}|${e.note}`),
-      ...v.jobs.map((j) => `j${j.id}|${j.stage}|${j.sent}|${j.message}|${j.lines.join("/")}|${j.montage}|${j.canOpen}`),
+      ...v.jobs.map((j) => `j${j.id}|${j.stage}|${j.sent}|${j.message}|${j.lines.join("/")}|${j.montage}|${j.canOpen}|${j.nextVia}|${j.printing}|${j.vias}`),
       ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}|${o.reply}|${o.kind}|${o.reason}|${o.sent}|${o.canPrint}|${o.paid}|${o.printed}`),
       // The ages move on a minute at a time.
       Math.floor(Date.now() / 60_000),
@@ -402,6 +416,9 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     ].join("~");
     if (key === listKey) return;
     listKey = key;
+    replyNow.style.display = v.replyNow === null ? "none" : "";
+    replyNow.classList.toggle("on", v.replyNow === true);
+    replyNow.textContent = t("Reply right away");
     unreadTag.textContent = v.unread > 0 ? t("{0} unread", { 0: v.unread }) : "";
     unreadTag.style.display = v.unread > 0 ? "" : "none";
     clear(pendingBox);

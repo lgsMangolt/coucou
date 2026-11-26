@@ -147,6 +147,8 @@ pub struct IslandView {
     /// Print orders read from customers' messages, each waiting for a click (orders.rs).
     pub orders: Vec<orders::OrderView>,
     pub jobs: Vec<grafica::JobView>,
+    /// The "answer right away" switch, on the shop's account only.
+    pub reply_now: Option<bool>,
 }
 
 /// A conversation the notes can be read from.
@@ -253,6 +255,8 @@ struct Ctl {
     order_queue: Vec<String>,
     /// Chats being read right now: one reading at a time for each.
     order_reading: HashSet<String>,
+    /// pedidos.json `silencio_minutos` is 0: Coucou answers even right after you wrote.
+    reply_now: bool,
     /// The partner print shop's group (pedidos.json `grafica_grupo`), normalized; "".
     grafica: String,
     /// Its jobs on the cards.
@@ -322,6 +326,7 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         ledger_sheet_code: false,
         order_queue: Vec::new(),
         order_reading: HashSet::new(),
+        reply_now: false,
         grafica: String::new(),
         jobs: Vec::new(),
         job_next: 0,
@@ -402,6 +407,7 @@ impl Ctl {
             pending: self.ledger_pending.iter().map(|(id, entry)| entry.view(*id)).collect(),
             orders: self.orders.iter().map(|(id, order)| order.view(*id)).collect(),
             jobs: self.jobs.iter().map(|(id, job)| job.view(*id)).collect(),
+            reply_now: (!SECOND).then_some(self.reply_now),
         }
     }
 
@@ -506,7 +512,12 @@ pub fn start(app: &AppHandle, active_integrations: &[String]) {
         std::thread::spawn(|| {
             crate::memoria::ensure_vault();
             let config = orders::load();
-            ctl().grafica = model::normalized(&config.grafica_grupo);
+            {
+                let mut c = ctl();
+                c.grafica = model::normalized(&config.grafica_grupo);
+                c.reply_now = config.silencio_minutos == 0;
+            }
+            changed();
         });
     }
     update();
@@ -1206,6 +1217,13 @@ async fn print_now(id: u64) -> Result<String, String> {
     if !names.contains(&printer) {
         return Err(crate::i18n::tf("The printer {name} is not on this computer.", &[("name", printer.as_str())]));
     }
+    crate::log::line(format!("whatsapp: printing an order on {printer}: {} × {} pages, {}{}{}", job.copies, job.pages, job.paper, if job.mono { ", P&B" } else { "" }, if job.duplex { ", frente e verso" } else { "" }));
+    run_print(std::path::Path::new(&pdf), &printer, job.copies, job.paper, job.mono, job.duplex).await?;
+    Ok(printer)
+}
+
+/// Sends a PDF to a printer through its own Windows driver (print.ps1).
+async fn run_print(pdf: &std::path::Path, printer: &str, copies: u32, paper: &str, mono: bool, duplex: bool) -> Result<(), String> {
     let script = crate::settings::local_dir().join("imprimir.ps1");
     // With its BOM, Windows PowerShell reads the script as UTF-8.
     std::fs::write(&script, format!("\u{feff}{PRINT_SCRIPT}")).map_err(|e| e.to_string())?;
@@ -1213,20 +1231,19 @@ async fn print_now(id: u64) -> Result<String, String> {
     cmd.args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File"])
         .arg(&script)
         .arg("-Pdf")
-        .arg(&pdf)
-        .args(["-Printer", printer.as_str(), "-Copies", &job.copies.to_string(), "-Paper", job.paper])
+        .arg(pdf)
+        .args(["-Printer", printer, "-Copies", &copies.to_string(), "-Paper", paper])
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .kill_on_drop(true);
-    if job.mono {
+    if mono {
         cmd.arg("-Mono");
     }
-    if job.duplex {
+    if duplex {
         cmd.arg("-Duplex");
     }
     crate::platform::no_console(cmd.as_std_mut());
-    crate::log::line(format!("whatsapp: printing an order on {printer}: {} × {} pages, {}{}{}", job.copies, job.pages, job.paper, if job.mono { ", P&B" } else { "" }, if job.duplex { ", frente e verso" } else { "" }));
     let output = tokio::time::timeout(std::time::Duration::from_secs(900), cmd.output())
         .await
         .map_err(|_| crate::i18n::t("Could not print."))?
@@ -1234,8 +1251,8 @@ async fn print_now(id: u64) -> Result<String, String> {
     let said = String::from_utf8_lossy(&output.stdout);
     let last = said.lines().map(str::trim).filter(|l| !l.is_empty()).last().unwrap_or("").to_string();
     if last.starts_with("ok") {
-        crate::log::line(format!("whatsapp: printed an order on {printer}"));
-        return Ok(printer);
+        crate::log::line(format!("whatsapp: printed on {printer}"));
+        return Ok(());
     }
     let why = last.strip_prefix("erro:").map(str::trim).map(str::to_string).unwrap_or_else(|| String::from_utf8_lossy(&output.stderr).trim().to_string());
     Err(if why.is_empty() { crate::i18n::t("Could not print.") } else { why })
@@ -1623,6 +1640,81 @@ async fn montage(provider: &Provider, group: &str, key: &str, spec: &grafica::Sp
     Ok((grafica::Montage { dir, pdf, sheets, per_sheet: layout.per_sheet, numbered }, layout.bitmap_only))
 }
 
+/// Reminders about a via still to print: every 15 minutes, 8 at most.
+const VIA_REMINDER: Duration = Duration::from_secs(15 * 60);
+const VIA_REMINDERS: u32 = 8;
+
+/// The Print button of a print shop job: the next via goes to the printer. Each via is the same
+/// montage on its own paper, so the next one waits for the owner to change the paper and click.
+async fn print_job_via(id: u64) {
+    let found = {
+        let mut guard = ctl();
+        let c = &mut *guard;
+        match c.jobs.iter_mut().find(|(n, _)| *n == id) {
+            Some((_, job)) if !job.printing && job.next_via() > 0 => {
+                job.printing = true;
+                job.print_error.clear();
+                job.montage.clone().map(|m| (m, job.next_via(), job.vias(), job.copies(), job.printer_kind(), job.spec.cor == "pb", job.spec.os.clone()))
+            }
+            _ => return,
+        }
+    };
+    changed();
+    let Some((made, via, vias, copies, kind, mono, os)) = found else { return };
+    let config = tauri::async_runtime::spawn_blocking(orders::load).await.unwrap_or_default();
+    let (names, busy) = crate::printers::queue();
+    let printer = orders::printer(kind, &config.impressoras, &names, &busy);
+    let result = if names.contains(&printer) {
+        crate::log::line(format!("whatsapp: printing via {via} of a print shop job on {printer}: {copies} × montagem.pdf"));
+        run_print(&made.pdf, &printer, copies, "A4", mono, false).await
+    } else {
+        Err(crate::i18n::tf("The printer {name} is not on this computer.", &[("name", printer.as_str())]))
+    };
+    let os = if os.is_empty() { "do serviço".to_string() } else { format!("da OS {os}") };
+    let today = {
+        let t = crate::platform::local_time();
+        format!("{:04}-{:02}-{:02}", t.year, t.month, t.day)
+    };
+    let pending = {
+        let mut guard = ctl();
+        let Some((_, job)) = guard.jobs.iter_mut().find(|(n, _)| *n == id) else { return };
+        job.printing = false;
+        let pending = match &result {
+            Ok(()) => {
+                job.vias_done = via;
+                job.next_via()
+            }
+            Err(why) => {
+                job.print_error = why.clone();
+                0
+            }
+        };
+        crate::memoria::write_note(job.note_path(), job.note(&today));
+        pending
+    };
+    changed();
+    match result {
+        Ok(()) if pending > 0 => {
+            tell_owner(format!("🖨️ Coucou: {via}ª via {os} mandada para a {printer}. Troque o papel e aperte \"Imprimir {pending}ª via\" no cartão."));
+            spawn(remind_via(id, via, pending, os));
+        }
+        Ok(()) => tell_owner(format!("🖨️ Coucou: {os} impressa, {} de {vias} vias.", if vias == 1 { "1 via".to_string() } else { format!("todas as {vias}") })),
+        Err(why) => tell_owner(format!("⚠️ Coucou: não consegui imprimir a {via}ª via {os}: {why}")),
+    }
+}
+
+/// While the next via waits for its paper, the owner is reminded on WhatsApp.
+async fn remind_via(id: u64, done: u32, next: u32, os: String) {
+    for n in 1..=VIA_REMINDERS {
+        tokio::time::sleep(VIA_REMINDER).await;
+        let still = ctl().jobs.iter().any(|(i, j)| *i == id && j.vias_done == done && !j.printing && j.next_via() == next);
+        if !still {
+            return;
+        }
+        tell_owner(format!("⏰ Coucou: falta a {next}ª via {os} ({n}º lembrete). Troque o papel e aperte \"Imprimir {next}ª via\" no cartão."));
+    }
+}
+
 /// A print shop job's card: "pdf" opens the montage, "pasta" its folder, "montar" makes it again.
 pub fn whatsapp_job_action(window: WebviewWindow, id: u64, action: String) -> Result<(), String> {
     only(&window, crate::island::WINDOW_LABEL)?;
@@ -1642,6 +1734,7 @@ pub fn whatsapp_job_action(window: WebviewWindow, id: u64, action: String) -> Re
         ("pdf", Some(m)) => crate::platform::open_url(&m.pdf.to_string_lossy()),
         ("pasta", Some(m)) => crate::platform::reveal_folder(&m.dir.to_string_lossy()),
         ("montar", _) => spawn(build_montage(id, quiet)),
+        ("imprimir", _) => spawn(print_job_via(id)),
         _ => {}
     }
     Ok(())
@@ -1684,6 +1777,27 @@ async fn answer_group(id: u64, quiet_minutes: u32) {
         crate::log::line("whatsapp: could not write in the print shop's group");
         ctl().job_sent.retain(|(_, t)| *t != text);
     }
+}
+
+/// The island's "answer right away" switch: on, Coucou answers customers even right after you wrote
+/// to them (pedidos.json `silencio_minutos` 0); off, it stays quiet 30 minutes. Only that key of
+/// the file changes.
+pub fn whatsapp_set_reply_now(window: WebviewWindow, on: bool) -> Result<(), String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    if SECOND {
+        return Ok(());
+    }
+    let path = orders::path();
+    let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
+    let bytes = bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&bytes);
+    let mut json: serde_json::Value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+    let object = json.as_object_mut().ok_or("pedidos.json não é um objeto")?;
+    object.insert("silencio_minutos".into(), serde_json::Value::from(if on { 0 } else { 30 }));
+    let pretty = serde_json::to_vec_pretty(&json).map_err(|e| e.to_string())?;
+    std::fs::write(&path, pretty).map_err(|e| e.to_string())?;
+    ctl().reply_now = on;
+    changed();
+    Ok(())
 }
 
 /// "Done" on a print shop job's card: it goes, and its file is not read again.
@@ -2554,6 +2668,7 @@ mod tests {
             ledger_sheet_code: false,
             order_queue: Vec::new(),
             order_reading: HashSet::new(),
+            reply_now: false,
             grafica: String::new(),
             jobs: Vec::new(),
             job_next: 0,

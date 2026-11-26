@@ -2,6 +2,81 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.19.0",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Printing by copy",
+            "zh-Hans": "逐联打印",
+            "hi": "प्रति-दर-प्रति छपाई",
+            "es": "Impresión por vías",
+            "ar": "الطباعة نسخةً نسخة",
+            "fr": "Impression par exemplaire",
+            "bn": "কপি ধরে ছাপা",
+            "pt-BR": "Impressão por vias",
+            "ru": "Печать по экземплярам",
+            "id": "Cetak per rangkap",
+            "de": "Druck je Exemplar",
+            "tr": "Nüsha nüsha baskı",
+            "ko": "사본별 인쇄",
+            "ja": "1枚ずつ印刷"
+          },
+          "detail": {
+            "en": "Each copy of a print shop job prints on its own paper, with a reminder until the last one.",
+            "zh-Hans": "印刷厂订单的每一联用各自的纸打印，直到最后一联都会提醒。",
+            "hi": "प्रिंट शॉप के काम की हर प्रति अपने कागज़ पर छपती है, आख़िरी तक याद दिलाया जाता है।",
+            "es": "Cada vía de un trabajo de la imprenta sale en su papel, con aviso hasta la última.",
+            "ar": "تُطبع كل نسخة من طلب المطبعة على ورقها، مع تذكير حتى الأخيرة.",
+            "fr": "Chaque exemplaire d’un travail s’imprime sur son papier, avec un rappel jusqu’au dernier.",
+            "bn": "ছাপাখানার কাজের প্রতিটি কপি নিজের কাগজে ছাপে, শেষটা পর্যন্ত মনে করানো হয়।",
+            "pt-BR": "Cada via de um serviço da gráfica sai no seu papel, com lembrete até a última.",
+            "ru": "Каждый экземпляр заказа печатается на своей бумаге, с напоминанием до последнего.",
+            "id": "Setiap rangkap dicetak di kertasnya sendiri, dengan pengingat sampai yang terakhir.",
+            "de": "Jedes Exemplar druckt auf seinem Papier, mit Erinnerung bis zum letzten.",
+            "tr": "Her nüsha kendi kâğıdına basılır, sonuncusuna kadar hatırlatılır.",
+            "ko": "인쇄소 작업의 각 사본을 각자의 용지에 인쇄하고, 마지막까지 알려 줍니다.",
+            "ja": "印刷所の仕事を1枚ずつ各用紙に印刷し、最後まで通知します。"
+          }
+        },
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Reply right away",
+            "zh-Hans": "立即回复",
+            "hi": "तुरंत जवाब",
+            "es": "Responder al instante",
+            "ar": "الرد فورًا",
+            "fr": "Répondre tout de suite",
+            "bn": "সঙ্গে সঙ্গে উত্তর",
+            "pt-BR": "Responder na hora",
+            "ru": "Отвечать сразу",
+            "id": "Balas langsung",
+            "de": "Sofort antworten",
+            "tr": "Hemen yanıtla",
+            "ko": "바로 답장",
+            "ja": "すぐに返信"
+          },
+          "detail": {
+            "en": "A switch on the WhatsApp card: on, Coucou answers even right after you wrote; off, it waits 30 minutes.",
+            "zh-Hans": "WhatsApp 卡片上的开关：打开时你刚回复后也会立即回答；关闭时等待 30 分钟。",
+            "hi": "WhatsApp कार्ड पर स्विच: चालू हो तो आपके लिखने के बाद भी तुरंत जवाब; बंद हो तो 30 मिनट रुकता है।",
+            "es": "Un interruptor en la tarjeta de WhatsApp: encendido responde al instante; apagado espera 30 minutos.",
+            "ar": "مفتاح في بطاقة واتساب: عند تشغيله يرد فورًا، وعند إيقافه ينتظر 30 دقيقة.",
+            "fr": "Un interrupteur sur la carte WhatsApp : allumé, il répond tout de suite ; éteint, il attend 30 min.",
+            "bn": "WhatsApp কার্ডে সুইচ: চালু থাকলে সঙ্গে সঙ্গে উত্তর; বন্ধ থাকলে ৩০ মিনিট অপেক্ষা।",
+            "pt-BR": "Uma chave no cartão do WhatsApp: ligada, responde na hora; desligada, espera 30 minutos.",
+            "ru": "Переключатель на карточке WhatsApp: включён — отвечает сразу; выключен — ждёт 30 минут.",
+            "id": "Sakelar di kartu WhatsApp: nyala langsung membalas; mati menunggu 30 menit.",
+            "de": "Ein Schalter auf der WhatsApp-Karte: an antwortet sofort, aus wartet 30 Minuten.",
+            "tr": "WhatsApp kartında anahtar: açıkken hemen yanıtlar, kapalıyken 30 dakika bekler.",
+            "ko": "WhatsApp 카드의 스위치: 켜면 바로 답하고, 끄면 30분 기다립니다.",
+            "ja": "WhatsAppカードのスイッチ：オンですぐ返信、オフで30分待ちます。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.18.1",
       "items": [
         {

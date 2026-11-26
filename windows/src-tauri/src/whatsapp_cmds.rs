@@ -100,6 +100,11 @@ pub fn whatsapp_order_discard(window: WebviewWindow, id: u64) -> Result<(), Stri
 }
 
 #[tauri::command]
+pub fn whatsapp_set_reply_now(window: WebviewWindow, on: bool) -> Result<(), String> {
+    whatsapp::whatsapp_set_reply_now(window, on)
+}
+
+#[tauri::command]
 pub fn whatsapp_job_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
     whatsapp::whatsapp_job_discard(window, id)
 }
@@ -223,6 +228,11 @@ pub fn whatsapp2_order_copied(window: WebviewWindow, id: u64) -> Result<(), Stri
 #[tauri::command]
 pub fn whatsapp2_order_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
     whatsapp2::whatsapp_order_discard(window, id)
+}
+
+#[tauri::command]
+pub fn whatsapp2_set_reply_now(window: WebviewWindow, on: bool) -> Result<(), String> {
+    whatsapp2::whatsapp_set_reply_now(window, on)
 }
 
 #[tauri::command]
