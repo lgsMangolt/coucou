@@ -308,7 +308,18 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
       done.disabled = true;
       void Bridge.whatsappJobDiscard(j.id, account);
     });
-    return h("div", { class: "wa-entry" }, label, ...lines, message, note, h("div", { class: "wa-entry-actions" }, copy, done));
+    const montage = h("div", { class: "wa-entry-detail", text: j.montage });
+    montage.style.display = j.montage ? "" : "none";
+    const open = h("button", { class: "wa-entry-save", text: t("Open montage") }) as HTMLButtonElement;
+    open.addEventListener("click", () => void Bridge.whatsappJobAction(j.id, "pdf", account));
+    const folder = h("button", { class: "wa-entry-drop", text: t("Open") }) as HTMLButtonElement;
+    folder.addEventListener("click", () => void Bridge.whatsappJobAction(j.id, "pasta", account));
+    const again = h("button", { class: "wa-entry-drop", text: t("Retry") }) as HTMLButtonElement;
+    again.addEventListener("click", () => { again.disabled = true; void Bridge.whatsappJobAction(j.id, "montar", account); });
+    for (const b of [open, folder]) b.style.display = j.canOpen ? "" : "none";
+    again.style.display = j.montage && !j.montage.startsWith("Montando") ? "" : "none";
+    return h("div", { class: "wa-entry" }, label, ...lines, montage, message, note,
+      h("div", { class: "wa-entry-actions" }, copy, open, folder, again, done));
   }
 
   function orderCard(o: WaOrder): HTMLElement {
@@ -383,7 +394,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     const key = [
       language(), v.link.state, "detail" in v.link ? v.link.detail : "", v.unread, ignoring,
       ...v.pending.map((e) => `${e.id}|${e.amount}|${e.kind}|${e.category}|${e.person}|${e.note}`),
-      ...v.jobs.map((j) => `j${j.id}|${j.stage}|${j.sent}|${j.message}|${j.lines.join("/")}`),
+      ...v.jobs.map((j) => `j${j.id}|${j.stage}|${j.sent}|${j.message}|${j.lines.join("/")}|${j.montage}|${j.canOpen}`),
       ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}|${o.reply}|${o.kind}|${o.reason}|${o.sent}|${o.canPrint}|${o.paid}|${o.printed}`),
       // The ages move on a minute at a time.
       Math.floor(Date.now() / 60_000),

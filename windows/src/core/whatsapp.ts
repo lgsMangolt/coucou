@@ -119,6 +119,9 @@ export interface WaJob {
   /** What Coucou writes (or wrote) in the group. */
   message: string;
   sent: boolean;
+  /** "Montagem pronta: 2 por A4, 125 folhas numeradas por via", "Montando no Corel…", or "". */
+  montage: string;
+  canOpen: boolean;
 }
 
 export const IDLE_WHATSAPP: WaIslandView = {

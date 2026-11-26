@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.18.0",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Montage in CorelDRAW",
+            "zh-Hans": "在 CorelDRAW 中拼版",
+            "hi": "CorelDRAW में मोंटाज",
+            "es": "Montaje en CorelDRAW",
+            "ar": "التركيب في CorelDRAW",
+            "fr": "Montage dans CorelDRAW",
+            "bn": "CorelDRAW-এ মন্টাজ",
+            "pt-BR": "Montagem no Corel",
+            "ru": "Раскладка в CorelDRAW",
+            "id": "Montase di CorelDRAW",
+            "de": "Montage in CorelDRAW",
+            "tr": "CorelDRAW'da montaj",
+            "ko": "CorelDRAW 조판",
+            "ja": "CorelDRAWで面付け"
+          },
+          "detail": {
+            "en": "Print shop jobs are laid out on an A4 in CorelDRAW and numbered, ready for you to check.",
+            "zh-Hans": "印刷厂订单会在 CorelDRAW 中拼到 A4 上并编号，供你检查。",
+            "hi": "प्रिंट शॉप के काम CorelDRAW में A4 पर सजाकर नंबर डाले जाते हैं, आपके जांचने के लिए।",
+            "es": "Los trabajos de la imprenta se montan en un A4 en CorelDRAW y se numeran, listos para revisar.",
+            "ar": "تُرتَّب طلبات المطبعة على A4 في CorelDRAW وتُرقَّم، جاهزة لتراجعها.",
+            "fr": "Les travaux de l’imprimerie sont montés sur un A4 dans CorelDRAW et numérotés, prêts à vérifier.",
+            "bn": "ছাপাখানার কাজ CorelDRAW-এ A4-এ সাজিয়ে নম্বর দেওয়া হয়, আপনার দেখার জন্য।",
+            "pt-BR": "Os serviços da gráfica são montados numa A4 no Corel e numerados, prontos para você conferir.",
+            "ru": "Заказы типографии раскладываются на A4 в CorelDRAW и нумеруются для проверки.",
+            "id": "Pekerjaan percetakan ditata di A4 dalam CorelDRAW dan diberi nomor, siap Anda periksa.",
+            "de": "Druckerei-Aufträge werden in CorelDRAW auf A4 montiert und nummeriert, bereit zur Prüfung.",
+            "tr": "Matbaa işleri CorelDRAW'da A4'e dizilip numaralanır, kontrolünüze hazır.",
+            "ko": "인쇄소 작업을 CorelDRAW에서 A4에 앉히고 번호를 매겨 검토할 수 있게 합니다.",
+            "ja": "印刷所の仕事をCorelDRAWでA4に面付けし、番号を入れて確認できるようにします。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.17.1",
       "items": [
         {

@@ -1503,6 +1503,148 @@ async fn read_jobs(gen: u64) {
         answer_group(id, config.silencio_minutos).await;
     }
     changed();
+    // Confirmed CorelDRAW jobs are put on the sheet, one at a time.
+    let ready: Vec<u64> = ctl()
+        .jobs
+        .iter()
+        .filter(|(_, j)| j.stage == grafica::Stage::Confirmed && j.montable() && j.montage.is_none() && !j.building && j.montage_error.is_empty())
+        .map(|(id, _)| *id)
+        .collect();
+    for id in ready {
+        spawn(build_montage(id, config.silencio_minutos));
+    }
+}
+
+/// One CorelDRAW at a time.
+static COREL: LazyLock<tokio::sync::Mutex<()>> = LazyLock::new(|| tokio::sync::Mutex::new(()));
+
+/// A print shop job put on the sheet: its file fetched into its folder, montar.ps1 in CorelDRAW,
+/// then the numbered sheets (grafica.rs). A file that is only a picture has the vector asked for.
+async fn build_montage(id: u64, quiet_minutes: u32) {
+    let found = {
+        let mut guard = ctl();
+        let c = &mut *guard;
+        let provider = c.provider.clone();
+        let group = c.grafica.clone();
+        match c.jobs.iter_mut().find(|(n, _)| *n == id) {
+            Some((_, job)) if !job.building && job.montage.is_none() && job.montable() => {
+                job.building = true;
+                job.montage_error.clear();
+                provider.map(|p| (p, group, job.key.clone(), job.spec.clone(), job.plan.clone()))
+            }
+            _ => return,
+        }
+    };
+    changed();
+    let result = match found {
+        Some((provider, group, key, spec, plan)) => {
+            let _one = COREL.lock().await;
+            montage(&provider, &group, &key, &spec, &plan).await
+        }
+        None => Err(crate::i18n::t("Could not fetch the file.")),
+    };
+    let today = {
+        let t = crate::platform::local_time();
+        format!("{:04}-{:02}-{:02}", t.year, t.month, t.day)
+    };
+    let (vector, name) = {
+        let mut guard = ctl();
+        let Some((_, job)) = guard.jobs.iter_mut().find(|(n, _)| *n == id) else { return };
+        job.building = false;
+        let mut vector = false;
+        match result {
+            Ok((made, bitmap)) => {
+                crate::log::line(format!("whatsapp: print shop job put on the sheet: {}", made.line()));
+                job.montage = Some(made);
+                if bitmap && !job.picture {
+                    job.picture = true;
+                    job.message = format!("A arte do {} veio em imagem dentro do cdr: tem em vetor (cdr ou pdf)? Se não tiver, faço assim mesmo.", job.spec.arquivo);
+                    job.sent = false;
+                    vector = true;
+                }
+            }
+            Err(why) => {
+                crate::log::line(format!("whatsapp: could not put a print shop job on the sheet: {why}"));
+                job.montage_error = why;
+            }
+        }
+        crate::memoria::write_note(job.note_path(), job.note(&today));
+        (vector, if job.spec.os.is_empty() { job.spec.arquivo.clone() } else { format!("OS {}", job.spec.os) })
+    };
+    pill(PillEvent::Message { name: crate::i18n::tf("Montage ready: {name}", &[("name", name.as_str())]) });
+    changed();
+    if vector {
+        answer_group(id, quiet_minutes).await;
+        changed();
+    }
+}
+
+async fn montage(provider: &Provider, group: &str, key: &str, spec: &grafica::Spec, plan: &grafica::Plan) -> Result<(grafica::Montage, bool), String> {
+    let dir = grafica::job_dir(spec);
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let relative = provider.download(key, group).await.map_err(|_| "não consegui baixar o arquivo do grupo".to_string())?;
+    let source = orders::downloaded(&process::working_dir(), &relative).ok_or("o arquivo baixado não está na pasta do WhatsApp")?;
+    let original = dir.join("original.cdr");
+    let copied = std::fs::copy(&source, &original).map_err(|e| e.to_string());
+    let _ = std::fs::remove_file(&source);
+    copied?;
+    let script = crate::settings::local_dir().join("montar.ps1");
+    // With its BOM, Windows PowerShell reads the script as UTF-8.
+    std::fs::write(&script, format!("\u{feff}{}", grafica::MONTAGE_SCRIPT.trim_start_matches('\u{feff}'))).map_err(|e| e.to_string())?;
+    let mut cmd = tokio::process::Command::new("powershell.exe");
+    cmd.args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File"])
+        .arg(&script)
+        .arg("-In")
+        .arg(&original)
+        .arg("-OutDir")
+        .arg(&dir)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .kill_on_drop(true);
+    crate::platform::no_console(cmd.as_std_mut());
+    let output = tokio::time::timeout(Duration::from_secs(300), cmd.output())
+        .await
+        .map_err(|_| "o Corel demorou demais".to_string())?
+        .map_err(|e| e.to_string())?;
+    let layout = grafica::parse_layout(&String::from_utf8_lossy(&output.stdout))?;
+    let (base, pdf) = (dir.join("base.pdf"), dir.join("montagem.pdf"));
+    let (sheets, numbered) = match plan.numbers {
+        Some((first, last)) => {
+            let (b, p, l) = (base.clone(), pdf.clone(), layout.clone());
+            let sheets = tauri::async_runtime::spawn_blocking(move || grafica::number_pdf(&b, &p, &l, first, last)).await.map_err(|e| e.to_string())??;
+            (sheets, true)
+        }
+        None => {
+            std::fs::copy(&base, &pdf).map_err(|e| e.to_string())?;
+            (plan.pieces.map_or(1, |p| p.div_ceil(layout.per_sheet)), false)
+        }
+    };
+    Ok((grafica::Montage { dir, pdf, sheets, per_sheet: layout.per_sheet, numbered }, layout.bitmap_only))
+}
+
+/// A print shop job's card: "pdf" opens the montage, "pasta" its folder, "montar" makes it again.
+pub fn whatsapp_job_action(window: WebviewWindow, id: u64, action: String) -> Result<(), String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    let (montage, quiet) = {
+        let mut c = ctl();
+        let Some((_, job)) = c.jobs.iter_mut().find(|(n, _)| *n == id) else { return Err(crate::i18n::t("That order is no longer waiting.")) };
+        if action == "montar" {
+            if job.building {
+                return Ok(());
+            }
+            job.montage = None;
+            job.montage_error.clear();
+        }
+        (job.montage.clone(), 30)
+    };
+    match (action.as_str(), montage) {
+        ("pdf", Some(m)) => crate::platform::open_url(&m.pdf.to_string_lossy()),
+        ("pasta", Some(m)) => crate::platform::reveal_folder(&m.dir.to_string_lossy()),
+        ("montar", _) => spawn(build_montage(id, quiet)),
+        _ => {}
+    }
+    Ok(())
 }
 
 /// Coucou's message about one job in the print shop's group: not when you wrote there in the last

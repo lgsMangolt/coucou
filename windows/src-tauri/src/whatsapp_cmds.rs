@@ -105,6 +105,11 @@ pub fn whatsapp_job_discard(window: WebviewWindow, id: u64) -> Result<(), String
 }
 
 #[tauri::command]
+pub fn whatsapp_job_action(window: WebviewWindow, id: u64, action: String) -> Result<(), String> {
+    whatsapp::whatsapp_job_action(window, id, action)
+}
+
+#[tauri::command]
 pub async fn whatsapp_order_file(window: WebviewWindow, id: u64) -> Result<String, String> {
     whatsapp::whatsapp_order_file(window, id).await
 }
@@ -223,6 +228,11 @@ pub fn whatsapp2_order_discard(window: WebviewWindow, id: u64) -> Result<(), Str
 #[tauri::command]
 pub fn whatsapp2_job_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
     whatsapp2::whatsapp_job_discard(window, id)
+}
+
+#[tauri::command]
+pub fn whatsapp2_job_action(window: WebviewWindow, id: u64, action: String) -> Result<(), String> {
+    whatsapp2::whatsapp_job_action(window, id, action)
 }
 
 #[tauri::command]

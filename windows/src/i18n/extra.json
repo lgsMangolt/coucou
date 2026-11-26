@@ -9213,6 +9213,36 @@
       "tr": "Gruba gönderildi",
       "ko": "그룹에 보냄",
       "ja": "グループに送信済み"
+    },
+    "Open montage": {
+      "zh-Hans": "打开拼版",
+      "hi": "मोंटाज खोलें",
+      "es": "Abrir montaje",
+      "ar": "فتح التركيب",
+      "fr": "Ouvrir le montage",
+      "bn": "মন্টাজ খুলুন",
+      "pt-BR": "Abrir montagem",
+      "ru": "Открыть раскладку",
+      "id": "Buka montase",
+      "de": "Montage öffnen",
+      "tr": "Montajı aç",
+      "ko": "조판 열기",
+      "ja": "面付けを開く"
+    },
+    "Montage ready: {name}": {
+      "zh-Hans": "拼版已完成：{name}",
+      "hi": "मोंटाज तैयार: {name}",
+      "es": "Montaje listo: {name}",
+      "ar": "التركيب جاهز: {name}",
+      "fr": "Montage prêt : {name}",
+      "bn": "মন্টাজ তৈরি: {name}",
+      "pt-BR": "Montagem pronta: {name}",
+      "ru": "Раскладка готова: {name}",
+      "id": "Montase siap: {name}",
+      "de": "Montage fertig: {name}",
+      "tr": "Montaj hazır: {name}",
+      "ko": "조판 완료: {name}",
+      "ja": "面付け完了：{name}"
     }
   }
 }

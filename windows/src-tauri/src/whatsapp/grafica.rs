@@ -11,7 +11,9 @@
 
 use std::time::Duration;
 
-use serde::Serialize;
+use std::path::{Path, PathBuf};
+
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::model::{Conversation, Media, Message};
@@ -355,6 +357,204 @@ pub fn group_message(spec: &Spec, plan: &Plan, picture: bool) -> String {
     out
 }
 
+// ── The montage (CorelDRAW) and its numbered sheets ──────────────────────────
+
+/// Where a number goes on the sheet, in mm from its bottom left corner.
+#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+pub struct Slot {
+    /// The piece on the sheet (1…), or the shop's own field (<01> → 1).
+    pub index: u32,
+    pub x: f64,
+    pub y: f64,
+    /// Points.
+    pub size: f64,
+    #[serde(default)]
+    pub angle: f64,
+}
+
+/// One piece on the sheet, in mm.
+#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+pub struct Cell {
+    pub index: u32,
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+}
+
+/// What montar.ps1 made of the file.
+#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+pub struct Layout {
+    pub ok: bool,
+    #[serde(default)]
+    pub error: String,
+    #[serde(default)]
+    pub mode: String,
+    #[serde(default)]
+    pub per_sheet: u32,
+    #[serde(default)]
+    pub rotated: bool,
+    #[serde(default)]
+    pub bitmap_only: bool,
+    #[serde(default, deserialize_with = "one_or_many")]
+    pub slots: Vec<Slot>,
+    #[serde(default, deserialize_with = "one_or_many")]
+    pub cells: Vec<Cell>,
+}
+
+/// PowerShell writes a list of one as the thing itself.
+fn one_or_many<'de, D, T>(d: D) -> Result<Vec<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: serde::de::DeserializeOwned,
+{
+    let v = Value::deserialize(d)?;
+    match v {
+        Value::Null => Ok(Vec::new()),
+        Value::Array(_) => serde_json::from_value(v).map_err(serde::de::Error::custom),
+        other => serde_json::from_value(other).map(|one| vec![one]).map_err(serde::de::Error::custom),
+    }
+}
+
+/// The script's last JSON line.
+pub fn parse_layout(stdout: &str) -> Result<Layout, String> {
+    let line = stdout.lines().map(|l| l.trim_start_matches('\u{feff}').trim()).filter(|l| l.starts_with('{')).last().ok_or("o Corel não respondeu")?;
+    let layout: Layout = serde_json::from_str(line).map_err(|e| e.to_string())?;
+    if !layout.ok {
+        return Err(if layout.error.is_empty() { "a montagem falhou".into() } else { layout.error });
+    }
+    if layout.per_sheet == 0 {
+        return Err("nenhuma peça na folha".into());
+    }
+    Ok(layout)
+}
+
+/// The script that montar.ps1 is (CorelDRAW through COM).
+pub const MONTAGE_SCRIPT: &str = include_str!("montar.ps1");
+
+const MM: f64 = 72.0 / 25.4;
+
+/// Where each number goes on a sheet: the art's own places (its "Nº", or the shop's fields), else
+/// the top right corner of each piece with "Nº ".
+fn placements(layout: &Layout) -> Vec<(u32, f64, f64, f64, f64, &'static str)> {
+    if !layout.slots.is_empty() {
+        return layout.slots.iter().map(|s| (s.index.max(1), s.x, s.y, if s.size > 0.0 { s.size } else { 12.0 }, s.angle, "")).collect();
+    }
+    layout.cells.iter().map(|c| (c.index.max(1), c.x + c.w - 32.0, c.y + c.h - 10.0, 14.0, 0.0, "Nº ")).collect()
+}
+
+/// Windows-1252 bytes for the built-in Helvetica: "Nº" and digits.
+fn win_ansi(text: &str) -> Vec<u8> {
+    text.chars().map(|c| match c {
+        'º' => 0xBA,
+        '°' => 0xB0,
+        c if c.is_ascii() => c as u8,
+        _ => b'?',
+    }).collect()
+}
+
+/// The numbered sheets: the montage's one page repeated, each time with its numbers, in sequence on
+/// the sheet (sheet 1 has `first` to `first + per_sheet - 1`). Returns how many sheets.
+pub fn number_pdf(base: &Path, out: &Path, layout: &Layout, first: u32, last: u32) -> Result<u32, String> {
+    use lopdf::content::{Content, Operation};
+    use lopdf::{dictionary, Dictionary, Document, Object, Stream, StringFormat};
+    if last < first {
+        return Err("numeração vazia".into());
+    }
+    let wrong = |e: lopdf::Error| e.to_string();
+    let mut doc = Document::load(base).map_err(wrong)?;
+    let page_id = *doc.get_pages().values().next().ok_or("o PDF da montagem não tem página")?;
+    let page = doc.get_object(page_id).and_then(Object::as_dict).map_err(wrong)?.clone();
+    let parent = page.get(b"Parent").and_then(Object::as_reference).map_err(wrong)?;
+    let deref = |doc: &Document, o: Option<&Object>| -> Dictionary {
+        match o {
+            Some(Object::Reference(r)) => doc.get_object(*r).and_then(Object::as_dict).cloned().unwrap_or_default(),
+            Some(Object::Dictionary(d)) => d.clone(),
+            _ => Dictionary::new(),
+        }
+    };
+    let mut resources = deref(&doc, page.get(b"Resources").ok());
+    let mut fonts = deref(&doc, resources.get(b"Font").ok());
+    let font = doc.add_object(dictionary! {
+        "Type" => "Font", "Subtype" => "Type1", "BaseFont" => "Helvetica-Bold", "Encoding" => "WinAnsiEncoding",
+    });
+    fonts.set("CcNum", Object::Reference(font));
+    resources.set("Font", Object::Dictionary(fonts));
+    let resources = doc.add_object(resources);
+    let base_contents: Vec<Object> = match page.get(b"Contents") {
+        Ok(Object::Array(a)) => a.clone(),
+        Ok(o) => vec![o.clone()],
+        Err(_) => Vec::new(),
+    };
+    let per = layout.per_sheet.max(1);
+    let total = last - first + 1;
+    let sheets = total.div_ceil(per);
+    let width = last.to_string().len();
+    let places = placements(layout);
+    let mut kids = Vec::new();
+    for sheet in 0..sheets {
+        let mut ops = Vec::new();
+        for (index, x, y, size, angle, prefix) in &places {
+            let n = first + sheet * per + (index - 1);
+            if n > last || *index > per {
+                continue;
+            }
+            let (c, s) = (angle.to_radians().cos(), angle.to_radians().sin());
+            let text = format!("{prefix}{n:0width$}");
+            ops.push(Operation::new("BT", vec![]));
+            ops.push(Operation::new("Tf", vec!["CcNum".into(), (*size as f32).into()]));
+            ops.push(Operation::new("Tm", vec![(c as f32).into(), (s as f32).into(), (-s as f32).into(), (c as f32).into(), ((x * MM) as f32).into(), ((y * MM) as f32).into()]));
+            ops.push(Operation::new("Tj", vec![Object::String(win_ansi(&text), StringFormat::Literal)]));
+            ops.push(Operation::new("ET", vec![]));
+        }
+        let encoded = Content { operations: ops }.encode().map_err(wrong)?;
+        let numbers = doc.add_object(Stream::new(dictionary! {}, encoded));
+        let mut contents = base_contents.clone();
+        contents.push(Object::Reference(numbers));
+        let mut this = page.clone();
+        this.set("Contents", Object::Array(contents));
+        this.set("Resources", Object::Reference(resources));
+        let id = if sheet == 0 {
+            doc.objects.insert(page_id, Object::Dictionary(this));
+            page_id
+        } else {
+            doc.add_object(this)
+        };
+        kids.push(Object::Reference(id));
+    }
+    let pages = doc.get_object_mut(parent).and_then(Object::as_dict_mut).map_err(wrong)?;
+    pages.set("Kids", Object::Array(kids));
+    pages.set("Count", Object::Integer(i64::from(sheets)));
+    doc.compress();
+    doc.save(out).map_err(|e| e.to_string())?;
+    Ok(sheets)
+}
+
+/// The montage a job got.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Montage {
+    pub dir: PathBuf,
+    pub pdf: PathBuf,
+    /// A4 sheets of one via (numbered sheets, or copies of the one sheet).
+    pub sheets: u32,
+    pub per_sheet: u32,
+    pub numbered: bool,
+}
+
+impl Montage {
+    pub fn line(&self) -> String {
+        let what = if self.numbered { "folhas numeradas" } else { "cópias da folha" };
+        format!("Montagem pronta: {} por A4, {} {what} por via", self.per_sheet, thousands(self.sheets))
+    }
+}
+
+/// The job's folder: Documents\Coucou\Gráfica\OS 12084 - CLIENTE.
+pub fn job_dir(spec: &Spec) -> PathBuf {
+    let name: String = spec.arquivo.rsplit_once('.').map_or(spec.arquivo.as_str(), |(n, _)| n).chars().take(60).collect();
+    let os = if spec.os.is_empty() { "sem OS".to_string() } else { format!("OS {}", spec.os) };
+    crate::platform::home_dir().join("Documents").join("Coucou").join("Gráfica").join(format!("{os} - {}", orders::safe_name(&name)))
+}
+
 // ── The job on the card ───────────────────────────────────────────────────────
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -377,6 +577,11 @@ pub struct Job {
     /// What Coucou writes (or wrote) in the group.
     pub message: String,
     pub sent: bool,
+    pub montage: Option<Montage>,
+    /// Being made in CorelDRAW now.
+    pub building: bool,
+    /// Why the montage could not be made, or "".
+    pub montage_error: String,
 }
 
 impl Job {
@@ -384,7 +589,7 @@ impl Job {
         let plan = plan(&spec);
         let stage = if plan.missing.is_empty() { Stage::Confirmed } else { Stage::Missing };
         let message = group_message(&spec, &plan, picture);
-        Job { key, spec, plan, picture, stage, message, sent: false }
+        Job { key, spec, plan, picture, stage, message, sent: false, montage: None, building: false, montage_error: String::new() }
     }
 
     pub fn view(&self, id: u64) -> JobView {
@@ -397,7 +602,19 @@ impl Job {
             picture: self.picture,
             message: self.message.clone(),
             sent: self.sent,
+            montage: match (&self.montage, self.building) {
+                (Some(m), _) => m.line(),
+                (None, true) => "Montando no Corel…".into(),
+                (None, false) if !self.montage_error.is_empty() => format!("Montagem não saiu: {}", self.montage_error),
+                _ => String::new(),
+            },
+            can_open: self.montage.is_some(),
         }
+    }
+
+    /// The file is a CorelDRAW file Coucou can put on the sheet.
+    pub fn montable(&self) -> bool {
+        self.spec.arquivo.to_lowercase().ends_with(".cdr")
     }
 
     /// The vault note of the job ("Gráfica PEB/OS 12084 - CLIENTE A.md").
@@ -421,6 +638,9 @@ impl Job {
         for l in ficha(&self.spec, &self.plan) {
             out.push_str(&format!("- {l}\n"));
         }
+        if let Some(m) = &self.montage {
+            out.push_str(&format!("- {}\n- Pasta: `{}`\n", m.line(), m.dir.display()));
+        }
         if self.picture {
             out.push_str("- Arte em imagem: pedido o vetor\n");
         }
@@ -442,6 +662,9 @@ pub struct JobView {
     /// What Coucou writes (or wrote) in the group, for the user to copy when it was not sent.
     pub message: String,
     pub sent: bool,
+    /// "Montagem pronta: 2 por A4, 125 folhas numeradas por via", "Montando no Corel…", or "".
+    pub montage: String,
+    pub can_open: bool,
 }
 
 #[cfg(test)]
@@ -508,5 +731,28 @@ mod tests {
     fn write_the_system_prompt() {
         let path = std::env::var("GRAFICA_SYSTEM").expect("GRAFICA_SYSTEM");
         std::fs::write(path, SYSTEM).unwrap();
+    }
+
+    #[test]
+    fn what_corel_says_is_read() {
+        let one = "Corel says hi\n\u{feff}{\"ok\":true,\"mode\":\"grade\",\"per_sheet\":2,\"rotated\":true,\"bitmap_only\":true,\"slots\":{\"index\":1,\"x\":10,\"y\":20,\"size\":12,\"angle\":90},\"cells\":[]}";
+        let layout = parse_layout(one).unwrap();
+        assert_eq!((layout.per_sheet, layout.rotated, layout.bitmap_only, layout.slots.len()), (2, true, true, 1));
+        assert_eq!(parse_layout(r#"{"ok":false,"error":"a peça não cabe numa A4"}"#).unwrap_err(), "a peça não cabe numa A4");
+        assert!(parse_layout("nada").is_err());
+        // Numbers go on the art's places, else on each piece's corner.
+        let cells = Layout { per_sheet: 2, cells: vec![Cell { index: 1, x: 0.0, y: 0.0, w: 210.0, h: 148.0 }], ..Layout::default() };
+        assert_eq!(placements(&cells), vec![(1, 178.0, 138.0, 14.0, 0.0, "Nº ")]);
+        assert_eq!(win_ansi("Nº 13501"), b"N\xBA 13501".to_vec());
+    }
+
+    /// Numbers a real montage: NUM_BASE (base.pdf), NUM_LAYOUT (montar.ps1's JSON), NUM_OUT, NUM_FIRST, NUM_LAST.
+    #[test]
+    #[ignore = "needs a montage made by CorelDRAW"]
+    fn number_a_real_montage() {
+        let env = |k: &str| std::env::var(k).unwrap();
+        let layout = parse_layout(&std::fs::read_to_string(env("NUM_LAYOUT")).unwrap()).unwrap();
+        let sheets = number_pdf(Path::new(&env("NUM_BASE")), Path::new(&env("NUM_OUT")), &layout, env("NUM_FIRST").parse().unwrap(), env("NUM_LAST").parse().unwrap()).unwrap();
+        println!("sheets={sheets}");
     }
 }
