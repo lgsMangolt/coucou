@@ -103,6 +103,28 @@ pub fn write_note(relative: String, content: String) {
     });
 }
 
+/// The shop's approved answers (the vault note "Loja": address, hours, Pix…), without the lines the
+/// owner left blank; None when there are none. Read as data by the model.
+pub fn shop_facts() -> Option<String> {
+    std::fs::read_to_string(vault().join("Loja.md")).ok().and_then(|note| facts_of(&note))
+}
+
+fn facts_of(note: &str) -> Option<String> {
+    let body = match note.strip_prefix("---") {
+        Some(rest) => rest.split_once("\n---").map_or(note, |(_, after)| after),
+        None => note,
+    };
+    let facts: Vec<String> = body
+        .lines()
+        .map(str::trim)
+        .filter(|l| l.starts_with("- ") || l.starts_with("* "))
+        .map(|l| l[2..].replace("**", ""))
+        .filter(|l| l.split_once(':').is_some_and(|(_, v)| !v.trim().is_empty()))
+        .collect();
+    let text: String = facts.join("\n").chars().take(1500).collect();
+    (!text.is_empty()).then_some(text)
+}
+
 /// What the model is told about this customer, or None for someone new.
 pub fn context(chat: &str) -> Option<String> {
     let _one = WRITING.lock().unwrap_or_else(PoisonError::into_inner);
@@ -390,6 +412,13 @@ mod tests {
         write_in(&base, "5554888880000@s.whatsapp.net", "Ana", "+5554888880000", entry("x", "2026-11-26", "", "Com o gerente")).unwrap();
         assert!(base.join("Clientes").join("Ana (final 0000) 2.md").exists());
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn the_shops_blank_answers_are_left_out() {
+        let note = "---\ntags: [loja]\n---\n# Loja\n\nTexto.\n\n- **Endereço:** Rua Pio XII, 285\n- **Horário:** \n- **Pix:** CNPJ 1\n";
+        assert_eq!(facts_of(note).as_deref(), Some("Endereço: Rua Pio XII, 285\nPix: CNPJ 1"));
+        assert_eq!(facts_of("# Loja\n- **Horário:**  \n"), None);
     }
 
     #[test]

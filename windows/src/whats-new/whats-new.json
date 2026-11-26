@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.18.1",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Shop facts",
+            "zh-Hans": "店铺信息",
+            "hi": "दुकान की जानकारी",
+            "es": "Datos de la tienda",
+            "ar": "بيانات المتجر",
+            "fr": "Infos de la boutique",
+            "bn": "দোকানের তথ্য",
+            "pt-BR": "Fatos da loja",
+            "ru": "Данные магазина",
+            "id": "Info toko",
+            "de": "Ladendaten",
+            "tr": "Dükkân bilgileri",
+            "ko": "매장 정보",
+            "ja": "店舗情報"
+          },
+          "detail": {
+            "en": "Suggestions use the address and answers in the Loja note, and stay empty when a fact is missing.",
+            "zh-Hans": "建议回复会使用库中“Loja”笔记的地址等信息，缺少信息时保持为空。",
+            "hi": "सुझाए जवाब वॉल्ट के Loja नोट से पता आदि लेते हैं, और जानकारी न हो तो खाली रहते हैं।",
+            "es": "Las respuestas sugeridas usan la dirección y otros datos de la nota Loja, y quedan vacías si falta un dato.",
+            "ar": "الردود المقترحة تستخدم العنوان وغيره من ملاحظة Loja، وتبقى فارغة عند نقص معلومة.",
+            "fr": "Les suggestions utilisent l’adresse et les infos de la note Loja, et restent vides s’il en manque.",
+            "bn": "প্রস্তাবিত উত্তর ভল্টের Loja নোট থেকে ঠিকানা ইত্যাদি নেয়, তথ্য না থাকলে খালি থাকে।",
+            "pt-BR": "A sugestão usa o endereço e as respostas da nota Loja, e fica vazia quando falta um dado.",
+            "ru": "Подсказки берут адрес и другие ответы из заметки Loja и остаются пустыми, если данных нет.",
+            "id": "Saran balasan memakai alamat dan jawaban dari catatan Loja, dan kosong bila datanya tidak ada.",
+            "de": "Antwortvorschläge nutzen Adresse und Angaben aus der Notiz Loja und bleiben leer, wenn etwas fehlt.",
+            "tr": "Önerilen yanıtlar Loja notundaki adres ve bilgileri kullanır, bilgi eksikse boş kalır.",
+            "ko": "제안 답장은 Loja 노트의 주소 등을 쓰고, 정보가 없으면 비워 둡니다.",
+            "ja": "返信の提案は保管庫のLojaノートの住所などを使い、情報がなければ空のままにします。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.18.0",
       "items": [
         {

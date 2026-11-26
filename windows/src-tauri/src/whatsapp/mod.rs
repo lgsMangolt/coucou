@@ -2407,8 +2407,10 @@ pub async fn whatsapp_suggest(window: WebviewWindow, chat: String) -> Result<Str
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
     let prompt = ctl().inbox.conversations.get(&chat).and_then(suggest::prompt);
+    // The shop's approved answers (vault note "Loja"), on the shop's account only.
+    let facts = if SECOND { None } else { tauri::async_runtime::spawn_blocking(crate::memoria::shop_facts).await.ok().flatten() };
     match prompt {
-        Some(prompt) => suggest::suggest(&prompt).await,
+        Some(prompt) => suggest::suggest(&prompt, facts.as_deref()).await,
         None => Ok(String::new()),
     }
 }
