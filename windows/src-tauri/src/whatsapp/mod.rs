@@ -2940,7 +2940,7 @@ mod tests {
         let mut c = fresh_ctl();
         ingest(&mut c, vec![msg("1", chat, "bom dia")]);
         ingest(&mut c, vec![file_from("2", chat)]);
-        assert!(c.order_queue.is_empty(), "a file with no word about printing is not read");
+        assert_eq!(c.order_queue, [chat], "a document alone is read: the model asks what is missing");
         ingest(&mut c, vec![msg("3", chat, "quero 6 folhas coloridas")]);
         assert_eq!(c.order_queue, [chat]);
         ingest(&mut c, vec![msg("3", chat, "quero 6 folhas coloridas")]);

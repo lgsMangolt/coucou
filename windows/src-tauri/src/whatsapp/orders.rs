@@ -549,10 +549,16 @@ pub fn file_of(conversation: &Conversation) -> Option<(String, String)> {
     recent(conversation).iter().rev().filter(|m| !m.from_me).find_map(|m| file_name(&m.media).map(|name| (m.id.clone(), name)))
 }
 
-/// A file and words about printing, both from the customer, in the last messages: only then is
-/// the conversation shown to the model.
+/// What makes a conversation worth showing to the model: a document the customer sent (customers
+/// of a print shop often send the file and nothing else: the model then asks what is missing, and
+/// ignores a receipt or a bill), or a picture together with words about printing (a picture alone
+/// is usually a receipt or chat).
 pub fn worth_reading(conversation: &Conversation) -> bool {
-    !conversation.is_group && file_of(conversation).is_some() && recent(conversation).iter().any(|m| !m.from_me && mentions_printing(&m.text))
+    if conversation.is_group || file_of(conversation).is_none() {
+        return false;
+    }
+    let theirs = || recent(conversation).iter().filter(|m| !m.from_me);
+    theirs().any(|m| matches!(m.media, Media::Document { .. })) || theirs().any(|m| mentions_printing(&m.text))
 }
 
 const YES: [&str; 20] = [
@@ -588,7 +594,7 @@ pub fn approves(text: &str) -> bool {
 /// How the shop answers on WhatsApp, taken from its own conversations: the model writes its
 /// questions the same way.
 const STYLE: &str = "Write like the shop owner does on WhatsApp: short, friendly, informal Brazilian Portuguese, \
-no greeting paragraphs, one question at a time. Examples of how he asks: \"opa, preto e branco ou colorido?\", \
+no greeting paragraphs, one short message. Examples of how he asks: \"opa, preto e branco ou colorido?\", \
 \"quantas seriam?\", \"qual tamanho? A4 ou A3?\", \"folha ofício ou couchê 150g / 300g?\", \
 \"é frente e verso?\". Plain paper is called \"ofício\" or \"sulfite\" by customers and by the shop.";
 
@@ -614,7 +620,10 @@ When the customer gives no number of copies, it is one copy of each file: add up
 2. {{\"perguntar\": \"the question\"}}: the customer wants something printed but what is needed to price it is \
 not in the messages: colour (P&B or colorida) and paper when they matter, or the number of copies when the pages \
 of a file are not known. Ask only what is missing, in one short message. When the pages of the file are known, \
-say how many it has. {STYLE}\n\
+say how many it has. When the customer sent only the file and never said what they want, open the conversation in \
+that one message: say you got the file (and its pages), and ask whether it is to print, P&B or colorida, on folha \
+ofício, and how many copies, for example \"opa! recebi o arquivo, tem 3 páginas. é pra imprimir? preto e branco ou \
+colorido, na folha ofício mesmo? quantas cópias?\". {STYLE}\n\
 3. {{\"gerente\": \"a few words in Brazilian Portuguese saying what is outside the table\"}}: something asked is \
 not in the table: another paper or product (cartão de visita, adesivo, papel foto, envelope, banner, lona), a \
 delivery, a discount, a special price, a deadline promise, or anything you would have to guess. Never invent a price, a deadline or a line of the table.\n\
@@ -1517,7 +1526,11 @@ mod tests {
         assert!(mentions_printing("em A3 couchê") && mentions_printing("frente e verso"));
         assert!(!mentions_printing("bom dia, tudo bem?") && !mentions_printing("sobe o pbx") && !mentions_printing(""));
         assert!(!worth_reading(&conversation(vec![said("1", "quero 6 folhas coloridas")])), "no file yet");
-        assert!(!worth_reading(&conversation(vec![sent("1", "a.pdf")])), "no words yet");
+        assert!(worth_reading(&conversation(vec![said("0", "Ola"), sent("1", "a.pdf")])), "a document alone is read: the model asks what is missing");
+        let mut photo = said("1", "");
+        photo.media = Media::Image;
+        assert!(!worth_reading(&conversation(vec![said("0", "Ola"), photo.clone()])), "a picture alone is not");
+        assert!(worth_reading(&conversation(vec![photo, said("2", "imprime essa pra mim")])));
         let both = conversation(vec![said("1", "quero 6 folhas coloridas"), sent("2", "a.pdf")]);
         assert!(worth_reading(&both));
         assert_eq!(file_of(&both), Some(("2".into(), "a.pdf".into())));

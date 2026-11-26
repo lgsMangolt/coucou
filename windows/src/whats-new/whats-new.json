@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.20.2",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Just the file",
+            "zh-Hans": "只发文件也行",
+            "hi": "सिर्फ़ फ़ाइल",
+            "es": "Solo el archivo",
+            "ar": "الملف وحده",
+            "fr": "Juste le fichier",
+            "bn": "শুধু ফাইল",
+            "pt-BR": "Só o arquivo",
+            "ru": "Только файл",
+            "id": "Hanya berkas",
+            "de": "Nur die Datei",
+            "tr": "Yalnızca dosya",
+            "ko": "파일만 보내도",
+            "ja": "ファイルだけでも"
+          },
+          "detail": {
+            "en": "A document sent with no request is read too: Coucou asks what is missing.",
+            "zh-Hans": "只发来文件、没写要求时也会读取：Coucou 会询问缺少的信息。",
+            "hi": "बिना अनुरोध के भेजी फ़ाइल भी पढ़ी जाती है: Coucou कमी पूछता है।",
+            "es": "Un documento enviado sin pedido también se lee: Coucou pregunta lo que falta.",
+            "ar": "المستند المُرسل دون طلب يُقرأ أيضًا: يسأل Coucou عمّا ينقص.",
+            "fr": "Un document envoyé sans demande est lu aussi : Coucou demande ce qui manque.",
+            "bn": "অনুরোধ ছাড়া পাঠানো নথিও পড়া হয়: Coucou যা বাকি তা জিজ্ঞেস করে।",
+            "pt-BR": "Documento mandado sem pedido escrito também é lido: o Coucou pergunta o que falta.",
+            "ru": "Документ без запроса тоже читается: Coucou уточняет недостающее.",
+            "id": "Dokumen tanpa permintaan pun dibaca: Coucou menanyakan yang kurang.",
+            "de": "Auch ein Dokument ohne Auftrag wird gelesen: Coucou fragt nach, was fehlt.",
+            "tr": "İstek yazılmadan gönderilen belge de okunur: Coucou eksikleri sorar.",
+            "ko": "요청 없이 보낸 문서도 읽고, Coucou가 빠진 정보를 묻습니다.",
+            "ja": "依頼文なしで送られた文書も読み取り、Coucouが足りない情報を尋ねます。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.20.1",
       "items": [
         {
