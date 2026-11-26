@@ -1288,6 +1288,17 @@ async fn read_order(gen: u64, chat: String) {
         None => prompt,
     };
     let answer = orders::read_order(&prompt, &config).await;
+    // The code checks what the model read: a colour order with no paper named is asked about.
+    let answer = match answer {
+        Ok(orders::Reading::Order(asked)) => {
+            let unsaid = ctl().inbox.conversations.get(&chat).and_then(|conv| orders::paper_unsaid(&asked.item, conv));
+            Ok(match unsaid {
+                Some(question) => orders::Reading::Ask(question.to_string()),
+                None => orders::Reading::Order(asked),
+            })
+        }
+        other => other,
+    };
     let (names, busy) = crate::printers::queue();
     let fresh = {
         let mut c = ctl();

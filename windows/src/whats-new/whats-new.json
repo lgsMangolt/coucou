@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.17.1",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "The right paper",
+            "zh-Hans": "正确的纸张",
+            "hi": "सही कागज़",
+            "es": "El papel correcto",
+            "ar": "الورق الصحيح",
+            "fr": "Le bon papier",
+            "bn": "সঠিক কাগজ",
+            "pt-BR": "Papel certo",
+            "ru": "Правильная бумага",
+            "id": "Kertas yang tepat",
+            "de": "Das richtige Papier",
+            "tr": "Doğru kâğıt",
+            "ko": "알맞은 용지",
+            "ja": "正しい用紙"
+          },
+          "detail": {
+            "en": "A colour order with no paper said is asked about; glossy paper is coated paper.",
+            "zh-Hans": "未说明纸张的彩色订单会先询问；光面纸按铜版纸处理。",
+            "hi": "कागज़ बताए बिना रंगीन ऑर्डर पर पूछा जाता है; चमकदार कागज़ कोटेड माना जाता है।",
+            "es": "Un pedido a color sin papel dicho se pregunta; el papel brillante es couché.",
+            "ar": "الطلب الملوّن دون ذكر الورق يُسأل عنه؛ والورق اللامع يُعدّ مطليًا.",
+            "fr": "Une commande couleur sans papier précisé est demandée ; le papier brillant est du couché.",
+            "bn": "কাগজ না বলা রঙিন অর্ডারে জিজ্ঞেস করা হয়; চকচকে কাগজ কোটেড ধরা হয়।",
+            "pt-BR": "Pedido colorido sem papel dito vira pergunta; papel brilhoso é couchê.",
+            "ru": "Цветной заказ без указанной бумаги уточняется; глянцевая бумага — мелованная.",
+            "id": "Pesanan warna tanpa jenis kertas akan ditanyakan; kertas mengilap adalah couché.",
+            "de": "Bei Farbaufträgen ohne Papierangabe wird nachgefragt; glänzendes Papier ist Bilderdruck.",
+            "tr": "Kâğıdı söylenmeyen renkli siparişte sorulur; parlak kâğıt kuşedir.",
+            "ko": "용지를 말하지 않은 컬러 주문은 먼저 묻고, 광택지는 코팅지로 봅니다.",
+            "ja": "用紙の指定がないカラー注文は確認し、光沢紙はコート紙として扱います。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.17.0",
       "items": [
         {
