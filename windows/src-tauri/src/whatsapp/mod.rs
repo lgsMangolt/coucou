@@ -1030,6 +1030,8 @@ async fn read_receipt(gen: u64, chat: String, message: String) {
     let read = orders::read_receipt(&target).await;
     let _ = std::fs::remove_dir_all(&dir);
     let config = tauri::async_runtime::spawn_blocking(orders::load).await.unwrap_or_default();
+    let codes = crate::settings::local_dir().join("comprovantes-usados.txt");
+    let used = orders::used_codes(&codes);
     let outcome = {
         let mut c = ctl();
         if c.generation != gen {
@@ -1042,11 +1044,10 @@ async fn read_receipt(gen: u64, chat: String, message: String) {
         else {
             return;
         };
-        let today = gateway::now_ms().div_euclid(86_400_000);
-        let pays = |r: &orders::Receipt| orders::receipt_pays(r, order.total_cents().unwrap_or(-1), &config, today);
         match read {
-            Ok(receipt) => match pays(&receipt) {
+            Ok(receipt) => match orders::receipt_pays(&receipt, order.total_cents().unwrap_or(-1), &config, &used) {
                 Ok(()) => {
+                    orders::remember_code(&codes, &receipt.code);
                     order.paid = true;
                     order.state = orders::State::Approved;
                     crate::log::line("whatsapp: a receipt matches its quote");

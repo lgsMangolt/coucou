@@ -29,7 +29,7 @@ Travas em código:
 - nunca manda as mesmas palavras duas vezes ao mesmo cliente (12 h) nem mais de 4 mensagens por hora;
 - a pergunta é texto do modelo: só sai sozinha sem "R$", "reais", Pix, link ou @ (senão fica no cartão);
 - impressão (0.14.0): depois do "sim", o cliente manda o comprovante; o modelo lê só o valor e o código confere
-  com o total; desde a 0.14.1 também o recebedor (`pix_chave` ou `pix_nome`) e a data (hoje ou ontem). Bateu → pedido pago; até `imprimir_sozinho_ate` (10) folhas de sulfite vai sozinho para a impressora;
+  com o total; desde a 0.14.2 também o CNPJ do recebedor (`pix_chave`) e o código da transação, que só vale uma vez (`comprovantes-usados.txt`). Bateu → pedido pago; até `imprimir_sozinho_ate` (10) folhas de sulfite vai sozinho para a impressora;
   maior, couchê, vários arquivos, tamanhos cortados ou juntados → botão "Imprimir" no cartão.
   O modelo diz os `arquivos` do pedido; o código acha o PDF, conta as páginas e calcula as cópias.
   Impressoras: sulfite A4 na Epson WF-C5390 A4; A3 e couchê na Canon C5255 (C7260 se ocupada).
@@ -55,4 +55,4 @@ Com 24 casos só dá para enxergar diferenças grandes (~15 pontos ou mais). Ain
 ## Próximos passos
 1. Cada erro visto no uso real vira um caso novo em `casos.jsonl` (ou `holdout.jsonl`), com o que o Lucas teria respondido.
 2. Respostas aprovadas para perguntas frequentes (endereço, horário, Pix, entrega) — hoje vão para o gerente.
-3. Lembrar dos comprovantes já usados (hoje um comprovante de hoje com o mesmo valor serviria duas vezes).
+3. Conferir o código lido contra o banco (hoje o modelo pode errar um dígito do código, e o mesmo comprovante passaria de novo).

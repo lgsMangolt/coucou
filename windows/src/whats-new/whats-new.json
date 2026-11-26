@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.14.2",
+      "items": [
+        {
+          "icon": "shield",
+          "title": {
+            "en": "One receipt, one order",
+            "zh-Hans": "一张收据一个订单",
+            "hi": "एक रसीद, एक ऑर्डर",
+            "es": "Un comprobante, un pedido",
+            "ar": "إيصال واحد لطلب واحد",
+            "fr": "Un reçu, une commande",
+            "bn": "এক রসিদ, এক অর্ডার",
+            "pt-BR": "Um comprovante, um pedido",
+            "ru": "Один чек — один заказ",
+            "id": "Satu bukti, satu pesanan",
+            "de": "Ein Beleg, ein Auftrag",
+            "tr": "Bir dekont, bir sipariş",
+            "ko": "영수증 하나, 주문 하나",
+            "ja": "領収書1枚に注文1件"
+          },
+          "detail": {
+            "en": "A receipt counts if it paid your CNPJ the exact amount and its transaction code was never used.",
+            "zh-Hans": "收据须付给你的 CNPJ、金额一致，且交易码从未用过才算数。",
+            "hi": "रसीद तभी मान्य है जब आपके CNPJ को सही रकम मिली हो और उसका कोड पहले इस्तेमाल न हुआ हो।",
+            "es": "El comprobante vale si pagó a tu CNPJ el monto exacto y su código nunca se usó.",
+            "ar": "يُقبل الإيصال إذا دُفع لـ CNPJ الخاص بك بالمبلغ نفسه ولم يُستخدم رمزه من قبل.",
+            "fr": "Un reçu compte s’il a payé ton CNPJ du montant exact et que son code n’a jamais servi.",
+            "bn": "রসিদ গণ্য, যদি আপনার CNPJ-তে ঠিক অঙ্ক যায় এবং কোডটি আগে ব্যবহার না হয়।",
+            "pt-BR": "O comprovante vale se pagou o seu CNPJ no valor exato e o código da transação nunca foi usado.",
+            "ru": "Чек засчитывается, если оплачен ваш CNPJ на точную сумму и его код ещё не использовался.",
+            "id": "Bukti berlaku jika membayar CNPJ Anda sejumlah tepat dan kodenya belum pernah dipakai.",
+            "de": "Ein Beleg zählt, wenn er dein CNPJ genau bezahlt hat und sein Code nie benutzt wurde.",
+            "tr": "Dekont, CNPJ'nize tam tutar ödendiyse ve kodu hiç kullanılmadıysa geçerlidir.",
+            "ko": "내 CNPJ로 정확한 금액이 결제되고 거래 코드가 처음 쓰일 때만 인정됩니다.",
+            "ja": "自分のCNPJ宛てに正しい金額で、取引コードが未使用の領収書だけ有効です。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.14.1",
       "items": [
         {

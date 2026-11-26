@@ -28,6 +28,7 @@ Cada versão é um commit marcado com a tag `br-v<número>` neste repositório.
 | 0.13.1 | Sugestão não silencia | Mandar pela ilha a resposta que o próprio Coucou sugeriu (Enter) não conta mais como "você falou com o cliente": o Coucou continua respondendo sozinho. Cada envio automático, ou o motivo de ficar quieto, vai para o coucou.log. |
 | 0.14.0 | Imprime sozinho | Depois do "sim", o comprovante do cliente é lido pelo modelo e o valor conferido com o total pelo código. Pedido pago de até 10 folhas de sulfite vai sozinho para a impressora (A4 na Epson WF-C5390, A3 na Canon C5255 ou C7260 se ocupada), com cópias, cor, frente e verso e papel certos; o resto ganha o botão "Imprimir" no cartão. A impressão usa o leitor de PDF do próprio Windows e o driver da impressora, sem instalar nada. |
 | 0.14.1 | Confere o recebedor | O comprovante só vale se o dinheiro foi para a copiadora (o CNPJ da chave Pix, mesmo com dígitos escondidos, ou o nome do recebedor) e se é de hoje ou de ontem, além do valor bater com o total. A chave fica em `pix_chave` e `pix_nome` no pedidos.json, e o orçamento passa a dizer a chave Pix. |
+| 0.14.2 | Código do comprovante | O comprovante vale se o valor bate, se o recebedor é o CNPJ da copiadora (`pix_chave`, dígitos escondidos aceitos) e se o código da transação nunca foi usado; o nome e a data não são mais conferidos. Os códigos usados ficam em `comprovantes-usados.txt`, e continuam lá depois de fechar o Coucou. |
 
 ## Como gerar e instalar
 
