@@ -15,7 +15,7 @@ import { Bridge } from "../core/bridge";
 import { State } from "../core/state";
 import {
   WHATSAPP_GREEN, waPillId, waStore, canSend, initials, keyAction, lastMessages, linkColor, linkLabel,
-  preview, previewParts, sendErrorLabel, timeAgo, type WaConversation, type WaEntry, type WaMessage, type WaOrder,
+  preview, previewParts, sendErrorLabel, timeAgo, type WaConversation, type WaEntry, type WaJob, type WaMessage, type WaOrder,
 } from "../core/whatsapp";
 import { language, t, tl } from "../i18n/i18n";
 
@@ -281,6 +281,36 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
 
   /** A print order: what is asked, the reply Coucou would give (to copy, correct and send), the
    * printer, and the clicks. Nothing is sent from here. */
+  /** A job from the partner print shop's group: its production sheet, and what Coucou wrote there
+   * (or would write, to copy, when it stayed quiet). */
+  function jobCard(j: WaJob): HTMLElement {
+    const title = j.os ? `${t("Print shop job")} · OS ${j.os}` : t("Print shop job");
+    const label = h("div", { class: "wa-entry-line" },
+      h("b", { class: `wa-entry-kind ${j.stage === "missing" ? "out" : "in"}`, text: title }),
+      h("span", { class: "wa-entry-amount", text: j.stage === "missing" ? t("Missing information") : t("Confirmed") }),
+    );
+    const lines = [j.file, ...j.lines].map((l) => h("div", { class: "wa-entry-detail", text: l }));
+    const message = h("textarea", { class: "wa-order-reply", rows: "3", spellcheck: "true" }) as HTMLTextAreaElement;
+    message.value = j.message;
+    message.readOnly = j.sent;
+    message.addEventListener("keydown", (e) => e.stopPropagation());
+    const note = h("div", { class: "wa-entry-detail", text: j.sent ? t("Sent in the group") : "" });
+    const copy = h("button", { class: "wa-entry-save", text: t("Copy") }) as HTMLButtonElement;
+    copy.style.display = j.sent ? "none" : "";
+    copy.addEventListener("click", () => {
+      void copyText(message.value).then(() => {
+        copy.textContent = t("Copied");
+        window.setTimeout(() => { copy.textContent = t("Copy"); }, 1500);
+      });
+    });
+    const done = h("button", { class: "wa-entry-drop", text: t("Done") }) as HTMLButtonElement;
+    done.addEventListener("click", () => {
+      done.disabled = true;
+      void Bridge.whatsappJobDiscard(j.id, account);
+    });
+    return h("div", { class: "wa-entry" }, label, ...lines, message, note, h("div", { class: "wa-entry-actions" }, copy, done));
+  }
+
   function orderCard(o: WaOrder): HTMLElement {
     const manager = o.kind === "manager" || (o.kind === "quote" && !o.total);
     const stage = o.printed ? t("Printed")
@@ -353,6 +383,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     const key = [
       language(), v.link.state, "detail" in v.link ? v.link.detail : "", v.unread, ignoring,
       ...v.pending.map((e) => `${e.id}|${e.amount}|${e.kind}|${e.category}|${e.person}|${e.note}`),
+      ...v.jobs.map((j) => `j${j.id}|${j.stage}|${j.sent}|${j.message}|${j.lines.join("/")}`),
       ...v.orders.map((o) => `o${o.id}|${o.state}|${o.total}|${o.line}|${o.note}|${o.printer}|${o.saved ?? ""}|${o.reply}|${o.kind}|${o.reason}|${o.sent}|${o.canPrint}|${o.paid}|${o.printed}`),
       // The ages move on a minute at a time.
       Math.floor(Date.now() / 60_000),
@@ -363,7 +394,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
     unreadTag.textContent = v.unread > 0 ? t("{0} unread", { 0: v.unread }) : "";
     unreadTag.style.display = v.unread > 0 ? "" : "none";
     clear(pendingBox);
-    pendingBox.append(...v.orders.map(orderCard), ...v.pending.map(entryCard));
+    pendingBox.append(...v.jobs.map(jobCard), ...v.orders.map(orderCard), ...v.pending.map(entryCard));
     clear(listBody);
     if (v.link.state !== "connected") {
       listBody.append(

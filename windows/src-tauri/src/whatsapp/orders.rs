@@ -122,6 +122,8 @@ pub struct Config {
     /// The shop owner's own WhatsApp number: warnings (a printer that stops, an order printed or not,
     /// an order for the manager, a receipt that does not match) are sent there. "": none.
     pub avisar_numero: String,
+    /// The partner print shop's WhatsApp group (…@g.us): its jobs are read (grafica.rs). "": none.
+    pub grafica_grupo: String,
 }
 
 fn tiers(prices: [f64; 4]) -> Vec<Tier> {
@@ -168,6 +170,7 @@ impl Default for Config {
             imprimir_sozinho_ate: 10,
             pix_chave: String::new(),
             avisar_numero: String::new(),
+            grafica_grupo: String::new(),
         }
     }
 }
@@ -195,6 +198,7 @@ impl Config {
         self.pagamento = self.pagamento.trim().chars().take(300).collect();
         self.pix_chave = clean_text(&self.pix_chave, 40);
         self.avisar_numero = self.avisar_numero.chars().filter(char::is_ascii_digit).take(15).collect();
+        self.grafica_grupo = clean_text(&self.grafica_grupo, 60);
         self
     }
 

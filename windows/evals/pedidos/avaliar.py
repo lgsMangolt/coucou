@@ -69,7 +69,7 @@ def right(case, got):
 def main():
     system = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
     models = sys.argv[2:]
-    cases = [json.loads(l) for l in (HERE / "casos.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    cases = [json.loads(l) for l in (HERE / __import__("os").environ.get("CASOS", "casos.jsonl")).read_text(encoding="utf-8").splitlines() if l.strip()]
     jobs = [(m, c) for m in models for c in cases]
 
     def run(job):

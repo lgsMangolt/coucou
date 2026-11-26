@@ -87,6 +87,22 @@ pub fn remember(chat: String, name: String, phone: String, entry: Entry) {
     });
 }
 
+/// Writes a note of Coucou's own (a print shop job's sheet) in the background, at `relative` in the
+/// vault. Only inside the vault.
+pub fn write_note(relative: String, content: String) {
+    let path = vault().join(&relative);
+    if !path.starts_with(vault()) || relative.contains("..") {
+        return;
+    }
+    std::thread::spawn(move || {
+        let _one = WRITING.lock().unwrap_or_else(PoisonError::into_inner);
+        let written = path.parent().map_or(Ok(()), std::fs::create_dir_all).and_then(|()| write_atomic(&path, content.as_bytes()));
+        if let Err(err) = written {
+            crate::log::line(format!("memoria: could not write a job's note: {err}"));
+        }
+    });
+}
+
 /// What the model is told about this customer, or None for someone new.
 pub fn context(chat: &str) -> Option<String> {
     let _one = WRITING.lock().unwrap_or_else(PoisonError::into_inner);

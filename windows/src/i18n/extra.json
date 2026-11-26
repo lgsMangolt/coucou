@@ -9153,6 +9153,66 @@
       "tr": "Yazdırılamadı.",
       "ko": "인쇄하지 못했습니다.",
       "ja": "印刷できませんでした。"
+    },
+    "Print shop job": {
+      "zh-Hans": "印刷厂订单",
+      "hi": "प्रिंट शॉप का काम",
+      "es": "Trabajo de la imprenta",
+      "ar": "طلب المطبعة",
+      "fr": "Travail de l’imprimerie",
+      "bn": "ছাপাখানার কাজ",
+      "pt-BR": "Serviço da gráfica",
+      "ru": "Заказ типографии",
+      "id": "Pekerjaan percetakan",
+      "de": "Druckerei-Auftrag",
+      "tr": "Matbaa işi",
+      "ko": "인쇄소 작업",
+      "ja": "印刷所の仕事"
+    },
+    "New print shop job": {
+      "zh-Hans": "新的印刷厂订单",
+      "hi": "प्रिंट शॉप का नया काम",
+      "es": "Nuevo trabajo de la imprenta",
+      "ar": "طلب جديد من المطبعة",
+      "fr": "Nouveau travail de l’imprimerie",
+      "bn": "ছাপাখানার নতুন কাজ",
+      "pt-BR": "Novo serviço da gráfica",
+      "ru": "Новый заказ типографии",
+      "id": "Pekerjaan percetakan baru",
+      "de": "Neuer Druckerei-Auftrag",
+      "tr": "Yeni matbaa işi",
+      "ko": "새 인쇄소 작업",
+      "ja": "印刷所の新しい仕事"
+    },
+    "Confirmed": {
+      "zh-Hans": "已确认",
+      "hi": "पुष्टि हुई",
+      "es": "Confirmado",
+      "ar": "مؤكَّد",
+      "fr": "Confirmé",
+      "bn": "নিশ্চিত",
+      "pt-BR": "Confirmado",
+      "ru": "Подтверждено",
+      "id": "Dikonfirmasi",
+      "de": "Bestätigt",
+      "tr": "Onaylandı",
+      "ko": "확인됨",
+      "ja": "確認済み"
+    },
+    "Sent in the group": {
+      "zh-Hans": "已发到群里",
+      "hi": "ग्रुप में भेजा गया",
+      "es": "Enviado al grupo",
+      "ar": "أُرسل في المجموعة",
+      "fr": "Envoyé dans le groupe",
+      "bn": "গ্রুপে পাঠানো হয়েছে",
+      "pt-BR": "Enviado no grupo",
+      "ru": "Отправлено в группу",
+      "id": "Terkirim di grup",
+      "de": "In der Gruppe gesendet",
+      "tr": "Gruba gönderildi",
+      "ko": "그룹에 보냄",
+      "ja": "グループに送信済み"
     }
   }
 }

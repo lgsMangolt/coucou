@@ -516,6 +516,7 @@ export const Bridge = {
   /** The reply was copied: the customer's "yes" approves it from now on. */
   whatsappOrderCopied: (id: number, account = 0) => call<void>(wa(account, "order_copied"), { id }),
   whatsappOrderDiscard: (id: number, account = 0) => call<void>(wa(account, "order_discard"), { id }),
+  whatsappJobDiscard: (id: number, account = 0) => call<void>(wa(account, "job_discard"), { id }),
   whatsappOrderFile: (id: number, account = 0) => callOrThrow<string>(wa(account, "order_file"), { id }),
   whatsappOrderPrint: (id: number, account = 0) => callOrThrow<string>(wa(account, "order_print"), { id }),
   /** Settings: notes on money on or off, and the spreadsheet's folder ("" is Documents\Coucou). */

@@ -21,6 +21,7 @@ pub mod orders;
 pub mod prefs;
 pub mod process;
 pub mod provider;
+pub mod grafica;
 pub mod suggest;
 pub mod webhook;
 
@@ -145,6 +146,7 @@ pub struct IslandView {
     pub pending: Vec<ledger::EntryView>,
     /// Print orders read from customers' messages, each waiting for a click (orders.rs).
     pub orders: Vec<orders::OrderView>,
+    pub jobs: Vec<grafica::JobView>,
 }
 
 /// A conversation the notes can be read from.
@@ -251,6 +253,18 @@ struct Ctl {
     order_queue: Vec<String>,
     /// Chats being read right now: one reading at a time for each.
     order_reading: HashSet<String>,
+    /// The partner print shop's group (pedidos.json `grafica_grupo`), normalized; "".
+    grafica: String,
+    /// Its jobs on the cards.
+    jobs: Vec<(u64, grafica::Job)>,
+    job_next: u64,
+    /// When the group last wrote, and whether a read is wanted.
+    job_last: i64,
+    job_wanted: bool,
+    /// Jobs done or discarded (their file messages): never read again.
+    job_settled: HashSet<String>,
+    /// Coucou's messages to the group lately (when, words).
+    job_sent: Vec<(i64, String)>,
     /// The warnings sent to the owner lately (when, words): never the same twice in a while.
     owner_sent: Vec<(i64, String)>,
     /// What Coucou sent by itself to each customer, and when (answer_alone).
@@ -308,6 +322,13 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         ledger_sheet_code: false,
         order_queue: Vec::new(),
         order_reading: HashSet::new(),
+        grafica: String::new(),
+        jobs: Vec::new(),
+        job_next: 0,
+        job_last: 0,
+        job_wanted: false,
+        job_settled: HashSet::new(),
+        job_sent: Vec::new(),
         owner_sent: Vec::new(),
         order_auto: HashMap::new(),
         receipt_queue: Vec::new(),
@@ -380,6 +401,7 @@ impl Ctl {
             down: self.down,
             pending: self.ledger_pending.iter().map(|(id, entry)| entry.view(*id)).collect(),
             orders: self.orders.iter().map(|(id, order)| order.view(*id)).collect(),
+            jobs: self.jobs.iter().map(|(id, job)| job.view(*id)).collect(),
         }
     }
 
@@ -483,7 +505,8 @@ pub fn start(app: &AppHandle, active_integrations: &[String]) {
         // The Obsidian vault is there from the start: its first page and the price note.
         std::thread::spawn(|| {
             crate::memoria::ensure_vault();
-            let _ = orders::load();
+            let config = orders::load();
+            ctl().grafica = model::normalized(&config.grafica_grupo);
         });
     }
     update();
@@ -965,6 +988,11 @@ fn ingest(c: &mut Ctl, messages: Vec<Message>) -> (Option<String>, Vec<String>) 
         if let (Some(id), true) = (receipt, outcome != Outcome::Duplicate) {
             receipt_step(c, &key, id);
         }
+        // The partner print shop's group: its jobs are read once it has been quiet a moment.
+        if !SECOND && !from_me && outcome != Outcome::Duplicate && !c.grafica.is_empty() && key == c.grafica {
+            c.job_last = gateway::now_ms();
+            c.job_wanted = true;
+        }
         if let Some(g) = needs_name(c, &key) {
             groups.push(g);
         }
@@ -1385,6 +1413,143 @@ async fn answer_alone(id: u64, quiet_minutes: u32) {
     }
 }
 
+/// At most this many messages from Coucou to the print shop's group in an hour.
+const GROUP_PER_HOUR: usize = 6;
+
+/// The print shop's group, once quiet: each job whose file and request are there gets its sheet
+/// (card and vault note) and, when it is new or its missing detail came, Coucou's message in the
+/// group (grafica.rs).
+async fn read_jobs(gen: u64) {
+    tokio::time::sleep(Duration::from_millis(grafica::QUIET_MS as u64)).await;
+    let config = tauri::async_runtime::spawn_blocking(orders::load).await.unwrap_or_default();
+    let group = {
+        let mut c = ctl();
+        if c.generation != gen || gateway::now_ms() - c.job_last < grafica::QUIET_MS - 2_000 {
+            // A later message has its own read.
+            return;
+        }
+        c.grafica = model::normalized(&config.grafica_grupo);
+        let key = c.grafica.clone();
+        c.inbox.conversations.get(&key).cloned()
+    };
+    let Some(group) = group else { return };
+    let Some(prompt) = grafica::prompt(&group) else { return };
+    let specs = match grafica::read(&prompt).await {
+        Ok(specs) => specs,
+        Err(reason) => {
+            crate::log::line(format!("whatsapp: could not read the print shop's jobs: {reason}"));
+            return;
+        }
+    };
+    let today = {
+        let t = crate::platform::local_time();
+        format!("{:04}-{:02}-{:02}", t.year, t.month, t.day)
+    };
+    let mut to_send = Vec::new();
+    let mut fresh = false;
+    {
+        let mut guard = ctl();
+        let c = &mut *guard;
+        if c.generation != gen {
+            return;
+        }
+        for spec in specs {
+            let Some(message) = grafica::file_message(&group, &spec.arquivo) else { continue };
+            if c.job_settled.contains(&message.id) {
+                continue;
+            }
+            let job = grafica::Job::new(message.id.clone(), spec, matches!(message.media, model::Media::Image));
+            match c.jobs.iter_mut().find(|(_, j)| j.key == job.key) {
+                // Once confirmed in the group, a job stays as it was: a second reading is not news.
+                Some((_, old)) if old.stage == grafica::Stage::Confirmed && old.sent => continue,
+                Some((id, old)) => {
+                    if old.spec == job.spec && old.picture == job.picture {
+                        continue;
+                    }
+                    *old = job.clone();
+                    to_send.push(*id);
+                }
+                None => {
+                    c.job_next += 1;
+                    let id = c.job_next;
+                    c.jobs.push((id, job.clone()));
+                    to_send.push(id);
+                    fresh = true;
+                }
+            }
+            crate::memoria::write_note(job.note_path(), job.note(&today));
+        }
+        if c.jobs.len() > grafica::MAX_JOBS {
+            let extra = c.jobs.len() - grafica::MAX_JOBS;
+            c.jobs.drain(0..extra);
+        }
+    }
+    if fresh {
+        pill(PillEvent::Message { name: crate::i18n::t("New print shop job") });
+    }
+    changed();
+    for id in to_send {
+        answer_group(id, config.silencio_minutos).await;
+    }
+    changed();
+}
+
+/// Coucou's message about one job in the print shop's group: not when you wrote there in the last
+/// minutes, never the same words twice, a few an hour at most. The card keeps it for you to copy.
+async fn answer_group(id: u64, quiet_minutes: u32) {
+    let now = gateway::now_ms();
+    let (group, text) = {
+        let mut guard = ctl();
+        let c = &mut *guard;
+        let Some((_, job)) = c.jobs.iter().find(|(n, j)| *n == id && !j.sent) else { return };
+        let text = job.message.clone();
+        let group = c.grafica.clone();
+        c.job_sent.retain(|(at, _)| now - *at < AUTO_MEMORY_MS);
+        let mine: Vec<String> = c.job_sent.iter().map(|(_, t)| t.clone()).collect();
+        let you = c.inbox.conversations.get(&group).map_or(true, |conv| orders::you_answered(conv, now, i64::from(quiet_minutes) * 60_000, &mine));
+        let quiet = if you {
+            Some(format!("you wrote in the group in the last {quiet_minutes} minutes"))
+        } else if c.job_sent.iter().filter(|(at, _)| now - *at < 3_600_000).count() >= GROUP_PER_HOUR {
+            Some(format!("{GROUP_PER_HOUR} messages sent to the group this hour"))
+        } else if mine.iter().any(|t| *t == text) {
+            Some("the same words were sent already".to_string())
+        } else {
+            None
+        };
+        if let Some(why) = quiet {
+            crate::log::line(format!("whatsapp: print shop job left on the card: {why}"));
+            return;
+        }
+        c.job_sent.push((now, text.clone()));
+        (group, text)
+    };
+    if send(&group, &text).await {
+        if let Some((_, job)) = ctl().jobs.iter_mut().find(|(n, _)| *n == id) {
+            job.sent = true;
+        }
+    } else {
+        crate::log::line("whatsapp: could not write in the print shop's group");
+        ctl().job_sent.retain(|(_, t)| *t != text);
+    }
+}
+
+/// "Done" on a print shop job's card: it goes, and its file is not read again.
+pub fn whatsapp_job_discard(window: WebviewWindow, id: u64) -> Result<(), String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    {
+        let mut c = ctl();
+        if let Some(index) = c.jobs.iter().position(|(n, _)| *n == id) {
+            let (_, job) = c.jobs.remove(index);
+            if c.job_settled.len() > 500 {
+                c.job_settled.clear();
+            }
+            c.job_settled.insert(job.key);
+        }
+    }
+    changed();
+    Ok(())
+}
+
 /// Fetches one PDF of the customer to count its pages; the gateway's copy is removed at once.
 async fn count_pages(provider: &Provider, message: &str, chat: &str) -> Option<u32> {
     let relative = provider.download(message, chat).await.ok()?;
@@ -1435,6 +1600,9 @@ fn after_ingest(gen: u64, fresh: Option<String>, groups: Vec<String>) {
     }
     for (chat, message) in receipts {
         spawn(read_receipt(gen, chat, message));
+    }
+    if std::mem::take(&mut ctl().job_wanted) {
+        spawn(read_jobs(gen));
     }
     for name in approved {
         pill(PillEvent::Message { name: crate::i18n::tf("Order approved: {name}", &[("name", name.as_str())]) });
@@ -2231,6 +2399,13 @@ mod tests {
             ledger_sheet_code: false,
             order_queue: Vec::new(),
             order_reading: HashSet::new(),
+            grafica: String::new(),
+            jobs: Vec::new(),
+            job_next: 0,
+            job_last: 0,
+            job_wanted: false,
+            job_settled: HashSet::new(),
+            job_sent: Vec::new(),
             owner_sent: Vec::new(),
             order_auto: HashMap::new(),
             receipt_queue: Vec::new(),

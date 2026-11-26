@@ -102,10 +102,27 @@ export interface WaIslandView {
   down: boolean;
   pending: WaEntry[];
   orders: WaOrder[];
+  /** Jobs from the partner print shop's group. */
+  jobs: WaJob[];
+}
+
+/** A job from the partner print shop's group: its production sheet and Coucou's message there. */
+export interface WaJob {
+  id: number;
+  os: string;
+  file: string;
+  /** The production sheet, one line each. */
+  lines: string[];
+  stage: "missing" | "confirmed";
+  /** The art came as a picture: the vector was asked for. */
+  picture: boolean;
+  /** What Coucou writes (or wrote) in the group. */
+  message: string;
+  sent: boolean;
 }
 
 export const IDLE_WHATSAPP: WaIslandView = {
-  on: false, link: { state: "off" }, conversations: [], unread: 0, sending: false, sendError: null, down: false, pending: [], orders: [],
+  on: false, link: { state: "off" }, conversations: [], unread: 0, sending: false, sendError: null, down: false, pending: [], orders: [], jobs: [],
 };
 
 /** The page's copy of what Rust keeps. */

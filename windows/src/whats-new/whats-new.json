@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.17.0",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Print shop jobs",
+            "zh-Hans": "印刷厂订单",
+            "hi": "प्रिंट शॉप के काम",
+            "es": "Trabajos de la imprenta",
+            "ar": "طلبات المطبعة",
+            "fr": "Travaux de l’imprimerie",
+            "bn": "ছাপাখানার কাজ",
+            "pt-BR": "Serviços da gráfica",
+            "ru": "Заказы типографии",
+            "id": "Pekerjaan percetakan",
+            "de": "Druckerei-Aufträge",
+            "tr": "Matbaa işleri",
+            "ko": "인쇄소 작업",
+            "ja": "印刷所の仕事"
+          },
+          "detail": {
+            "en": "Jobs from the print shop's group get a production sheet, and Coucou asks what is missing.",
+            "zh-Hans": "印刷厂群里的订单会生成生产单，Coucou 会询问缺少的信息。",
+            "hi": "प्रिंट शॉप ग्रुप के कामों की प्रोडक्शन शीट बनती है और Coucou कमी पूछता है।",
+            "es": "Los trabajos del grupo de la imprenta tienen su ficha de producción y Coucou pregunta lo que falta.",
+            "ar": "لطلبات مجموعة المطبعة بطاقة إنتاج، ويسأل Coucou عمّا ينقص.",
+            "fr": "Les travaux du groupe de l’imprimerie ont leur fiche de production et Coucou demande ce qui manque.",
+            "bn": "ছাপাখানার গ্রুপের কাজের প্রোডাকশন শিট হয়, আর Coucou যা বাকি তা জিজ্ঞেস করে।",
+            "pt-BR": "Os serviços do grupo da gráfica ganham ficha de produção, e o Coucou pergunta o que falta.",
+            "ru": "Заказы из группы типографии получают техкарту, а Coucou уточняет недостающее.",
+            "id": "Pekerjaan dari grup percetakan dapat lembar produksi, dan Coucou menanyakan yang kurang.",
+            "de": "Aufträge aus der Druckerei-Gruppe bekommen einen Produktionszettel, Coucou fragt nach Fehlendem.",
+            "tr": "Matbaa grubundaki işlere üretim fişi çıkar, Coucou eksikleri sorar.",
+            "ko": "인쇄소 그룹의 작업에 생산 지시서가 만들어지고, Coucou가 빠진 정보를 묻습니다.",
+            "ja": "印刷所グループの仕事に製作票ができ、Coucouが足りない情報を尋ねます。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.16.0",
       "items": [
         {
