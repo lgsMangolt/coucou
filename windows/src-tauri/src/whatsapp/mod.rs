@@ -251,6 +251,8 @@ struct Ctl {
     order_queue: Vec<String>,
     /// Chats being read right now: one reading at a time for each.
     order_reading: HashSet<String>,
+    /// The warnings sent to the owner lately (when, words): never the same twice in a while.
+    owner_sent: Vec<(i64, String)>,
     /// What Coucou sent by itself to each customer, and when (answer_alone).
     order_auto: HashMap<String, Vec<(i64, String)>>,
     /// Images and PDFs customers sent while a quote waits for payment: (chat, message), read as receipts.
@@ -306,6 +308,7 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         ledger_sheet_code: false,
         order_queue: Vec::new(),
         order_reading: HashSet::new(),
+        owner_sent: Vec::new(),
         order_auto: HashMap::new(),
         receipt_queue: Vec::new(),
         order_printing: HashSet::new(),
@@ -1063,6 +1066,8 @@ async fn read_receipt(gen: u64, chat: String, message: String) {
                 }
                 Err(why) => {
                     crate::log::line(format!("whatsapp: a receipt does not pay its quote: {why}"));
+                    let total = order.total_cents().map(ledger::reais).unwrap_or_default();
+                    tell_owner(format!("⚠️ Coucou: o comprovante de {} não bate com o orçamento de {total}: {why}. Confere no WhatsApp.", order.name));
                     Err(Some(order.name.clone()))
                 }
             },
@@ -1085,15 +1090,55 @@ async fn read_receipt(gen: u64, chat: String, message: String) {
     }
 }
 
+/// The same warning goes to the owner at most once in this long.
+const OWNER_REPEAT_MS: i64 = 10 * 60_000;
+/// And at most this many warnings in that time.
+const OWNER_MAX: usize = 10;
+
+/// A warning for the shop's owner on their own WhatsApp (pedidos.json `avisar_numero`), sent from
+/// the shop's account. Only that number, never the same words twice in 10 minutes, a few at most.
+pub fn tell_owner(text: String) {
+    if SECOND {
+        return;
+    }
+    spawn(async move {
+        let number = tauri::async_runtime::spawn_blocking(|| orders::load().avisar_numero).await.unwrap_or_default();
+        let Some(owner) = orders::owner_chat(&number) else { return };
+        let text: String = text.trim().chars().take(600).collect();
+        let provider = {
+            let mut c = ctl();
+            let now = gateway::now_ms();
+            c.owner_sent.retain(|(at, _)| now - *at < OWNER_REPEAT_MS);
+            if c.owner_sent.iter().any(|(_, t)| *t == text) || c.owner_sent.len() >= OWNER_MAX {
+                return;
+            }
+            let Some(provider) = c.provider.clone() else { return };
+            if !c.rate.allow(Instant::now()) {
+                crate::log::line("whatsapp: a warning for the owner waits: too many messages this minute");
+                return;
+            }
+            c.owner_sent.push((now, text.clone()));
+            provider
+        };
+        if let Err(err) = provider.send(&text, &owner).await {
+            crate::log::line(format!("whatsapp: could not warn the owner: {err:?}"));
+        }
+    });
+}
+
 /// Prints an order and says so on the pill.
 async fn print_and_tell(id: u64) -> Result<String, String> {
     let name = ctl().orders.iter().find(|(n, _)| *n == id).map(|(_, o)| o.name.clone()).unwrap_or_default();
     let result = print_order(id).await;
     match &result {
-        Ok(_) => pill(PillEvent::Message { name: crate::i18n::tf("Printed: {name}", &[("name", name.as_str())]) }),
+        Ok(printer) => {
+            pill(PillEvent::Message { name: crate::i18n::tf("Printed: {name}", &[("name", name.as_str())]) });
+            tell_owner(format!("🖨️ Coucou: mandei o pedido de {name} para a {printer}."));
+        }
         Err(why) => {
             crate::log::line(format!("whatsapp: could not print an order: {why}"));
             pill(PillEvent::Message { name: crate::i18n::tf("Could not print: {name}", &[("name", name.as_str())]) });
+            tell_owner(format!("⚠️ Coucou: não consegui imprimir o pedido de {name}: {why}"));
         }
     }
     changed();
@@ -1270,6 +1315,11 @@ async fn read_order(gen: u64, chat: String) {
     };
     if let Some(id) = fresh {
         pill(PillEvent::Message { name: crate::i18n::t("New print order") });
+        let for_you = ctl().orders.iter().find(|(n, _)| *n == id).map(|(_, o)| o.view(id)).filter(|v| v.kind == orders::Kind::Manager || (v.kind == orders::Kind::Quote && v.total.is_empty()));
+        if let Some(view) = for_you {
+            let why = if view.reason.is_empty() { String::new() } else { format!(": {}", view.reason) };
+            tell_owner(format!("📋 Coucou: pedido de {} para você{why}. Respondi que você faz o orçamento.", view.name));
+        }
         if config.responder_sozinho {
             changed();
             answer_alone(id, config.silencio_minutos).await;
@@ -2181,6 +2231,7 @@ mod tests {
             ledger_sheet_code: false,
             order_queue: Vec::new(),
             order_reading: HashSet::new(),
+            owner_sent: Vec::new(),
             order_auto: HashMap::new(),
             receipt_queue: Vec::new(),
             order_printing: HashSet::new(),

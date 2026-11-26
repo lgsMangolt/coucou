@@ -50,6 +50,21 @@ pub enum Problem {
     StuckJob,
 }
 
+/// The problem, as the owner's WhatsApp warning says it ("a impressora X está …").
+pub fn problem_pt(problem: Problem) -> &'static str {
+    match problem {
+        Problem::Offline => "desligada ou desconectada",
+        Problem::PaperOut => "sem papel",
+        Problem::PaperJam => "com papel atolado",
+        Problem::TonerOut => "sem toner ou tinta",
+        Problem::DoorOpen => "com a porta aberta",
+        Problem::Service => "pedindo manutenção",
+        Problem::BinFull => "com a bandeja de saída cheia",
+        Problem::Error => "com erro",
+        Problem::StuckJob => "com um trabalho travado na fila",
+    }
+}
+
 // ── What Windows says ─────────────────────────────────────────────────────────
 
 #[derive(Debug, Default, Deserialize)]
@@ -318,6 +333,7 @@ async fn look(app: &AppHandle) -> Report {
     };
     publish(app, &report);
     for alert in alerts {
+        crate::whatsapp::tell_owner(format!("⚠️ Coucou: a impressora {} está {}.", alert.name, problem_pt(alert.problem)));
         let _ = app.emit_to(crate::island::WINDOW_LABEL, ALERT_EVENT, alert);
     }
     report

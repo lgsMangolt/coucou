@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.16.0",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Warnings on WhatsApp",
+            "zh-Hans": "WhatsApp 提醒",
+            "hi": "WhatsApp पर चेतावनी",
+            "es": "Avisos en WhatsApp",
+            "ar": "تنبيهات على واتساب",
+            "fr": "Alertes sur WhatsApp",
+            "bn": "WhatsApp-এ সতর্কবার্তা",
+            "pt-BR": "Avisos no WhatsApp",
+            "ru": "Оповещения в WhatsApp",
+            "id": "Peringatan di WhatsApp",
+            "de": "Hinweise per WhatsApp",
+            "tr": "WhatsApp'ta uyarılar",
+            "ko": "WhatsApp 알림",
+            "ja": "WhatsAppで通知"
+          },
+          "detail": {
+            "en": "Printer problems, printed orders and orders for you arrive on your own WhatsApp.",
+            "zh-Hans": "打印机故障、已打印的订单和需要你处理的订单会发到你自己的 WhatsApp。",
+            "hi": "प्रिंटर की दिक्कत, छपे ऑर्डर और आपके लिए ऑर्डर आपके WhatsApp पर आते हैं।",
+            "es": "Problemas de impresora, pedidos impresos y pedidos para ti llegan a tu WhatsApp.",
+            "ar": "مشكلات الطابعة والطلبات المطبوعة والطلبات الموجهة إليك تصل إلى واتساب الخاص بك.",
+            "fr": "Les pannes d’imprimante, les commandes imprimées et celles pour vous arrivent sur votre WhatsApp.",
+            "bn": "প্রিন্টারের সমস্যা, ছাপা অর্ডার ও আপনার জন্য অর্ডার আপনার WhatsApp-এ আসে।",
+            "pt-BR": "Problema na impressora, pedido impresso e pedido para você chegam no seu WhatsApp.",
+            "ru": "Сбои принтера, напечатанные заказы и заказы для вас приходят в ваш WhatsApp.",
+            "id": "Masalah printer, pesanan tercetak, dan pesanan untuk Anda masuk ke WhatsApp Anda.",
+            "de": "Druckerprobleme, gedruckte Aufträge und Aufträge für Sie kommen auf Ihr WhatsApp.",
+            "tr": "Yazıcı sorunları, basılan siparişler ve size kalan siparişler WhatsApp'ınıza gelir.",
+            "ko": "프린터 문제, 인쇄된 주문, 직접 처리할 주문이 내 WhatsApp으로 옵니다.",
+            "ja": "プリンターの不具合、印刷した注文、あなた宛ての注文がWhatsAppに届きます。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.15.0",
       "items": [
         {

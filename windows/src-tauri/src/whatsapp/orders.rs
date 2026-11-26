@@ -119,6 +119,9 @@ pub struct Config {
     /// The shop's Pix key (its CNPJ): a receipt counts only when it was paid to it. "": the
     /// receiver is not checked.
     pub pix_chave: String,
+    /// The shop owner's own WhatsApp number: warnings (a printer that stops, an order printed or not,
+    /// an order for the manager, a receipt that does not match) are sent there. "": none.
+    pub avisar_numero: String,
 }
 
 fn tiers(prices: [f64; 4]) -> Vec<Tier> {
@@ -164,6 +167,7 @@ impl Default for Config {
             silencio_minutos: 30,
             imprimir_sozinho_ate: 10,
             pix_chave: String::new(),
+            avisar_numero: String::new(),
         }
     }
 }
@@ -190,6 +194,7 @@ impl Config {
         self.acabamentos.retain(|f| !f.id.is_empty() && !f.nome.is_empty());
         self.pagamento = self.pagamento.trim().chars().take(300).collect();
         self.pix_chave = clean_text(&self.pix_chave, 40);
+        self.avisar_numero = self.avisar_numero.chars().filter(char::is_ascii_digit).take(15).collect();
         self
     }
 
@@ -1287,6 +1292,12 @@ pub fn memory_entry(order: &Order) -> crate::memoria::Entry {
     }
 }
 
+/// The owner's chat from pedidos.json `avisar_numero` (digits only), or None when there is none.
+pub fn owner_chat(number: &str) -> Option<String> {
+    let digits: String = number.chars().filter(char::is_ascii_digit).collect();
+    (10..=15).contains(&digits.len()).then(|| format!("{digits}@s.whatsapp.net"))
+}
+
 // ── The file ──────────────────────────────────────────────────────────────────
 
 /// A name safe for a folder or a file: no separators, no reserved characters, not too long.
@@ -1711,6 +1722,17 @@ mod tests {
         std::fs::write(&note_path, note.replace("| 1,00 | 0,70 |", "| ? | 0,70 |")).unwrap();
         assert_eq!(with_note_prices(used.clone(), &note_path, &json), used);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn warnings_go_only_to_a_real_number() {
+        assert_eq!(owner_chat("55 54 8136-0479").as_deref(), Some("555481360479@s.whatsapp.net"));
+        assert_eq!(owner_chat("+55 (54) 98136-0479").as_deref(), Some("5554981360479@s.whatsapp.net"));
+        for bad in ["", "0479", "123456789", "abc", "1234567890123456"] {
+            assert_eq!(owner_chat(bad), None, "{bad}");
+        }
+        let cleaned = Config { avisar_numero: "+55 54 8136-0479".into(), ..Config::default() }.cleaned();
+        assert_eq!(cleaned.avisar_numero, "555481360479");
     }
 
     /// For windows/evals/pedidos/avaliar.py: the instructions the model gets, with the default table.
