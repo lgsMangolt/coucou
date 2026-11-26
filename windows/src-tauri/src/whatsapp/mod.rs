@@ -1042,17 +1042,21 @@ async fn read_receipt(gen: u64, chat: String, message: String) {
         else {
             return;
         };
+        let today = gateway::now_ms().div_euclid(86_400_000);
+        let pays = |r: &orders::Receipt| orders::receipt_pays(r, order.total_cents().unwrap_or(-1), &config, today);
         match read {
-            Ok(paid) if Some(paid) == order.total_cents() => {
-                order.paid = true;
-                order.state = orders::State::Approved;
-                crate::log::line("whatsapp: a receipt matches its quote");
-                Ok((*id, order.name.clone(), order.job.as_ref().is_some_and(|j| orders::prints_alone(j, &config))))
-            }
-            Ok(paid) => {
-                crate::log::line(format!("whatsapp: a receipt of {} does not match its quote", ledger::reais(paid)));
-                Err(Some(order.name.clone()))
-            }
+            Ok(receipt) => match pays(&receipt) {
+                Ok(()) => {
+                    order.paid = true;
+                    order.state = orders::State::Approved;
+                    crate::log::line("whatsapp: a receipt matches its quote");
+                    Ok((*id, order.name.clone(), order.job.as_ref().is_some_and(|j| orders::prints_alone(j, &config))))
+                }
+                Err(why) => {
+                    crate::log::line(format!("whatsapp: a receipt does not pay its quote: {why}"));
+                    Err(Some(order.name.clone()))
+                }
+            },
             Err(why) => {
                 crate::log::line(format!("whatsapp: a customer's file is not a receipt: {why}"));
                 Err(None)

@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.14.1",
+      "items": [
+        {
+          "icon": "shield",
+          "title": {
+            "en": "Checks who was paid",
+            "zh-Hans": "核对收款人",
+            "hi": "प्राप्तकर्ता की जाँच",
+            "es": "Verifica el destinatario",
+            "ar": "يتحقق من المستلم",
+            "fr": "Vérifie le bénéficiaire",
+            "bn": "প্রাপক যাচাই করে",
+            "pt-BR": "Confere o recebedor",
+            "ru": "Проверяет получателя",
+            "id": "Cek penerima",
+            "de": "Prüft den Empfänger",
+            "tr": "Alıcıyı kontrol eder",
+            "ko": "받는 사람 확인",
+            "ja": "受取人を確認"
+          },
+          "detail": {
+            "en": "A receipt counts only if it paid your Pix key, today or yesterday, and the quote's exact amount.",
+            "zh-Hans": "收据须付给你的 Pix 密钥、日期为今天或昨天、金额与报价一致才算数。",
+            "hi": "रसीद तभी मान्य है जब भुगतान आपकी Pix कुंजी पर, आज या कल, सही रकम का हो।",
+            "es": "El comprobante vale solo si pagó a tu clave Pix, hoy o ayer, y el monto exacto.",
+            "ar": "يُقبل الإيصال فقط إذا دُفع لمفتاح Pix الخاص بك، اليوم أو أمس، وبالمبلغ نفسه.",
+            "fr": "Un reçu ne compte que s’il a payé ta clé Pix, aujourd’hui ou hier, du montant exact.",
+            "bn": "রসিদ তখনই গণ্য, যদি আপনার Pix কী-তে আজ বা গতকাল ঠিক অঙ্ক দেওয়া হয়।",
+            "pt-BR": "O comprovante só vale se o Pix foi para a sua chave, hoje ou ontem, e no valor exato do orçamento.",
+            "ru": "Чек засчитывается, только если оплата на ваш ключ Pix, сегодня или вчера, на точную сумму.",
+            "id": "Bukti bayar berlaku hanya jika ke kunci Pix Anda, hari ini atau kemarin, dengan jumlah tepat.",
+            "de": "Ein Beleg zählt nur, wenn er an deinen Pix-Schlüssel ging, heute oder gestern, mit dem genauen Betrag.",
+            "tr": "Dekont yalnızca Pix anahtarınıza, bugün veya dün, tam tutarla ödendiyse geçerlidir.",
+            "ko": "영수증은 내 Pix 키로, 오늘이나 어제, 정확한 금액이 결제된 경우에만 인정됩니다.",
+            "ja": "領収書は自分のPixキー宛て、今日か昨日、見積もり通りの金額の場合のみ有効です。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.14.0",
       "items": [
         {
