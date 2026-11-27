@@ -279,6 +279,10 @@ struct Ctl {
     receipt_queue: Vec<(String, String)>,
     /// Customers who just sent a voice note: asked to write it.
     audio_queue: Vec<String>,
+    /// Customers who asked something with no file: read for an owner's answer, or noted for them.
+    question_queue: Vec<String>,
+    /// The customer's last message read as a question, by chat (never read twice).
+    question_seen: HashMap<String, String>,
     /// Orders on their way to the printer.
     order_printing: HashSet<u64>,
     /// The pages of the customers' PDFs, by message id (counted once).
@@ -343,6 +347,8 @@ static CTL: LazyLock<Mutex<Ctl>> = LazyLock::new(|| {
         order_auto: HashMap::new(),
         receipt_queue: Vec::new(),
         audio_queue: Vec::new(),
+        question_queue: Vec::new(),
+        question_seen: HashMap::new(),
         order_printing: HashSet::new(),
         order_pages: HashMap::new(),
         orders: Vec::new(),
@@ -1059,6 +1065,12 @@ fn order_step(c: &mut Ctl, key: &str, text: &str) {
     }
     let Some(conversation) = c.inbox.conversations.get(key) else { return };
     if !orders::worth_reading(conversation) {
+        // A question with no file ("vocês fazem banner?"): read for an owner's answer, or noted.
+        let loose = !SECOND && !conversation.is_group && orders::file_of(conversation).is_none() && orders::is_question(text);
+        let card = c.orders.iter().any(|(_, o)| o.chat == key && o.state == orders::State::Draft);
+        if loose && !card && !c.question_queue.iter().any(|k| k == key) {
+            c.question_queue.push(key.to_string());
+        }
         return;
     }
     let Some((file, _)) = orders::file_of(conversation) else { return };
@@ -1541,8 +1553,90 @@ async fn answer_audio(gen: u64, chat: String) {
     if !config.ativo || !config.responder_sozinho {
         return;
     }
+    send_alone(gen, chat, orders::AUDIO_REPLY.to_string(), config.silencio_minutos, "a voice note").await;
+}
+
+/// A customer asked something with no file (orders::is_question). The model only says whether it
+/// is a question the owner already answered in "Para responder" (their words are then sent as they
+/// are, by itself, with the locks of answer_alone), a question for the owner (noted there, and the
+/// owner warned), or nothing (a greeting, chat). Shop's account only; never twice for one message;
+/// not while you are writing to that customer.
+async fn read_question(gen: u64, chat: String) {
+    if SECOND {
+        return;
+    }
+    let config = tauri::async_runtime::spawn_blocking(orders::load).await.unwrap_or_default();
+    if !config.ativo {
+        return;
+    }
     let now = gateway::now_ms();
-    let text = orders::AUDIO_REPLY.to_string();
+    let found = {
+        let mut guard = ctl();
+        let c = &mut *guard;
+        if c.generation != gen {
+            return;
+        }
+        let Some(conv) = c.inbox.conversations.get(&chat) else { return };
+        // The customer has the last word, still no file, and this message was not read before.
+        let Some(last) = conv.messages.last().filter(|m| !m.from_me) else { return };
+        if orders::file_of(conv).is_some() || c.question_seen.get(&chat) == Some(&last.id) {
+            return;
+        }
+        let mine: Vec<String> = c.order_auto.get(&chat).map(|p| p.iter().map(|(_, t)| t.clone()).collect()).unwrap_or_default();
+        if orders::you_answered(conv, now, i64::from(config.silencio_minutos) * 60_000, &mine) {
+            return;
+        }
+        let Some(prompt) = orders::prompt(conv, &HashMap::new()) else { return };
+        let said: Vec<String> = orders::transcript(conv).into_iter().filter(|l| l.starts_with("Cliente:")).collect();
+        let found = (prompt, conv.name.clone(), said);
+        if c.question_seen.len() > 2000 {
+            c.question_seen.clear();
+        }
+        c.question_seen.insert(chat.clone(), last.id.clone());
+        found
+    };
+    let (prompt, name, said) = found;
+    let owner = tauri::async_runtime::spawn_blocking(crate::memoria::answers).await.unwrap_or_default();
+    let prompt = match orders::answers_block(&owner) {
+        Some(block) => format!("{prompt}\n\n{block}"),
+        None => prompt,
+    };
+    let read = match orders::read_question(&prompt).await {
+        Ok(read) => read,
+        Err(why) => {
+            crate::log::line(format!("whatsapp: could not read a customer's question: {why}"));
+            return;
+        }
+    };
+    if ctl().generation != gen {
+        return;
+    }
+    // The number the model picked becomes the owner's own words; an unknown number is noted.
+    let note = |title: String| {
+        let title = if title.trim().is_empty() { "Pergunta".to_string() } else { title };
+        crate::log::line("whatsapp: a customer's question noted for you");
+        tell_owner(format!("❓ Coucou: {name} perguntou: {title}. Anotei em Para responder."));
+        crate::memoria::note_pending(name.clone(), model::display_number(&chat), title, said.clone());
+    };
+    match read {
+        orders::Loose::Answer(n) => match owner.get(n - 1) {
+            Some(a) if config.responder_sozinho => {
+                crate::log::line("whatsapp: answering a customer's question with your answer");
+                send_alone(gen, chat.clone(), a.resposta.clone(), config.silencio_minutos, "a question").await;
+            }
+            Some(_) => tell_owner(format!("💬 Coucou: {name} perguntou algo que você já respondeu em Para responder. Responde no WhatsApp.")),
+            None => note(String::new()),
+        },
+        orders::Loose::Note(title) => note(title),
+        orders::Loose::Nothing => {}
+    }
+    changed();
+}
+
+/// Sends `text` to a customer by itself, with the locks of answer_alone: quiet when you wrote to the
+/// customer lately, a few messages an hour, and never the same words twice in 12 hours.
+async fn send_alone(gen: u64, chat: String, text: String, quiet_minutes: u32, what: &str) {
+    let now = gateway::now_ms();
     {
         let mut guard = ctl();
         let c = &mut *guard;
@@ -1553,18 +1647,18 @@ async fn answer_audio(gen: u64, chat: String) {
         past.retain(|(at, _)| now - *at < AUTO_MEMORY_MS);
         let mine: Vec<String> = past.iter().map(|(_, t)| t.clone()).collect();
         let this_hour = past.iter().filter(|(at, _)| now - *at < 3_600_000).count();
-        let quiet_ms = i64::from(config.silencio_minutos) * 60_000;
+        let quiet_ms = i64::from(quiet_minutes) * 60_000;
         let you = c.inbox.conversations.get(&chat).map_or(true, |conv| orders::you_answered(conv, now, quiet_ms, &mine));
         if you || this_hour >= AUTO_PER_HOUR || mine.iter().any(|t| *t == text) {
-            crate::log::line("whatsapp: a voice note left for you: you wrote lately, or Coucou already asked");
+            crate::log::line(format!("whatsapp: {what} left for you: you wrote lately, too many messages, or the same words went already"));
             return;
         }
         past.push((now, text.clone()));
     }
-    crate::log::line("whatsapp: asking a customer to write their voice note");
+    crate::log::line(format!("whatsapp: answering {what} by itself"));
     note_coucou(&chat, "coucou", &text);
     if !send(&chat, &text).await {
-        crate::log::line("whatsapp: could not answer a voice note");
+        crate::log::line(format!("whatsapp: could not answer {what}"));
         if let Some(past) = ctl().order_auto.get_mut(&chat) {
             past.retain(|(_, t)| *t != text);
         }
@@ -1986,7 +2080,7 @@ fn after_ingest(gen: u64, fresh: Option<String>, groups: Vec<String>) {
     if let Some(name) = fresh {
         pill(PillEvent::Message { name });
     }
-    let (notes, queued, approved, receipts, audios) = {
+    let (notes, queued, approved, receipts, audios, questions) = {
         let mut c = ctl();
         (
             std::mem::take(&mut c.ledger_queue),
@@ -1994,6 +2088,7 @@ fn after_ingest(gen: u64, fresh: Option<String>, groups: Vec<String>) {
             std::mem::take(&mut c.order_news),
             std::mem::take(&mut c.receipt_queue),
             std::mem::take(&mut c.audio_queue),
+            std::mem::take(&mut c.question_queue),
         )
     };
     for text in notes {
@@ -2001,6 +2096,9 @@ fn after_ingest(gen: u64, fresh: Option<String>, groups: Vec<String>) {
     }
     for chat in audios {
         spawn(answer_audio(gen, chat));
+    }
+    for chat in questions {
+        spawn(read_question(gen, chat));
     }
     for chat in queued {
         spawn(read_order(gen, chat));
@@ -2832,7 +2930,9 @@ mod tests {
             order_auto: HashMap::new(),
             receipt_queue: Vec::new(),
             audio_queue: Vec::new(),
-            order_printing: HashSet::new(),
+            question_queue: Vec::new(),
+            question_seen: HashMap::new(),
+order_printing: HashSet::new(),
             order_pages: HashMap::new(),
             orders: Vec::new(),
             order_next: 0,
@@ -3037,6 +3137,28 @@ mod tests {
         let mine = Message { from_me: true, ..voice("4", chat) };
         ingest(&mut c, vec![mine]);
         assert!(c.audio_queue.is_empty(), "a group's voice note and your own are left alone");
+    }
+
+    #[test]
+    fn a_question_with_no_file_is_queued_and_a_greeting_is_not() {
+        let chat = "5511999990000@s.whatsapp.net";
+        let mut c = fresh_ctl();
+        ingest(&mut c, vec![msg("1", chat, "bom dia")]);
+        assert!(c.question_queue.is_empty() && c.order_queue.is_empty(), "a greeting never leaves the PC");
+        ingest(&mut c, vec![msg("2", chat, "vocês fazem banner?")]);
+        if SECOND {
+            assert!(c.question_queue.is_empty(), "the second account is not the shop's");
+            return;
+        }
+        assert_eq!(c.question_queue, [chat]);
+        ingest(&mut c, vec![msg("2", chat, "vocês fazem banner?"), msg("3", chat, "de lona")]);
+        assert_eq!(c.question_queue, [chat], "a duplicate, or another message before the reading, queues nothing more");
+        c.question_queue.clear();
+        ingest(&mut c, vec![msg("4", "120363000000000000@g.us", "alguém sabe o horário?")]);
+        assert!(c.question_queue.is_empty(), "a group's question is left alone");
+        ingest(&mut c, vec![file_from("5", chat), msg("6", chat, "quanto fica?")]);
+        assert!(c.question_queue.is_empty(), "with a file, it is read as an order");
+        assert_eq!(c.order_queue, [chat]);
     }
 
     #[test]

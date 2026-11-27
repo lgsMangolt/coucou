@@ -2,6 +2,46 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.22.0",
+      "items": [
+        {
+          "icon": "checklist",
+          "title": {
+            "en": "Questions without a file, too",
+            "zh-Hans": "没有文件的问题也会记录",
+            "hi": "बिना फ़ाइल वाले सवाल भी",
+            "es": "También preguntas sin archivo",
+            "ar": "الأسئلة بلا ملف أيضًا",
+            "fr": "Les questions sans fichier aussi",
+            "bn": "ফাইল ছাড়া প্রশ্নও",
+            "pt-BR": "Pergunta sem arquivo também",
+            "ru": "И вопросы без файла",
+            "id": "Pertanyaan tanpa file juga",
+            "de": "Auch Fragen ohne Datei",
+            "tr": "Dosyasız sorular da",
+            "ko": "파일 없는 질문도",
+            "ja": "ファイルのない質問も"
+          },
+          "detail": {
+            "en": "A customer's question with no file gets your saved answer, or is noted for you.",
+            "zh-Hans": "顾客没发文件的问题，会用您写好的回答，或记下来等您回答。",
+            "hi": "बिना फ़ाइल वाले सवाल को आपका लिखा जवाब मिलता है, या वह आपके लिए नोट होता है।",
+            "es": "Una pregunta sin archivo recibe tu respuesta guardada, o se anota para ti.",
+            "ar": "سؤال العميل بلا ملف يتلقى جوابك المحفوظ، أو يُدوَّن لك.",
+            "fr": "Une question sans fichier reçoit votre réponse enregistrée, ou est notée pour vous.",
+            "bn": "ফাইল ছাড়া প্রশ্ন আপনার লেখা উত্তর পায়, বা আপনার জন্য লেখা থাকে।",
+            "pt-BR": "Pergunta sem arquivo recebe a sua resposta anotada, ou fica anotada para você.",
+            "ru": "Вопрос без файла получает ваш сохранённый ответ или записывается для вас.",
+            "id": "Pertanyaan tanpa file mendapat jawaban simpananmu, atau dicatat untukmu.",
+            "de": "Eine Frage ohne Datei bekommt deine gespeicherte Antwort oder wird für dich notiert.",
+            "tr": "Dosyasız soru kayıtlı yanıtını alır ya da senin için not edilir.",
+            "ko": "파일 없는 질문에는 저장한 답이 가거나, 답하도록 기록됩니다.",
+            "ja": "ファイルのない質問には保存した答えを送るか、記録します。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.21.0",
       "items": [
         {
