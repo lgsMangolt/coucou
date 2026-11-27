@@ -77,7 +77,7 @@ export interface WaOrder {
   /** The reply to the customer, to copy, correct and send: the quote, the question, or the manager's message. */
   reply: string;
   /** A priced quote, a question for the customer, or an order for the manager (outside the table). */
-  kind: "quote" | "question" | "manager";
+  kind: "quote" | "question" | "manager" | "answer";
   /** Why it goes to the manager, or "". */
   reason: string;
   /** Coucou sent the reply by itself. */

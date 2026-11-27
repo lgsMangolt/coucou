@@ -125,6 +125,124 @@ fn facts_of(note: &str) -> Option<String> {
     (!text.is_empty()).then_some(text)
 }
 
+// ── Para responder ────────────────────────────────────────────────────────────
+// What Coucou could not answer (an order for the manager) is written down in the vault note
+// "Para responder", with an empty "Resposta:". Once the owner writes the answer there, the next
+// customer who asks the same is sent those exact words.
+
+const PENDING_NOTE: &str = "Para responder.md";
+const ANSWER: &str = "- Resposta:";
+const PENDING_HEAD: &str = "# Para responder\n\n\
+O Coucou anota aqui o que ele não soube responder sozinho (pedidos que foram para o gerente).\n\n\
+**Como usar:** escreva a sua resposta depois de `Resposta:`, do jeito que mandaria no WhatsApp. \
+Na próxima vez que um cliente pedir a mesma coisa, o Coucou manda as suas palavras, sem mudar nada. \
+Para ele parar de usar uma resposta, apague a resposta (ou o bloco inteiro).\n";
+/// Answered questions shown to the model, at most.
+const MAX_ANSWERS: usize = 40;
+const MAX_ANSWER_CHARS: usize = 600;
+
+/// One question the owner answered in "Para responder".
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Answer {
+    /// The heading (why it went to the manager) and what the customer said.
+    pub pergunta: String,
+    /// The owner's own words, sent as they are.
+    pub resposta: String,
+}
+
+/// Writes down, in the background, a request Coucou could not answer: `why` in a few words, the
+/// customer, and their last lines. The same request of the same customer still unanswered is not
+/// written twice.
+pub fn note_pending(name: String, phone: String, why: String, said: Vec<String>) {
+    std::thread::spawn(move || {
+        let _one = WRITING.lock().unwrap_or_else(PoisonError::into_inner);
+        let today = crate::platform::local_time();
+        let when = format!("{:02}/{:02}/{} {:02}:{:02}", today.day, today.month, today.year, today.hour, today.minute);
+        if let Err(err) = pending_in(&vault(), &name, &phone, &why, &said, &when) {
+            crate::log::line(format!("memoria: could not write Para responder: {err}"));
+        }
+    });
+}
+
+fn one_line(text: &str, max: usize) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(max).collect()
+}
+
+fn pending_in(base: &Path, name: &str, phone: &str, why: &str, said: &[String], when: &str) -> std::io::Result<()> {
+    std::fs::create_dir_all(base)?;
+    let path = base.join(PENDING_NOTE);
+    let old = std::fs::read_to_string(&path).unwrap_or_default();
+    let why = one_line(why, 120).replace('#', "");
+    let title = if why.trim().is_empty() { "Pedido para o gerente".to_string() } else { why.trim().to_string() };
+    let tail: String = phone.chars().filter(char::is_ascii_digit).collect::<Vec<_>>().iter().rev().take(4).rev().collect();
+    let who = if name.trim().is_empty() { format!("final {tail}") } else { format!("{} (final {tail})", one_line(name, 60)) };
+    // Still waiting for an answer, same request, same customer: once is enough.
+    if sections(&old).iter().any(|s| s.title == title && s.answer.is_empty() && s.body.contains(&who)) {
+        return Ok(());
+    }
+    let lines: Vec<String> = said.iter().rev().take(4).rev().map(|l| format!("  > {}", one_line(l, 200))).collect();
+    let mut out = if old.trim().is_empty() { PENDING_HEAD.to_string() } else { old.trim_end().to_string() + "\n" };
+    out.push_str(&format!("\n## {title}\n- Cliente: {who} · {when}\n"));
+    if !lines.is_empty() {
+        out.push_str(&format!("- O cliente disse:\n{}\n", lines.join("\n")));
+    }
+    out.push_str(&format!("{ANSWER} \n"));
+    write_atomic(&path, out.as_bytes())
+}
+
+struct Section {
+    title: String,
+    body: String,
+    answer: String,
+}
+
+/// The note's blocks: each "## " heading, its lines, and the answer written after "- Resposta:"
+/// (on that line and the lines under it, up to the next item or heading).
+fn sections(note: &str) -> Vec<Section> {
+    let mut out = Vec::new();
+    for block in note.split("\n## ").skip(1) {
+        let (title, body) = block.split_once('\n').unwrap_or((block, ""));
+        let mut answer = Vec::new();
+        let mut inside = false;
+        for line in body.lines() {
+            let trimmed = line.trim();
+            if let Some(rest) = trimmed.strip_prefix(ANSWER).or_else(|| trimmed.strip_prefix("Resposta:")) {
+                inside = true;
+                answer.push(rest.trim().to_string());
+            } else if inside && (trimmed.starts_with("- ") || trimmed.starts_with("## ")) {
+                inside = false;
+            } else if inside {
+                answer.push(trimmed.to_string());
+            }
+        }
+        let answer = answer.join("\n").trim().to_string();
+        out.push(Section { title: title.trim().to_string(), body: body.to_string(), answer });
+    }
+    out
+}
+
+/// The questions the owner answered in "Para responder", newest last.
+pub fn answers() -> Vec<Answer> {
+    let _one = WRITING.lock().unwrap_or_else(PoisonError::into_inner);
+    answers_in(&vault())
+}
+
+fn answers_in(base: &Path) -> Vec<Answer> {
+    let note = std::fs::read_to_string(base.join(PENDING_NOTE)).unwrap_or_default();
+    let mut out: Vec<Answer> = sections(&note)
+        .into_iter()
+        .filter(|s| !s.answer.is_empty())
+        .map(|s| {
+            let said: Vec<String> = s.body.lines().map(str::trim).filter_map(|l| l.strip_prefix('>')).map(|l| l.trim().to_string()).collect();
+            let pergunta = if said.is_empty() { s.title.clone() } else { format!("{} (o cliente disse: {})", s.title, said.join(" / ")) };
+            Answer { pergunta: one_line(&pergunta, 400), resposta: s.answer.chars().take(MAX_ANSWER_CHARS).collect() }
+        })
+        .collect();
+    let skip = out.len().saturating_sub(MAX_ANSWERS);
+    out.drain(..skip);
+    out
+}
+
 /// The log is set aside past this size (registro.jsonl → registro.antigo.jsonl).
 const MAX_LOG_BYTES: u64 = 5_000_000;
 
@@ -454,5 +572,34 @@ mod tests {
         assert_eq!(note_name(&store, "Zé: a/b|c", "+55 54 9999-1234"), "Zé a b c (final 1234).md");
         assert_eq!(note_name(&store, "", "+5554999991234"), "Cliente (final 1234).md");
         assert_eq!(notes_of(&format!("# Ana\n\n## Notas\n{NOTES_HINT}\n\n{START}\n## Pedidos")), "");
+    }
+
+    #[test]
+    fn what_coucou_could_not_answer_waits_for_the_owners_answer() {
+        let base = temp();
+        let said = vec!["Cliente: quero 500 cartões de visita".to_string()];
+        pending_in(&base, "Ana", "+5554999990000", "cartão de visita", &said, "27/11/2026 10:00").unwrap();
+        pending_in(&base, "Ana", "+5554999990000", "cartão de visita", &said, "27/11/2026 10:05").unwrap();
+        pending_in(&base, "Bia", "+5554999991111", "banner em lona", &[], "27/11/2026 11:00").unwrap();
+        let path = base.join(PENDING_NOTE);
+        let note = std::fs::read_to_string(&path).unwrap();
+        assert!(note.starts_with("# Para responder"), "{note}");
+        assert_eq!(note.matches("## cartão de visita").count(), 1, "the same request still waiting is written once: {note}");
+        assert!(note.contains("- Cliente: Ana (final 0000) · 27/11/2026 10:00") && note.contains("  > Cliente: quero 500 cartões de visita"), "{note}");
+        assert!(answers_in(&base).is_empty(), "nothing answered yet");
+
+        // The owner answers one, on two lines.
+        let edited = note.replacen("- Resposta:", "- Resposta: Cartão a gente faz sim!\n  O cento sai R$ 60,00.", 1);
+        std::fs::write(&path, edited).unwrap();
+        let got = answers_in(&base);
+        assert_eq!(got.len(), 1);
+        assert_eq!(got[0].resposta, "Cartão a gente faz sim!\nO cento sai R$ 60,00.");
+        assert!(got[0].pergunta.starts_with("cartão de visita (o cliente disse: Cliente: quero 500"), "{}", got[0].pergunta);
+
+        // Answered, the same request is written again only for another customer, and the note is kept.
+        pending_in(&base, "Caio", "+5554999992222", "cartão de visita", &[], "28/11/2026 09:00").unwrap();
+        let note = std::fs::read_to_string(&path).unwrap();
+        assert!(note.contains("O cento sai R$ 60,00.") && note.contains("Caio (final 2222)"), "{note}");
+        assert_eq!(answers_in(&base).len(), 1);
     }
 }

@@ -354,7 +354,7 @@ export function buildWhatsAppCard(host: WhatsAppCardHost, account = 0): WhatsApp
       : t("Print order");
     const label = h("div", { class: "wa-entry-line" },
       h("b", { class: `wa-entry-kind ${manager ? "out" : "in"}`, text: stage }),
-      h("span", { class: "wa-entry-amount", text: o.total || (o.kind === "question" ? "" : t("No price")) }),
+      h("span", { class: "wa-entry-amount", text: o.total || (o.kind === "question" || o.kind === "answer" ? "" : t("No price")) }),
     );
     const reply = h("textarea", { class: "wa-order-reply", rows: "5", spellcheck: "true" }) as HTMLTextAreaElement;
     reply.value = replies.get(o.id) ?? o.reply;

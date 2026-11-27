@@ -2,6 +2,81 @@
   "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.21.0",
+      "items": [
+        {
+          "icon": "checklist",
+          "title": {
+            "en": "Questions for you, answered once",
+            "zh-Hans": "待您回答的问题，只需答一次",
+            "hi": "आपके लिए सवाल, एक बार जवाब",
+            "es": "Preguntas para ti, una sola vez",
+            "ar": "أسئلة لك، تُجاب مرة واحدة",
+            "fr": "Vos questions, répondues une fois",
+            "bn": "আপনার জন্য প্রশ্ন, একবার উত্তর",
+            "pt-BR": "Para responder, uma vez só",
+            "ru": "Вопросы для вас, ответ один раз",
+            "id": "Pertanyaan untukmu, dijawab sekali",
+            "de": "Fragen an dich, einmal beantwortet",
+            "tr": "Sana sorular, bir kez yanıtla",
+            "ko": "한 번만 답하면 되는 질문",
+            "ja": "一度答えれば済む質問"
+          },
+          "detail": {
+            "en": "What goes to the manager is noted in the vault; your answer there is sent to the next customer who asks.",
+            "zh-Hans": "转给经理的请求记在笔记里；您写下的回答会发给下一位问同样问题的顾客。",
+            "hi": "मैनेजर को जाने वाली बात नोट में लिखी जाती है; आपका जवाब अगले ग्राहक को जाता है।",
+            "es": "Lo que va al gerente se anota; tu respuesta se envía al próximo cliente que pregunte.",
+            "ar": "ما يذهب إلى المدير يُدوَّن؛ وجوابك هناك يُرسل إلى العميل التالي الذي يسأل.",
+            "fr": "Ce qui part au gérant est noté ; votre réponse est envoyée au prochain client qui demande.",
+            "bn": "ম্যানেজারের কাছে যা যায় তা লেখা থাকে; আপনার উত্তর পরের গ্রাহককে যায়।",
+            "pt-BR": "O que vai para o gerente fica anotado; a sua resposta vai para o próximo cliente que pedir.",
+            "ru": "То, что уходит менеджеру, записывается; ваш ответ получит следующий клиент.",
+            "id": "Yang ke manajer dicatat; jawabanmu di sana dikirim ke pelanggan berikutnya.",
+            "de": "Was an den Chef geht, wird notiert; deine Antwort geht an den nächsten Kunden.",
+            "tr": "Müdüre gidenler not edilir; oradaki yanıtın sonraki müşteriye gider.",
+            "ko": "관리자에게 넘긴 요청이 기록되고, 적어 둔 답이 다음 고객에게 갑니다.",
+            "ja": "店長に回した依頼を記録し、書いた答えを次の客に送ります。"
+          }
+        },
+        {
+          "icon": "mic",
+          "title": {
+            "en": "Voice notes: asked in writing",
+            "zh-Hans": "语音消息：请对方改发文字",
+            "hi": "वॉइस नोट: लिखकर भेजने को कहा",
+            "es": "Audios: se piden por escrito",
+            "ar": "الرسائل الصوتية: يُطلب نصها",
+            "fr": "Vocaux : demandés par écrit",
+            "bn": "ভয়েস নোট: লিখে পাঠাতে বলা হয়",
+            "pt-BR": "Áudio: pede por escrito",
+            "ru": "Голосовые: просим написать",
+            "id": "Pesan suara: diminta tertulis",
+            "de": "Sprachnachrichten: schriftlich erbeten",
+            "tr": "Sesli mesaj: yazılı istenir",
+            "ko": "음성 메시지: 글로 요청",
+            "ja": "音声メッセージ：文字で依頼"
+          },
+          "detail": {
+            "en": "A customer who sends a voice note is asked to write it, once every 12 hours.",
+            "zh-Hans": "顾客发语音时，会请其改发文字，每 12 小时一次。",
+            "hi": "वॉइस नोट भेजने वाले ग्राहक से लिखने को कहा जाता है, हर 12 घंटे में एक बार।",
+            "es": "Al cliente que manda un audio se le pide escribirlo, una vez cada 12 horas.",
+            "ar": "يُطلب من العميل الذي يرسل رسالة صوتية أن يكتبها، مرة كل 12 ساعة.",
+            "fr": "Le client qui envoie un vocal est invité à l'écrire, une fois toutes les 12 heures.",
+            "bn": "ভয়েস নোট পাঠানো গ্রাহককে লিখে পাঠাতে বলা হয়, ১২ ঘণ্টায় একবার।",
+            "pt-BR": "Quem manda áudio recebe um pedido para escrever, uma vez a cada 12 horas.",
+            "ru": "Клиента с голосовым просят написать текстом, раз в 12 часов.",
+            "id": "Pelanggan yang kirim pesan suara diminta menulisnya, sekali tiap 12 jam.",
+            "de": "Wer eine Sprachnachricht schickt, wird gebeten zu schreiben, einmal in 12 Stunden.",
+            "tr": "Sesli mesaj gönderen müşteriden yazması istenir, 12 saatte bir.",
+            "ko": "음성 메시지를 보낸 고객에게 글로 보내 달라고 12시간에 한 번 요청합니다.",
+            "ja": "音声を送った客に文字での送信を12時間に1回お願いします。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.20.3",
       "items": [
         {
